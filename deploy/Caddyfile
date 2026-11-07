@@ -1,5 +1,0 @@
-# SITE_ADDRESS comes from .env: your domain (automatic HTTPS) or http://localhost.
-{$SITE_ADDRESS} {
-	encode zstd gzip
-	reverse_proxy web:8080
-}
