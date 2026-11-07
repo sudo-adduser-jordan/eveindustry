@@ -15,7 +15,7 @@ The React app at `/app` is installable and keeps working as a shell when offline
 
 ## Server requirements
 
-`sw.js` and `manifest.webmanifest` must be served with `Cache-Control: no-cache`, and `/app/static/` may be `immutable`. `docker/nginx/*.conf` set this. On Forge or other nginx setups add the same three `location` blocks; without the `no-cache` header on `sw.js`, clients can be stuck on an old worker.
+`sw.js` and `manifest.webmanifest` must be served with `Cache-Control: no-cache`, and `/app/static/` may be `immutable`. Configure the same three `location` blocks in nginx; without the `no-cache` header on `sw.js`, clients can be stuck on an old worker.
 
 ## Development
 

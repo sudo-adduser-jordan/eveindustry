@@ -9,7 +9,7 @@ set nothing.
 
 1. A theme is a folder with a `theme.css` (and an optional `theme.json`).
 2. Set `APP_THEME=<folder name>` in `.env`.
-3. Apply it: `docker compose up -d` (this recreates the containers; no rebuild).
+3. Restart the app to apply it.
 
 Setting `APP_THEME=default`, leaving it empty, or naming a folder that does not
 exist gives the built-in look. Names are lowercase letters, digits, `-` and `_`.
@@ -19,7 +19,7 @@ Where theme folders are looked up, in order:
 | Location | Use |
 |---|---|
 | `public/themes/<name>/` | Themes that ship with the app (`default`, `example-light`). |
-| `./themes/<name>/` next to your `docker-compose.yml` | Your own themes. It is mounted read-only at `public/themes-custom/` in the containers. |
+| `public/themes-custom/<name>/` | Your own themes. |
 
 ## Making a theme
 
@@ -28,7 +28,6 @@ mkdir -p themes/midnight
 cp public/themes/example-light/theme.css themes/midnight/theme.css   # or start from default
 $EDITOR themes/midnight/theme.css
 echo 'APP_THEME=midnight' >> .env
-docker compose up -d
 ```
 
 `theme.css` loads after the app's own styles, so redefining a variable on

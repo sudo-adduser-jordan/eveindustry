@@ -290,7 +290,7 @@ Return stale data during transient failure only while current authorisation perm
 
 Refresh corporation datasets once per corporation/dataset, independently of user aggregates. Background collectors choose a valid credential; initial rollout can preserve the current main-character rule, then introduce explicitly selected corporation collectors. Avoid making every user's request try every character for inaccessible structures.
 
-Docker currently places sessions on the evictable, nonpersistent cache Redis (`SESSION_CONNECTION=cache`). Separate sessions from bulk dataset cache, or reserve a non-evicting, persisted session store. Monitor queue Redis memory too: `noeviction` prevents eviction but cannot prevent write failures when capacity is exhausted.
+The default configuration places sessions on the evictable, nonpersistent cache Redis (`SESSION_CONNECTION=cache`). Separate sessions from bulk dataset cache, or reserve a non-evicting, persisted session store. Monitor queue Redis memory too: `noeviction` prevents eviction but cannot prevent write failures when capacity is exhausted.
 
 Keep public market ingestion isolated from private owner sync and CPU-heavy precomputation. Within the current five-process ceiling, first test a private/background split and smaller jobs. If measurements justify a higher ceiling or separate host, update Horizon and `JobTimeoutTest` together. Maintain `request timeout < job timeout < retry_after`, including lock leases and termination grace; verify normal throttling releases do not become terminal failures.
 

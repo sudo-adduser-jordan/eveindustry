@@ -23,7 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->statefulApi();
 
-        // Behind the bundled Caddy (or any reverse proxy) the request arrives over
+        // Behind a reverse proxy the request arrives over
         // plain HTTP; trust the proxy's forwarded headers so URLs and cookies are
         // https. Defaults to private networks only. Use '*' only if nothing but
         // your proxy can reach the web container.

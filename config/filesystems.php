@@ -9,8 +9,8 @@ return [
     /*
     | Where uploaded files (sponsor banners) go: "public" (storage/app/public,
     | served at /storage) or "s3" for any S3-compatible bucket (AWS S3,
-    | DigitalOcean Spaces, Cloudflare R2, MinIO). Use s3 when the container
-    | disk is not kept, as on DigitalOcean App Platform.
+    | DigitalOcean Spaces, Cloudflare R2, MinIO). Use s3 when the local
+    | disk is ephemeral and uploads must survive restarts.
     */
     'uploads' => env('UPLOADS_DISK', 'public'),
 

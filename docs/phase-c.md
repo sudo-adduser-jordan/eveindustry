@@ -113,31 +113,6 @@ removed only after a complete sweep.
   rewrite are deleted. Note: a manual `--include-t2` (or `--include-all`) run
   is undone by the next default T1 run, which removes the T2 rows.
 
-## Deploy split
-
-- `docker-compose.yml` is now the role split, one image (`Dockerfile.app`):
-  `migrate` (one-off `php artisan migrate --force`; `web`, `worker` and
-  `scheduler` wait for it to finish successfully), `web`, `worker`
-  (Horizon) and `scheduler`. `docker/start.sh` gained `APP_ROLE=migrate` for
-  platforms with a pre-deploy job (e.g. App Platform). No long-running role
-  migrates.
-- The previous bind-mounted development setup moved unchanged to
-  `docker-compose.dev.yml` (`docker compose -f docker-compose.dev.yml up -d`).
-- Two Redis roles: `redis` (queues, Horizon, cache locks) with
-  `noeviction` and AOF, and `redis-cache` (cache and sessions) with
-  `allkeys-lru`, bounded by `REDIS_CACHE_MAXMEMORY` (512 MB), no
-  persistence. The `cache` Redis connection reads `REDIS_CACHE_HOST` (falls
-  back to `REDIS_HOST`, database 1, so a single-Redis host keeps working);
-  sessions use it through `SESSION_CONNECTION=cache`; cache locks
-  (`withoutOverlapping`, `onOneServer`, rate-limiter locks) use
-  `lock_connection = default` so eviction cannot drop a lock.
-- `.dockerignore` keeps `.env`, `.git`, `vendor` and runtime files out of the
-  image (the image previously copied the local `.env` in).
-- `GET /api/v1/health` (public, throttled 60/min): database and cache checks,
-  200 or 503. `docker/smoke-test.sh [BASE_URL]` checks `/up`,
-  `/api/v1/health` and that `/api/v1/me` answers 401 `unauthenticated`,
-  retrying for up to 60 s.
-
 ## Deviations and open points
 
 - Sessions now live in the evicting Redis, as planned. Under memory pressure

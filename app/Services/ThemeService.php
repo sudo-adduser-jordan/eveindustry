@@ -6,8 +6,7 @@ namespace App\Services;
  * Resolves the active visual theme. A theme is a folder with a theme.css (CSS
  * variable overrides and optional rules, loaded after the app's own styles)
  * and an optional theme.json. Shipped themes live in public/themes/<name>/;
- * operators add their own in public/themes-custom/<name>/ (the self-hosting
- * compose file mounts ./themes there). The folder named by APP_THEME is used;
+ * operators add their own in public/themes-custom/<name>/. The folder named by APP_THEME is used;
  * anything missing or malformed falls back to the built-in look.
  * See docs/styling.md.
  */

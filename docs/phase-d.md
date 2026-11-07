@@ -7,16 +7,17 @@ origin under `/app`, so there is no CORS and the session cookie is the login.
 
 - Vite, React 19, strict TypeScript, React Router, TanStack Query.
 - Typed API client from `docs/openapi.json` (`openapi-fetch`;
-  `npm run gen:api` writes `src/api/schema.d.ts`, CI fails if it is stale).
+  `npm run gen:api` writes `src/api/schema.d.ts`, keep it in sync).
   Writes get the Sanctum CSRF cookie flow; a 401 sends the user to `/login`.
 - Shell with navigation (ported pages plus links to the classic Blade pages),
   `FreshnessBadge` (amber when stale, "no data yet" instead of a price of 0),
   and three pages: Overview, Characters, Market data.
 - `GET /app/{path?}` (`SpaController`, `auth`) serves `public/app/index.html`
   for every client route; 503 with a hint when the app is not built.
-- `Dockerfile.app` builds the app in a Node stage. nginx no longer lists
+- `GET /api/v1/health` (public, throttled 60/min): database and cache checks,
+  200 or 503. nginx no longer lists
   directories (`try_files $uri /index.php`) so `/app/` reaches Laravel.
-- CI `frontend` job: type check, build, Vitest, size-limit
+- Type check, build, Vitest, size-limit
   (120 kB gzip shell, 60 kB per route chunk; shell is about 85 kB today).
 
 ## Second slice: assets
