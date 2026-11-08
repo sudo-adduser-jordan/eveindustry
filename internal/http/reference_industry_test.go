@@ -19,6 +19,7 @@ type stubIndustry struct {
 	precomputed      []industry.PrecomputedCost
 	precomputedTotal int
 	names            map[int]string
+	groups           map[int]int
 }
 
 func (s *stubIndustry) SearchBlueprintTypes(ctx context.Context, like string, limit int) ([]industry.BlueprintTypeHit, error) {
@@ -93,7 +94,16 @@ func (s *stubIndustry) ActivityProducing(ctx context.Context, typeID, activityID
 	return s.ActivityProducingType(ctx, typeID, activityID)
 }
 func (s *stubIndustry) GroupsOf(ctx context.Context, typeIDs []int) (map[int]int, error) {
-	return map[int]int{}, nil
+	if s.groups == nil {
+		return map[int]int{}, nil
+	}
+	out := map[int]int{}
+	for _, id := range typeIDs {
+		if g, ok := s.groups[id]; ok {
+			out[id] = g
+		}
+	}
+	return out, nil
 }
 func (s *stubIndustry) AllManufacturingActivities(ctx context.Context) ([]industry.MfgActivity, error) {
 	return s.mfgActs, nil

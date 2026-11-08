@@ -46,6 +46,7 @@ type Deps struct {
 	Wholemap     store.WholemapStore
 	Programs     store.ProgramStore
 	IndustryDeps IndustryDeps
+	Progress     ProgressDeps
 
 	// Sessions and Users drive RequireAuth. Either nil means nobody can
 	// authenticate, so every authed route 401s (never silently open).
@@ -110,6 +111,7 @@ func New(d Deps) *echo.Echo {
 	registerStructures(authed, d)
 	registerIndustryRefresh(authed, d)
 	registerPrograms(authed, d)
+	registerProgress(authed, d)
 
 	return e
 }
