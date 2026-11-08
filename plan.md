@@ -20,6 +20,8 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
 - Phase 3b (`532e568`): corporate-export availability.
 - Phase 4a (`a2eb801`): ESI transport core (outcomes, circuit, rate
   limiter, token refresher, HTTP client).
+- Phase 4b (`cc17a74`): ESI character client (credentials, pagination,
+  assets, names) + calculator skills endpoints.
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
@@ -60,8 +62,8 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
 
 ## Remaining
 
-- [ ] Calculators: corporate-export (done `532e568`), skills/stock
-      (need live ESI → ESI phase).
+- [ ] Calculators: corporate-export (done `532e568`), skills (done
+      `cc17a74`), stock needs live asset aggregation → ESI phase.
 - [ ] Industry group (`routes/api_v1/industry.php`), planetary, heavy
       (moon scans, structures, wholemap), corp tools, programs + planning
       writes, admin, notifications, session/characters/me.
