@@ -52,6 +52,8 @@ type Deps struct {
 	AssetBrowser       AssetBrowserDeps
 	Donations          store.DonationStore
 	DonationCharacters DonationESI
+	Ess   store.EssStore
+	Windows store.WindowStore
 
 	// Sessions and Users drive RequireAuth. Either nil means nobody can
 	// authenticate, so every authed route 401s (never silently open).
@@ -123,6 +125,8 @@ func New(d Deps) *echo.Echo {
 	registerAssets(authed, d)
 	registerAssetExtras(authed, d)
 	registerDonations(authed, d)
+	registerEss(authed, d)
+	registerWindows(authed, d)
 
 	return e
 }
