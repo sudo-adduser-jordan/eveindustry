@@ -40,6 +40,8 @@ per the existing rule.
 - Phase 5f (`0087044`): corp build programs, stock items, structures,
   industry refresh writes.
 - Phase 5g: corporate build-program pages (overview, enable/disable, show).
+- Phase 5h: progress calculator (calc.SummariseProgress) + personal/corp
+  progress and asset-location endpoints.
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
