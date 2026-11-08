@@ -22,6 +22,8 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
   limiter, token refresher, HTTP client).
 - Phase 4b (`cc17a74`): ESI character client (credentials, pagination,
   assets, names) + calculator skills endpoints.
+- Phase 4c (`070a5ec`): blueprints/industry-jobs fetch + the three
+  stock endpoints.
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
@@ -63,17 +65,17 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
 ## Remaining
 
 - [ ] Calculators: corporate-export (done `532e568`), skills (done
-      `cc17a74`), stock needs live asset aggregation → ESI phase.
+      `cc17a74`), stock (done `070a5ec`).
 - [ ] Industry group (`routes/api_v1/industry.php`), planetary, heavy
       (moon scans, structures, wholemap), corp tools, programs + planning
       writes, admin, notifications, session/characters/me.
 - [ ] Auth phase (part 1 done `51ac980`: sessions, RequireAuth,
       demo-guard, /me, /logout, account delete): EVE SSO, character-scoped
       skills/stock, admin/stock-manager gates.
-- [ ] ESI phase (core done `a2eb801`; still needed: diagnostics,
-      HTTP cache, demo responses, 8 resource sub-clients, character token
-      store, route-group table): live fallbacks, adjusted prices, cost
-      indices, skills/stock endpoints.
+- [ ] ESI phase (core `a2eb801`, character client + skills `cc17a74`,
+      blueprints/jobs + stock `070a5ec`; still needed: diagnostics,
+      HTTP cache, demo responses, 4 remaining sub-clients, route-group
+      table): live fallbacks, adjusted prices, cost indices.
 - [ ] Jobs phase: `cmd/worker` queue (17 jobs), `cmd/scheduler` tick loop,
       Horizon replacement decision (riverqueue/asynq).
 - [ ] Migrations phase: 74 Laravel migrations -> `migrations/*.up/down.sql`,
