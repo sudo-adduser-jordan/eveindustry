@@ -90,7 +90,7 @@ tasks:
         port="${PORT:-8080}"
         for i in $(seq 1 30); do
           if curl -fs -o /dev/null "http://localhost:$port/up" 2>/dev/null; then
-            echo "api healthy on :$port"
+            echo "api healthy at http://localhost:$port"
             break
           fi
           sleep 0.5
