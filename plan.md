@@ -34,6 +34,7 @@ per the existing rule.
 - Phase 5a (`6b59c9d`): station-configs CRUD (first planning writes).
 - Phase 5b (`b497847`): wholemap writes (signatures, connections,
   jump-logs, notes).
+- Phase 5c (`42c2a68`): invention + reaction plan CRUD.
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
@@ -86,8 +87,8 @@ per the existing rule.
       blueprints/jobs + stock `070a5ec`; still needed: diagnostics,
       HTTP cache, demo responses, 4 remaining sub-clients, route-group
       table): live fallbacks, adjusted prices, cost indices.
-- [ ] Writes: station-configs + wholemap (done `6b59c9d`, `b497847`),
-      plans, programs, stock items, industry refresh.
+- [ ] Writes: station-configs + wholemap + plans (done `6b59c9d`,
+      `b497847`, `42c2a68`), programs, stock items, industry refresh.
 - [ ] Jobs phase: `cmd/worker` queue (17 jobs), `cmd/scheduler` tick loop,
       Horizon replacement decision (riverqueue/asynq).
 - [ ] Migrations phase: 74 Laravel migrations -> `migrations/*.up/down.sql`,
