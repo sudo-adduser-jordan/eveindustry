@@ -83,12 +83,12 @@ func (s *StreamSink) Emit(ctx context.Context, e DiagEvent) {
 
 func diagPayload(e DiagEvent) map[string]any {
 	m := map[string]any{
-		"event_id":   newEventID(),
+		"event_id":    newEventID(),
 		"occurred_at": e.OccurredAt.UTC().Format("2006-01-02 15:04:05.000000"),
-		"kind":       string(e.Kind),
-		"method":     e.Method,
-		"endpoint":   e.Endpoint,
-		"reason":     e.Reason,
+		"kind":        string(e.Kind),
+		"method":      e.Method,
+		"endpoint":    e.Endpoint,
+		"reason":      e.Reason,
 	}
 	if e.Operation != "" {
 		m["operation_key"] = e.Operation

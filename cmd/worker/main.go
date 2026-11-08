@@ -74,14 +74,14 @@ func main() {
 		esiClient := esi.NewClient(coord, limiter, circuit, cfg.ESIUserAgent)
 		esiClient.Cache = esi.NewHTTPCache(coord)
 
-	diagEnabled := os.Getenv("ESI_DIAGNOSTICS_ENABLED") == "true" || os.Getenv("ESI_DIAGNOSTICS_ENABLED") == "1"
-	diagSinkRedis := os.Getenv("ESI_DIAGNOSTICS_SINK") == "redis"
-	if diagEnabled && diagSinkRedis && rdb != nil {
-		stream := &esi.RedisStream{Client: rdb}
-		rec := &esi.DiagRecorder{Enabled: true, Sink: &esi.StreamSink{Stream: stream}}
-		esiClient.Recorder = rec
-		esiClient.Cache.Recorder = rec
-	}
+		diagEnabled := os.Getenv("ESI_DIAGNOSTICS_ENABLED") == "true" || os.Getenv("ESI_DIAGNOSTICS_ENABLED") == "1"
+		diagSinkRedis := os.Getenv("ESI_DIAGNOSTICS_SINK") == "redis"
+		if diagEnabled && diagSinkRedis && rdb != nil {
+			stream := &esi.RedisStream{Client: rdb}
+			rec := &esi.DiagRecorder{Enabled: true, Sink: &esi.StreamSink{Stream: stream}}
+			esiClient.Recorder = rec
+			esiClient.Cache.Recorder = rec
+		}
 		hd.ESIChars = esi.NewCharacterClient(esiClient, nil, hd.DB, nil, nil)
 		hd.ESIUniverse = esi.NewUniverseClient(esiClient, hd.DB, nil, hd.DB)
 		hd.ESIMarket = esi.NewMarketClient(esiClient, nil)

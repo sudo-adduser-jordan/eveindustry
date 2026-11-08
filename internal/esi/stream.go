@@ -9,11 +9,11 @@ import (
 
 // Diag stream keys mirror RedisStream (non-evicting Redis).
 const (
-	diagStreamKey   = "esi:diag:stream"
-	diagEpochKey    = "esi:diag:stream:epoch"
-	diagDropsKey    = "esi:diag:stream:drops"
-	diagAddedKey    = "esi:diag:stream:added"
-	diagDefaultCap  = 100000
+	diagStreamKey  = "esi:diag:stream"
+	diagEpochKey   = "esi:diag:stream:epoch"
+	diagDropsKey   = "esi:diag:stream:drops"
+	diagAddedKey   = "esi:diag:stream:added"
+	diagDefaultCap = 100000
 )
 
 // RedisStream ports the Redis diagnostics buffer: capped XADD, XRANGE reads,

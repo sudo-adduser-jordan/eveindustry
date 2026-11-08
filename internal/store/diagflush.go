@@ -85,24 +85,24 @@ type EndpointMetricDelta struct {
 
 // BudgetMetricDelta is one merged budget bucket increment.
 type BudgetMetricDelta struct {
-	DimensionHash string
-	BucketAt      time.Time
-	Granularity   string
-	SourceID      string
-	ApplicationID string
-	Mechanism     string
-	LimiterGroup  string
-	Observations  int64
-	RemainingMin  *int64
-	RemainingMax  *int64
+	DimensionHash  string
+	BucketAt       time.Time
+	Granularity    string
+	SourceID       string
+	ApplicationID  string
+	Mechanism      string
+	LimiterGroup   string
+	Observations   int64
+	RemainingMin   *int64
+	RemainingMax   *int64
 	RemainingFirst *int64
-	RemainingLast *int64
-	UsedSum       *int64
-	ResetMin      *time.Time
-	ResetMax      *time.Time
-	CircuitOpened int64
-	CircuitClosed int64
-	PauseSeconds  int64
+	RemainingLast  *int64
+	UsedSum        *int64
+	ResetMin       *time.Time
+	ResetMax       *time.Time
+	CircuitOpened  int64
+	CircuitClosed  int64
+	PauseSeconds   int64
 }
 
 // EnsureDiagCheckpoint inserts the collector row when missing.
