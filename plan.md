@@ -63,6 +63,7 @@ per the existing rule.
 - Phase 9b: market order sweeps (pages, complete, aggregates).
 - Phase 9c: market price/history/contract imports.
 - Phase 9d: manufacturing cost precompute.
+- Phase 9e: notification dispatch (detectors, webpush sender, dedupe log).
 - Phase 8a: ESI market client, route-group table, HTTP cache, demo
   responses, revoke, diagnostics recorder facade.
 
