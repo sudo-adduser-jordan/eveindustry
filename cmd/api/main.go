@@ -115,6 +115,8 @@ func main() {
 		deps.Sponsors = queries
 		deps.AdminStats = queries
 		deps.Diag = queries
+		deps.Discord = queries
+		deps.DiscordBotEnabled = os.Getenv("FEATURE_DISCORD_BOT") == "true"
 		deps.SponsorImages = gohttp.DiskSponsorStorage{Dir: sponsorDir()}
 		deps.CorpPrograms = queries
 		deps.StockItems = queries

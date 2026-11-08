@@ -60,6 +60,8 @@ type Deps struct {
 	AdminStats         store.AdminStatsStore
 	SponsorImages      SponsorStorage
 	Diag               store.DiagStore
+	Discord            store.DiscordStore
+	DiscordBotEnabled  bool
 
 	// Sessions and Users drive RequireAuth. Either nil means nobody can
 	// authenticate, so every authed route 401s (never silently open).
@@ -137,6 +139,7 @@ func New(d Deps) *echo.Echo {
 	registerAdmin(authed, d)
 	registerSponsors(authed, d)
 	registerDiagnostics(authed, d)
+	registerDiscordBot(authed, d)
 
 	return e
 }
