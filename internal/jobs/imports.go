@@ -296,11 +296,11 @@ func importContractsCSV(ctx context.Context, h HandlerDeps, path string, genID i
 			Title: nilStr(d["title"]), ForCorporation: isTruthy(d["for_corporation"]),
 			IssuerCorpID: nilInt64(d["issuer_corporation_id"]), IssuerID: nilInt64(d["issuer_id"]),
 			DateIssued: nilTime(d["date_issued"]), DateExpired: nilTime(d["date_expired"]),
-			DaysToComplete: atoiOr(d["days_to_complete"], 0),
+			DaysToComplete:  atoiOr(d["days_to_complete"], 0),
 			StartLocationID: nilInt64(d["start_location_id"]), EndLocationID: nilInt64(d["end_location_id"]),
 			StationID: nilInt64(d["station_id"]), SystemID: nilInt(d["system_id"]),
 			ConstellationID: nilInt(d["constellation_id"]),
-			Price: price, Buyout: nilFloat(d["buyout"]), Reward: nilFloat(d["reward"]),
+			Price:           price, Buyout: nilFloat(d["buyout"]), Reward: nilFloat(d["reward"]),
 			Collateral: nilFloat(d["collateral"]), Volume: atofOr(d["volume"], 0),
 			HTTPModified: nilTime(d["http_last_modified"]),
 		})
@@ -344,8 +344,8 @@ func importContractItemsCSV(ctx context.Context, h HandlerDeps, path string, gen
 		}
 		batch = append(batch, store.SnapshotItemRow{
 			ContractID: cid, TypeID: tid, Quantity: qty,
-			IsIncluded: !isFalsy(d["is_included"]),
-			IsBlueprintCopy: nilBool(d["is_blueprint_copy"]),
+			IsIncluded:         !isFalsy(d["is_included"]),
+			IsBlueprintCopy:    nilBool(d["is_blueprint_copy"]),
 			MaterialEfficiency: nilInt(d["material_efficiency"]), TimeEfficiency: nilInt(d["time_efficiency"]),
 			Runs: nilInt(d["runs"]), RecordID: nilInt64(d["record_id"]), ItemID: nilInt64(d["item_id"]),
 			HTTPModified: nilTime(d["http_last_modified"]),

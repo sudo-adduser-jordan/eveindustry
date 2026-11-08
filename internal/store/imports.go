@@ -113,27 +113,27 @@ func chunkGlobalPrices(in []GlobalPrice, n int) [][]GlobalPrice {
 
 // SnapshotContractRow mirrors the everef contracts.csv shape for staging.
 type SnapshotContractRow struct {
-	ContractID          int64
-	RegionID            int
-	Type                string
-	Title               *string
-	ForCorporation      bool
-	IssuerCorpID        *int64
-	IssuerID            *int64
-	DateIssued          *time.Time
-	DateExpired         *time.Time
-	DaysToComplete      int
-	StartLocationID     *int64
-	EndLocationID       *int64
-	StationID           *int64
-	SystemID            *int
-	ConstellationID     *int
-	Price               float64
-	Buyout              *float64
-	Reward              *float64
-	Collateral          *float64
-	Volume              float64
-	HTTPModified        *time.Time
+	ContractID      int64
+	RegionID        int
+	Type            string
+	Title           *string
+	ForCorporation  bool
+	IssuerCorpID    *int64
+	IssuerID        *int64
+	DateIssued      *time.Time
+	DateExpired     *time.Time
+	DaysToComplete  int
+	StartLocationID *int64
+	EndLocationID   *int64
+	StationID       *int64
+	SystemID        *int
+	ConstellationID *int
+	Price           float64
+	Buyout          *float64
+	Reward          *float64
+	Collateral      *float64
+	Volume          float64
+	HTTPModified    *time.Time
 }
 
 // SnapshotItemRow mirrors the everef contract_items.csv shape.

@@ -43,4 +43,5 @@ func TestReadCSVMap(t *testing.T) {
 	}
 	if _, err := readCSVMap(bad, []string{"a", "b"}); err == nil {
 		t.Fatal("expected malformed row error")
-	}}
+	}
+}
