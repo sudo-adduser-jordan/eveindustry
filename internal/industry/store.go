@@ -277,6 +277,7 @@ type IndustryStore interface {
 	TypeGroupMeta(ctx context.Context, typeIDs []int) ([]TypeGroupMeta, error)
 	GroupsInCategory(ctx context.Context, categoryID int) ([]int, error)
 	GroupNames(ctx context.Context, groupIDs []int) (map[int]string, error)
+	DemoBlueprintPool(ctx context.Context) ([][2]int, error)
 	PrecomputedCosts(ctx context.Context, productIDs []int, regionID, meLevel, limit, offset int) ([]PrecomputedCost, int, error)
 	ProductTypeIDsExcludingInvented(ctx context.Context) ([]int, error)
 	ProductGroupCounts(ctx context.Context, typeIDs []int) (map[int]int, error)
@@ -639,6 +640,80 @@ func (s *SQL) GroupNames(ctx context.Context, groupIDs []int) (map[int]string, e
 	}
 	for _, r := range rows {
 		out[r.GroupID] = r.Name
+	}
+	return out, nil
+}
+
+func jsonUnmarshalDemo(s string, v any) error { return json.Unmarshal([]byte(s), v) }
+
+type demoPair struct{ bp, prod int }
+
+func sortDemoPool(pool []demoPair) {
+	for i := 1; i < len(pool); i++ {
+		for j := i; j > 0 && pool[j].bp < pool[j-1].bp; j-- {
+			pool[j], pool[j-1] = pool[j-1], pool[j]
+		}
+	}
+}
+
+// DemoBlueprintPool ports DemoEsiResponder::blueprintPool(): priced
+// manufacturing [blueprint, product] pairs ordered by blueprint, cap 400.
+func (s *SQL) DemoBlueprintPool(ctx context.Context) ([][2]int, error) {
+	type row struct {
+		BP       int            `db:"blueprint_type_id"`
+		Products sql.NullString `db:"products"`
+	}
+	var rows []row
+	err := s.db.SelectContext(ctx, &rows, `SELECT b.blueprint_type_id, b.products
+		FROM blueprint_activities b JOIN eve_types t ON t.type_id = b.blueprint_type_id
+		WHERE b.activity_id = 1 AND t.published = 1 AND t.market_group_id IS NOT NULL
+		ORDER BY b.blueprint_type_id LIMIT 6000`)
+	if err != nil {
+		return nil, err
+	}
+	cands := map[int]int{}
+	var pids []int
+	for _, r := range rows {
+		var prods []struct {
+			TypeID int `json:"type_id"`
+		}
+		if r.Products.Valid {
+			_ = jsonUnmarshalDemo(r.Products.String, &prods)
+		}
+		if len(prods) > 0 && prods[0].TypeID > 0 {
+			if _, ok := cands[prods[0].TypeID]; !ok {
+				cands[prods[0].TypeID] = r.BP
+				pids = append(pids, prods[0].TypeID)
+			}
+		}
+	}
+	priced := map[int]bool{}
+	if len(pids) > 0 {
+		q, args, err := sqlx.In(`SELECT DISTINCT type_id FROM market_prices WHERE type_id IN (?) AND sell_min > 0`, pids)
+		if err != nil {
+			return nil, err
+		}
+		var got []int
+		if err := s.db.SelectContext(ctx, &got, s.db.Rebind(q), args...); err != nil {
+			return nil, err
+		}
+		for _, id := range got {
+			priced[id] = true
+		}
+	}
+	var pool []demoPair
+	for pid, bp := range cands {
+		if priced[pid] {
+			pool = append(pool, demoPair{bp, pid})
+		}
+	}
+	sortDemoPool(pool)
+	out := make([][2]int, 0, len(pool))
+	for _, p := range pool {
+		if len(out) >= 400 {
+			break
+		}
+		out = append(out, [2]int{p.bp, p.prod})
 	}
 	return out, nil
 }

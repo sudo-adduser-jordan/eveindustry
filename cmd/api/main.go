@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -79,6 +80,7 @@ func main() {
 		limiter := esi.NewLimiter(coord, "eve-industrialist")
 		circuit := esi.NewCircuit(coord)
 		esiClient := esi.NewClient(coord, limiter, circuit, cfg.ESIUserAgent)
+		esiClient.Cache = esi.NewHTTPCache(coord)
 		esiClient.CompatibilityDate = cfg.ESICompatibilityDate
 		ssoHTTP := &http.Client{Timeout: 30 * time.Second}
 		refresher := esi.NewRefresher(coord, queries, ssoHTTP, cfg.ESIClientID, cfg.ESIClientSecret)
@@ -88,6 +90,43 @@ func main() {
 		}
 		esiChars := esi.NewCharacterClient(esiClient, refresher, queries, nil, appKey)
 		esiUniverse := esi.NewUniverseClient(esiClient, queries, nil, queries)
+		demo := &esi.DemoResponder{
+			Chars: func(ctx context.Context) ([]esi.DemoCharacter, error) {
+				rows, err := queries.DemoCharacters(ctx)
+				if err != nil {
+					return nil, err
+				}
+				out := make([]esi.DemoCharacter, 0, len(rows))
+				for _, r := range rows {
+					c := esi.DemoCharacter{ID: r.CharacterID, Name: r.Name, CreatedAt: r.CreatedAt}
+					if r.CorporationID.Valid {
+						c.CorporationID = r.CorporationID.Int64
+					}
+					if r.CorporationName.Valid {
+						c.CorpName = r.CorporationName.String
+					}
+					if r.AllianceID.Valid {
+						c.AllianceID = r.AllianceID.Int64
+					}
+					if r.AllianceName.Valid {
+						c.AllianceName = r.AllianceName.String
+					}
+					if r.Roles.Valid && r.Roles.String != "" {
+						var roles []string
+						if err := json.Unmarshal([]byte(r.Roles.String), &roles); err == nil {
+							c.Roles = roles
+						}
+					}
+					out = append(out, c)
+				}
+				return out, nil
+			},
+			Pool: func(ctx context.Context) ([][2]int, error) {
+				return deps.Industry.DemoBlueprintPool(ctx)
+			},
+		}
+		esiChars.Demo = demo
+		esiUniverse.Demo = demo
 		deps.Skills.Characters = esiChars
 		deps.Stock.Characters = esiChars
 		deps.Production.Characters = esiChars

@@ -141,6 +141,9 @@ func (s *stubIndustry) TypeGroupMeta(ctx context.Context, typeIDs []int) ([]indu
 	}
 	return out, nil
 }
+func (s *stubIndustry) DemoBlueprintPool(ctx context.Context) ([][2]int, error) {
+	return nil, nil
+}
 func (s *stubIndustry) GroupNames(ctx context.Context, ids []int) (map[int]string, error) {
 	return map[int]string{}, nil
 }

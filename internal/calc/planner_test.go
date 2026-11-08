@@ -92,6 +92,9 @@ func (s *chainStub) PublishedTypesInGroups(ctx context.Context, groupIDs []int) 
 func (s *chainStub) TypeGroupMeta(ctx context.Context, typeIDs []int) ([]industry.TypeGroupMeta, error) {
 	return nil, nil
 }
+func (s *chainStub) DemoBlueprintPool(ctx context.Context) ([][2]int, error) {
+	return nil, nil
+}
 func (s *chainStub) GroupNames(ctx context.Context, ids []int) (map[int]string, error) {
 	return map[int]string{}, nil
 }

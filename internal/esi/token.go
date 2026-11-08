@@ -33,6 +33,27 @@ type Refresher struct {
 }
 
 // NewRefresher builds a refresher against the SSO login host.
+// RevokeToken ports EsiAuthClient::revokeToken: best-effort SSO revocation.
+func (r *Refresher) RevokeToken(ctx context.Context, refreshToken string) {
+	form := url.Values{
+		"token":           {refreshToken},
+		"token_type_hint": {"refresh_token"},
+		"client_id":       {r.client},
+		"client_secret":   {r.secret},
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		r.base+"/v2/oauth/revoke", strings.NewReader(form.Encode()))
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := r.http.Do(req)
+	if err != nil {
+		return
+	}
+	resp.Body.Close()
+}
+
 func NewRefresher(store CoordStore, creds CredentialStore, httpClient *http.Client, clientID, clientSecret string) *Refresher {
 	return &Refresher{store: store, creds: creds, http: httpClient, base: LoginBase, client: clientID, secret: clientSecret}
 }

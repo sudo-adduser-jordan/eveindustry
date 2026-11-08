@@ -1,6 +1,7 @@
 package esi
 
 import (
+	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"context"
 	"fmt"
 	"net/http"
@@ -34,7 +35,10 @@ type CharacterClient struct {
 	creds   CredentialStore
 	memo    *Memo
 	key     []byte // APP_KEY bytes for encrypted-at-rest tokens; nil = raw only
+	Demo    *DemoResponder
 }
+
+// Demo wires demo-character responses (nil disables them).
 
 // NewCharacterClient builds the client. key may be nil when tokens are
 // stored raw; encrypted payloads then fail closed like the PHP cast.
@@ -84,6 +88,27 @@ func (c *CharacterClient) credential(ctx context.Context, characterID int64) (Au
 }
 
 func (c *CharacterClient) authed(ctx context.Context, method, endpoint string, characterID int64, body any) (any, error) {
+	if c.Demo != nil && auth.IsDemoID(characterID) {
+		chars, _ := c.Demo.Chars(ctx)
+		var ch *DemoCharacter
+		for _, cc := range chars {
+			if cc.ID == characterID {
+				cc := cc
+				ch = &cc
+				break
+			}
+		}
+		if ch != nil {
+			status, payload, _ := c.Demo.Respond(ctx, method, endpoint, ch, nil, body)
+			if status != 0 && payload != nil {
+				if status >= 200 && status < 300 {
+					return payload, nil
+				}
+				return nil, &RequestError{Outcome: OutcomeNotFound, Status: status}
+			}
+		}
+		return nil, &RequestError{Outcome: OutcomeNotFound, Status: 404}
+	}
 	auth, err := c.credential(ctx, characterID)
 	if err != nil {
 		return nil, err

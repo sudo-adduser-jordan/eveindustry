@@ -1,6 +1,7 @@
 package esi
 
 import (
+	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"context"
 	"fmt"
 	"net/http"
@@ -17,6 +18,8 @@ type UniverseClient struct {
 	creds  CredentialStore
 	memo   *Memo
 	types  TypeStore
+	// Demo wires demo-planet responses (nil disables them).
+	Demo *DemoResponder
 }
 
 // TypeStore resolves local SDE rows: eve_types for getTypeInfo, sde_stations
@@ -262,6 +265,9 @@ func (c *UniverseClient) GetPlanetarySchematic(ctx context.Context, schematicID 
 
 // GetPlanetInfo ports getPlanetInfo(): public planet data, 30-day memo.
 func (c *UniverseClient) GetPlanetInfo(ctx context.Context, planetID int) (map[string]any, error) {
+	if c.Demo != nil && auth.IsDemoID(int64(planetID)) {
+		return c.Demo.planetInfo(ctx, int64(planetID)), nil
+	}
 	key := fmt.Sprintf("esi.planet_info.%d", planetID)
 	if v, ok := c.memo.Get(key); ok {
 		if v == nil {

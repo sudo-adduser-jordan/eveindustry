@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"time"
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
@@ -192,4 +193,28 @@ func (s *SQL) DeleteCharacter(ctx context.Context, userID, characterID int64) er
 		}
 	}
 	return tx.Commit()
+}
+
+// DemoCharacterRow is the minimal character record the demo responder needs.
+type DemoCharacterRow struct {
+	CharacterID    int64          `db:"character_id"`
+	Name           string         `db:"name"`
+	CorporationID  sql.NullInt64  `db:"corporation_id"`
+	CorporationName sql.NullString `db:"corporation_name"`
+	AllianceID     sql.NullInt64  `db:"alliance_id"`
+	AllianceName   sql.NullString `db:"alliance_name"`
+	Roles          sql.NullString `db:"roles"`
+	CreatedAt      time.Time      `db:"created_at"`
+}
+
+// DemoCharacters lists characters in the demo id range.
+func (s *SQL) DemoCharacters(ctx context.Context) ([]DemoCharacterRow, error) {
+	var out []DemoCharacterRow
+	err := s.db.SelectContext(ctx, &out, `SELECT character_id, name, corporation_id,
+		corporation_name, alliance_id, alliance_name, roles, created_at FROM characters
+		WHERE character_id >= 99000000000 AND character_id < 99300000000 ORDER BY character_id`)
+	if out == nil {
+		out = []DemoCharacterRow{}
+	}
+	return out, err
 }

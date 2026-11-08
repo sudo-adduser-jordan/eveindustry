@@ -112,6 +112,9 @@ func (s *stubStore) PublishedTypesInGroups(ctx context.Context, groupIDs []int) 
 func (s *stubStore) TypeGroupMeta(ctx context.Context, typeIDs []int) ([]TypeGroupMeta, error) {
 	return nil, nil
 }
+func (s *stubStore) DemoBlueprintPool(ctx context.Context) ([][2]int, error) {
+	return nil, nil
+}
 func (s *stubStore) GroupNames(ctx context.Context, ids []int) (map[int]string, error) {
 	return map[int]string{}, nil
 }

@@ -64,6 +64,8 @@ type Client struct {
 	store             CoordStore
 	// Refresh rotates one character's token; nil disables the post-401 retry.
 	Refresh func(ctx context.Context, characterID int64, priorAccess string, force bool) (string, error)
+	// Cache serves GETs with ETag revalidation; nil disables caching.
+	Cache *HTTPCache
 }
 
 // NewClient builds a transport with the PHP timeouts.
@@ -124,7 +126,13 @@ func (c *Client) DoJSON(ctx context.Context, method, endpoint string, query map[
 		reservation = id
 	}
 
-	resp, err := c.sendOnce(ctx, method, endpoint, query, body, headers, auth)
+	var resp *Response
+	var err error
+	if c.Cache != nil && method == http.MethodGet {
+		resp, err = c.Cache.Remember(ctx, c, endpoint, query, headers, auth)
+	} else {
+		resp, err = c.sendOnce(ctx, method, endpoint, query, body, headers, auth)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +240,7 @@ func (c *Client) trackCircuit(hresp *http.Response) {
 }
 
 // resolveGroup ports resolveRateLimitGroup(): learned route-group cache,
-// else legacy. (The pinned esi_routes table port lands with the sub-clients.)
+// else the pinned route table, else legacy.
 func (c *Client) resolveGroup(endpoint, method string) string {
 	path := endpoint
 	if u, err := url.Parse(endpoint); err == nil && u.Path != "" {
@@ -242,6 +250,36 @@ func (c *Client) resolveGroup(endpoint, method string) string {
 	key := "esi.routegroup." + sha256hex(strings.ToLower(method)+" "+path)
 	if raw, ok := c.store.Get(key); ok {
 		return string(raw)
+	}
+	if g, ok := routeGroups[strings.ToLower(method)+" "+path]; ok {
+		return g
+	}
+	// Templates carry {placeholders}; match segment-wise.
+	m := strings.ToLower(method)
+	segs := strings.Split(strings.Trim(path, "/"), "/")
+	for route, g := range routeGroups {
+		sp := strings.IndexByte(route, ' ')
+		if sp < 0 || route[:sp] != m {
+			continue
+		}
+		ts := strings.Split(strings.Trim(route[sp+1:], "/"), "/")
+		if len(ts) != len(segs) {
+			continue
+		}
+		hit := true
+		for i := range ts {
+			t := ts[i]
+			if len(t) > 2 && t[0] == '{' && t[len(t)-1] == '}' {
+				continue
+			}
+			if t != segs[i] {
+				hit = false
+				break
+			}
+		}
+		if hit {
+			return g
+		}
 	}
 	return "legacy"
 }
