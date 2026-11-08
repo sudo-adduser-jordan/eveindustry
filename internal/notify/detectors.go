@@ -14,10 +14,10 @@ import (
 
 // DetectorDeps carries the data sources detectors need.
 type DetectorDeps struct {
-	Industry    IndustryFinishedJobs
-	Planetary   PlanetaryColonies
-	CorpChars   func(ctx context.Context, userID int64) ([]auth.Character, error)
-	Windows     func(ctx context.Context, corpIDs []int64) ([]store.StructureWindow, error)
+	Industry  IndustryFinishedJobs
+	Planetary PlanetaryColonies
+	CorpChars func(ctx context.Context, userID int64) ([]auth.Character, error)
+	Windows   func(ctx context.Context, corpIDs []int64) ([]store.StructureWindow, error)
 }
 
 // IndustryFinishedJobs mirrors getFinishedJobsForUser.

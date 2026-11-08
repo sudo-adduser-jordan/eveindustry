@@ -135,14 +135,14 @@ type PrefState struct {
 
 // NotifyType mirrors NotificationType.
 type NotifyType struct {
-	Key             string
-	Label           string
-	Description     string
-	Category        string
-	DefaultEnabled  bool
-	LeadOptions     []int
-	SupportsChars   bool
-	RequiresCorp    bool
+	Key            string
+	Label          string
+	Description    string
+	Category       string
+	DefaultEnabled bool
+	LeadOptions    []int
+	SupportsChars  bool
+	RequiresCorp   bool
 }
 
 var Types = []NotifyType{

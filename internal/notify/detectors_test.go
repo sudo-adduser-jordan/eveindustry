@@ -75,8 +75,8 @@ func TestIsQuiet(t *testing.T) {
 	}
 	q := func(start, end string) *store.QuietHours {
 		return &store.QuietHours{
-			Start: sql.NullString{String: start, Valid: true},
-			End:   sql.NullString{String: end, Valid: true},
+			Start:    sql.NullString{String: start, Valid: true},
+			End:      sql.NullString{String: end, Valid: true},
 			Timezone: "UTC",
 		}
 	}

@@ -12,8 +12,8 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/cache"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/health"
-	"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/setup"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )

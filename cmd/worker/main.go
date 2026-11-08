@@ -17,7 +17,7 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/jobs"
-		"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
