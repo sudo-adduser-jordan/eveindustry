@@ -57,6 +57,7 @@ per the existing rule.
 - Phase 7d: admin discord bot settings (feature-gated).
 - Phase 7e: planetary dashboard (colony analysis, capacity, refresh).
 - Phase 7f: characters, notifications (push + prefs), dashboard.
+- Phase 7g: abyssal modules browser (dogma roll comparison).
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
