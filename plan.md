@@ -37,6 +37,8 @@ per the existing rule.
 - Phase 5c (`42c2a68`): invention + reaction plan CRUD.
 - Phase 5d (`01f70bf`): moon occupation write.
 - Phase 5e (`387aff3`): personal build programs (chain nesting, merge, plans).
+- Phase 5f (`0087044`): corp build programs, stock items, structures,
+  industry refresh writes.
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
@@ -91,7 +93,8 @@ per the existing rule.
       table): live fallbacks, adjusted prices, cost indices.
 - [ ] Writes: station-configs + wholemap + plans + moon + personal
       programs (done `6b59c9d`, `b497847`, `42c2a68`, `01f70bf`,
-      `387aff3`), corp programs, stock items, industry refresh.
+      `387aff3`), corp programs + stock items + structures + refresh
+      (done `0087044`).
 - [ ] Jobs phase: `cmd/worker` queue (17 jobs), `cmd/scheduler` tick loop,
       Horizon replacement decision (riverqueue/asynq).
 - [ ] Migrations phase: 74 Laravel migrations -> `migrations/*.up/down.sql`,
