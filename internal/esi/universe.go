@@ -280,3 +280,65 @@ func (c *UniverseClient) GetPlanetInfo(ctx context.Context, planetID int) (map[s
 	c.memo.Set(key, m, 30*24*time.Hour)
 	return m, nil
 }
+
+// GetDogmaAttribute ports getDogmaAttribute(): public attribute metadata,
+// 30-day memo.
+func (c *UniverseClient) GetDogmaAttribute(ctx context.Context, attributeID int) (map[string]any, error) {
+	key := fmt.Sprintf("esi.dogma.attribute.%d", attributeID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.(map[string]any), nil
+	}
+	resp, err := c.client.DoJSON(ctx, http.MethodGet, fmt.Sprintf("/dogma/attributes/%d/", attributeID), nil, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	if !resp.Successful() {
+		return nil, nil
+	}
+	m, _ := resp.JSON().(map[string]any)
+	if m == nil {
+		return nil, nil
+	}
+	c.memo.Set(key, m, 30*24*time.Hour)
+	return m, nil
+}
+
+// DogmaTypeAttributes ports getDogmaTypeAttributes(): base dogma attributes
+// keyed by attribute id. Always read from ESI (the local SDE row carries no
+// dogma attributes), 30-day memo.
+func (c *UniverseClient) DogmaTypeAttributes(ctx context.Context, typeID int) (map[int]float64, error) {
+	key := fmt.Sprintf("esi.dogma.type.%d", typeID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.(map[int]float64), nil
+	}
+	resp, err := c.client.DoJSON(ctx, http.MethodGet, fmt.Sprintf("/universe/types/%d/", typeID), nil, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	out := map[int]float64{}
+	if resp.Successful() {
+		if m, ok := resp.JSON().(map[string]any); ok {
+			if list, ok := m["dogma_attributes"].([]any); ok {
+				for _, item := range list {
+					am, ok := item.(map[string]any)
+					if !ok {
+						continue
+					}
+					id, _ := am["attribute_id"].(float64)
+					val, _ := am["value"].(float64)
+					if id != 0 {
+						out[int(id)] = val
+					}
+				}
+			}
+		}
+	}
+	c.memo.Set(key, out, 30*24*time.Hour)
+	return out, nil
+}

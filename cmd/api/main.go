@@ -117,6 +117,10 @@ func main() {
 		deps.Diag = queries
 		deps.Discord = queries
 		deps.Notify = queries
+		deps.Abyssal.Characters = esiChars
+		deps.Abyssal.Reference = queries
+		deps.Abyssal.Universe = esiUniverse
+		deps.Abyssal.Dogma = esiChars
 		deps.NotifyPush = gohttp.NotifyPush{VapidPublicKey: os.Getenv("VAPID_PUBLIC_KEY")}
 		deps.DiscordBotEnabled = os.Getenv("FEATURE_DISCORD_BOT") == "true"
 		deps.Planetary.Characters = esiChars

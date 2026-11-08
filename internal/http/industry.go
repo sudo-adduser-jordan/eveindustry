@@ -32,6 +32,12 @@ type UniverseReader interface {
 	GetStructure(ctx context.Context, structureID uint64, characterID int64) (map[string]any, error)
 }
 
+// DogmaReader is the dogma subset UniverseReader gains for abyssal analysis.
+type DogmaReader interface {
+	GetDogmaAttribute(ctx context.Context, attributeID int) (map[string]any, error)
+	DogmaTypeAttributes(ctx context.Context, typeID int) (map[int]float64, error)
+}
+
 // IndustryDeps carries the ESI clients the industry group needs.
 type IndustryDeps struct {
 	Characters IndustryJobReader

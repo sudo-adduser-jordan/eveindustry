@@ -22,6 +22,7 @@ type stubIndustry struct {
 	groups           map[int]int
 	mats             map[int][]industry.ReprocessMaterial
 	portions         map[int]int
+	metaGroups       map[int]int64
 }
 
 func (s *stubIndustry) SearchBlueprintTypes(ctx context.Context, like string, limit int) ([]industry.BlueprintTypeHit, error) {
@@ -132,7 +133,13 @@ func (s *stubIndustry) PublishedTypesInGroups(ctx context.Context, groupIDs []in
 	return []int{587}, nil
 }
 func (s *stubIndustry) TypeGroupMeta(ctx context.Context, typeIDs []int) ([]industry.TypeGroupMeta, error) {
-	return nil, nil
+	var out []industry.TypeGroupMeta
+	for _, id := range typeIDs {
+		if g, ok := s.metaGroups[id]; ok {
+			out = append(out, industry.TypeGroupMeta{TypeID: id, MetaGroupID: sqlNullInt64(g)})
+		}
+	}
+	return out, nil
 }
 func (s *stubIndustry) GroupNames(ctx context.Context, ids []int) (map[int]string, error) {
 	return map[int]string{}, nil

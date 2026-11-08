@@ -63,6 +63,7 @@ type Deps struct {
 	Discord            store.DiscordStore
 	Notify             store.NotifyStore
 	NotifyPush         NotifyPush
+	Abyssal            AbyssalDeps
 	DiscordBotEnabled  bool
 	Planetary          PlanetaryDeps
 
@@ -146,6 +147,7 @@ func New(d Deps) *echo.Echo {
 	registerCharacters(authed, d)
 	registerNotifications(authed, d)
 	registerDashboard(authed, d)
+	registerAbyssal(authed, d)
 	registerPlanetary(authed, d)
 
 	return e

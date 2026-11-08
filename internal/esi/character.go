@@ -413,6 +413,28 @@ func (c *CharacterClient) ClearPlanetaryCache(characterID int64) {
 	c.memo.Forget(fmt.Sprintf("esi.planets.%d", characterID))
 }
 
+// GetDynamicItem ports getDynamicItem(): mutated-item dogma attributes for one
+// abyssal item, 1-hour memo.
+func (c *CharacterClient) GetDynamicItem(ctx context.Context, typeID int, itemID int64, characterID int64) (map[string]any, error) {
+	key := fmt.Sprintf("esi.dynamic_item.%d", itemID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.(map[string]any), nil
+	}
+	raw, err := c.authed(ctx, http.MethodGet, fmt.Sprintf("/dogma/dynamic/items/%d/%d/", typeID, itemID), characterID, nil)
+	if err != nil {
+		return nil, err
+	}
+	m, _ := raw.(map[string]any)
+	if m == nil {
+		return nil, nil
+	}
+	c.memo.Set(key, m, time.Hour)
+	return m, nil
+}
+
 // GetCorporationAssetNames ports getCorporationAssetNames(): POST chunks of
 // 1000 against the corporation endpoint, skipping blank/'None' names.
 func (c *CharacterClient) GetCorporationAssetNames(ctx context.Context, characterID, corporationID int64, itemIDs []int64) (map[int64]string, error) {

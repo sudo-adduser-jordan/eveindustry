@@ -47,6 +47,12 @@ func (stubUniverse) GetSystem(ctx context.Context, id int) (map[string]any, erro
 func (stubUniverse) GetStructure(ctx context.Context, id uint64, char int64) (map[string]any, error) {
 	return nil, nil
 }
+func (stubUniverse) GetDogmaAttribute(ctx context.Context, id int) (map[string]any, error) {
+	return nil, nil
+}
+func (stubUniverse) DogmaTypeAttributes(ctx context.Context, id int) (map[int]float64, error) {
+	return map[int]float64{}, nil
+}
 
 func industryJobsTestDeps() Deps {
 	stub := testAuth()
