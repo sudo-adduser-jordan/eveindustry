@@ -34,9 +34,9 @@ func discordShape(s store.DiscordBotSettings) map[string]any {
 		message = s.WelcomeMessage.String
 	}
 	return map[string]any{
-		"is_enabled": s.IsEnabled,
+		"is_enabled":    s.IsEnabled,
 		"has_bot_token": s.BotToken.Valid && s.BotToken.String != "",
-		"bot_name": s.BotName, "bot_avatar_url": avatar,
+		"bot_name":      s.BotName, "bot_avatar_url": avatar,
 		"welcome_channel_id": channel, "welcome_message": message,
 	}
 }
