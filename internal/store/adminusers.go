@@ -9,19 +9,19 @@ import (
 // AdminUser mirrors the admin user index row: account fields plus the main
 // character and character count.
 type AdminUser struct {
-	ID                   int64          `db:"id"`
-	Name                 string         `db:"name"`
-	Email                sql.NullString `db:"email"`
-	IsAdmin              bool           `db:"is_admin"`
-	IsSuperAdmin         bool           `db:"is_super_admin"`
-	IsActive             bool           `db:"is_active"`
-	IsStockManager       bool           `db:"is_stock_manager_enabled"`
-	LastLoginAt          sql.NullTime   `db:"last_login_at"`
-	CreatedAt            time.Time      `db:"created_at"`
-	MainCharacterID      sql.NullInt64  `db:"main_character_id"`
-	MainCharacterName    sql.NullString `db:"main_character_name"`
-	CharacterCount       int            `db:"character_count"`
-	PasswordHash         sql.NullString `db:"password"`
+	ID                int64          `db:"id"`
+	Name              string         `db:"name"`
+	Email             sql.NullString `db:"email"`
+	IsAdmin           bool           `db:"is_admin"`
+	IsSuperAdmin      bool           `db:"is_super_admin"`
+	IsActive          bool           `db:"is_active"`
+	IsStockManager    bool           `db:"is_stock_manager_enabled"`
+	LastLoginAt       sql.NullTime   `db:"last_login_at"`
+	CreatedAt         time.Time      `db:"created_at"`
+	MainCharacterID   sql.NullInt64  `db:"main_character_id"`
+	MainCharacterName sql.NullString `db:"main_character_name"`
+	CharacterCount    int            `db:"character_count"`
+	PasswordHash      sql.NullString `db:"password"`
 }
 
 // AdminUserStore covers the admin user manager.

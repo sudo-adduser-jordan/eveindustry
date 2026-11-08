@@ -74,7 +74,7 @@ func adminTestDeps() Deps {
 		AdminUsers: &stubAdminUsers{rows: map[int64]store.AdminUser{
 			1: {ID: 1, Name: "Admin", Email: sql.NullString{String: "admin@x.io", Valid: true},
 				IsAdmin: true, IsActive: true, CreatedAt: created,
-				PasswordHash: sql.NullString{String: hash, Valid: true},
+				PasswordHash:      sql.NullString{String: hash, Valid: true},
 				MainCharacterName: sql.NullString{String: "Main", Valid: true}, CharacterCount: 2},
 			2: {ID: 2, Name: "User", Email: sql.NullString{String: "user@x.io", Valid: true},
 				IsActive: true, CreatedAt: created, CharacterCount: 1},

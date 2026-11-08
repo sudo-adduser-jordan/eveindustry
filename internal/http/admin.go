@@ -76,8 +76,8 @@ func adminUserShape(u store.AdminUser) map[string]any {
 		"portrait_url": portrait, "character_count": u.CharacterCount,
 		"role": role, "is_active": u.IsActive,
 		"is_stock_manager_enabled": u.IsStockManager,
-		"last_login_at": lastLogin,
-		"created_at": u.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		"last_login_at":            lastLogin,
+		"created_at":               u.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}
 }
 
