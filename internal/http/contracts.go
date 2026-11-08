@@ -223,8 +223,8 @@ func handleContractShow(d Deps) echo.HandlerFunc {
 				"type_id": it.TypeID, "type_name": name, "quantity": it.Quantity,
 				"is_included": it.IsIncluded, "is_blueprint_copy": nullableBool(it.IsBlueprintCopy),
 				"material_efficiency": nullableInt64(it.MaterialEfficiency),
-				"time_efficiency": nullableInt64(it.TimeEfficiency),
-				"runs": nullableInt64(it.Runs),
+				"time_efficiency":     nullableInt64(it.TimeEfficiency),
+				"runs":                nullableInt64(it.Runs),
 			})
 		}
 		return Success(c, http.StatusOK, contractShape(*cc, out), nil)

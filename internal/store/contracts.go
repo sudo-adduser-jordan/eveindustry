@@ -34,31 +34,31 @@ type TypedName struct {
 // SnapshotContract mirrors public_contract_snapshot_contracts columns read
 // by the browser.
 type SnapshotContract struct {
-	ContractID          uint64         `db:"contract_id"`
-	RegionID            int            `db:"region_id"`
-	Type                string         `db:"type"`
-	Title               sql.NullString `db:"title"`
-	IssuerID            sql.NullInt64  `db:"issuer_id"`
-	Price               float64        `db:"price"`
-	Buyout              sql.NullFloat64 `db:"buyout"`
-	Reward              sql.NullFloat64 `db:"reward"`
-	Collateral          sql.NullFloat64 `db:"collateral"`
-	Volume              float64        `db:"volume"`
-	DateIssued          sql.NullTime   `db:"date_issued"`
-	DateExpired         sql.NullTime   `db:"date_expired"`
-	ItemsCount          int            `db:"items_count"`
+	ContractID  uint64          `db:"contract_id"`
+	RegionID    int             `db:"region_id"`
+	Type        string          `db:"type"`
+	Title       sql.NullString  `db:"title"`
+	IssuerID    sql.NullInt64   `db:"issuer_id"`
+	Price       float64         `db:"price"`
+	Buyout      sql.NullFloat64 `db:"buyout"`
+	Reward      sql.NullFloat64 `db:"reward"`
+	Collateral  sql.NullFloat64 `db:"collateral"`
+	Volume      float64         `db:"volume"`
+	DateIssued  sql.NullTime    `db:"date_issued"`
+	DateExpired sql.NullTime    `db:"date_expired"`
+	ItemsCount  int             `db:"items_count"`
 }
 
 // SnapshotItem mirrors public_contract_snapshot_items columns read by the
 // detail endpoint.
 type SnapshotItem struct {
-	TypeID             int             `db:"type_id"`
-	Quantity           int             `db:"quantity"`
-	IsIncluded         bool            `db:"is_included"`
-	IsBlueprintCopy    sql.NullBool    `db:"is_blueprint_copy"`
-	MaterialEfficiency sql.NullInt64   `db:"material_efficiency"`
-	TimeEfficiency     sql.NullInt64   `db:"time_efficiency"`
-	Runs               sql.NullInt64   `db:"runs"`
+	TypeID             int           `db:"type_id"`
+	Quantity           int           `db:"quantity"`
+	IsIncluded         bool          `db:"is_included"`
+	IsBlueprintCopy    sql.NullBool  `db:"is_blueprint_copy"`
+	MaterialEfficiency sql.NullInt64 `db:"material_efficiency"`
+	TimeEfficiency     sql.NullInt64 `db:"time_efficiency"`
+	Runs               sql.NullInt64 `db:"runs"`
 }
 
 func (s *SQL) ActiveGeneration(ctx context.Context) (*uint64, error) {
