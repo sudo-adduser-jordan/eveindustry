@@ -25,6 +25,7 @@ type HandlerDeps struct {
 	Industry    *industry.SQL
 	ESIChars    *esi.CharacterClient
 	ESIUniverse *esi.UniverseClient
+	ESIMarket   *esi.MarketClient
 }
 
 func (d HandlerDeps) logger() *slog.Logger {

@@ -52,8 +52,9 @@ func main() {
 		circuit := esi.NewCircuit(coord)
 		esiClient := esi.NewClient(coord, limiter, circuit, cfg.ESIUserAgent)
 		esiClient.Cache = esi.NewHTTPCache(coord)
-		hd.ESIChars = esi.NewCharacterClient(esiClient, nil, hd.DB, nil, nil)
+			hd.ESIChars = esi.NewCharacterClient(esiClient, nil, hd.DB, nil, nil)
 		hd.ESIUniverse = esi.NewUniverseClient(esiClient, hd.DB, nil, hd.DB)
+		hd.ESIMarket = esi.NewMarketClient(esiClient, nil)
 	}
 	var q jobs.Queue = jobs.NewMemoryQueue()
 	if rdb != nil {
@@ -66,6 +67,9 @@ func main() {
 		Log: func(msg string, args ...any) { log.Warn(msg, args...) },
 	}
 	for _, e := range jobs.RefreshSchedule(hd) {
+		sched.Entries = append(sched.Entries, e)
+	}
+	for _, e := range jobs.SweepSchedule(hd, 10000002) {
 		sched.Entries = append(sched.Entries, e)
 	}
 
