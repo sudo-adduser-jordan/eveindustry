@@ -60,6 +60,7 @@ per the existing rule.
 - Phase 7g: abyssal modules browser (dogma roll comparison).
 - Phase 8a: ESI market client, route table, HTTP cache, demo, recorder.
 - Phase 9a: jobs runner/scheduler + refresh jobs with cache read-through.
+- Phase 9b: market order sweeps (pages, complete, aggregates).
 - Phase 8a: ESI market client, route-group table, HTTP cache, demo
   responses, revoke, diagnostics recorder facade.
 
