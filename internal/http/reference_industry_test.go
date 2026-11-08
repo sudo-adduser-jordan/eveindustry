@@ -134,6 +134,9 @@ func (s *stubIndustry) PublishedTypesInGroups(ctx context.Context, groupIDs []in
 func (s *stubIndustry) TypeGroupMeta(ctx context.Context, typeIDs []int) ([]industry.TypeGroupMeta, error) {
 	return nil, nil
 }
+func (s *stubIndustry) GroupNames(ctx context.Context, ids []int) (map[int]string, error) {
+	return map[int]string{}, nil
+}
 func (s *stubIndustry) GroupsInCategory(ctx context.Context, categoryID int) ([]int, error) {
 	return nil, nil
 }

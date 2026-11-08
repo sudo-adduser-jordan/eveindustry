@@ -276,6 +276,7 @@ type IndustryStore interface {
 	PublishedTypesInGroups(ctx context.Context, groupIDs []int) ([]int, error)
 	TypeGroupMeta(ctx context.Context, typeIDs []int) ([]TypeGroupMeta, error)
 	GroupsInCategory(ctx context.Context, categoryID int) ([]int, error)
+	GroupNames(ctx context.Context, groupIDs []int) (map[int]string, error)
 	PrecomputedCosts(ctx context.Context, productIDs []int, regionID, meLevel, limit, offset int) ([]PrecomputedCost, int, error)
 	ProductTypeIDsExcludingInvented(ctx context.Context) ([]int, error)
 	ProductGroupCounts(ctx context.Context, typeIDs []int) (map[int]int, error)
@@ -615,6 +616,29 @@ func (s *SQL) TypeMaterials(ctx context.Context, typeIDs []int) (map[int][]Repro
 	}
 	for _, r := range rows {
 		out[r.TypeID] = append(out[r.TypeID], r)
+	}
+	return out, nil
+}
+
+// GroupNames batch-loads inv_groups names for ship grouping.
+func (s *SQL) GroupNames(ctx context.Context, groupIDs []int) (map[int]string, error) {
+	out := map[int]string{}
+	if len(groupIDs) == 0 {
+		return out, nil
+	}
+	q, args, err := sqlx.In(`SELECT group_id, name FROM inv_groups WHERE group_id IN (?)`, groupIDs)
+	if err != nil {
+		return nil, err
+	}
+	var rows []struct {
+		GroupID int    `db:"group_id"`
+		Name    string `db:"name"`
+	}
+	if err := s.db.SelectContext(ctx, &rows, s.db.Rebind(q), args...); err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		out[r.GroupID] = r.Name
 	}
 	return out, nil
 }

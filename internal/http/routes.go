@@ -119,6 +119,7 @@ func New(d Deps) *echo.Echo {
 	registerMoonScans(authed, d)
 	registerWholemapReads(authed, d)
 	registerAssets(authed, d)
+	registerAssetExtras(authed, d)
 
 	return e
 }
