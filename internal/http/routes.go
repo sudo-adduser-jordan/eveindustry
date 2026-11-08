@@ -37,6 +37,7 @@ type Deps struct {
 	Skills       SkillsDeps
 	Stock        StockDeps
 	Production   ProductionDeps
+	Research     ResearchDeps
 	IndustryDeps IndustryDeps
 
 	// Sessions and Users drive RequireAuth. Either nil means nobody can
@@ -87,6 +88,7 @@ func New(d Deps) *echo.Echo {
 	registerStock(authed, d)
 	registerIndustry(authed, d)
 	registerProduction(authed, d)
+	registerResearch(authed, d)
 
 	return e
 }

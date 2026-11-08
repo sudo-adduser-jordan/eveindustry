@@ -91,6 +91,8 @@ func main() {
 		deps.Skills.Characters = esiChars
 		deps.Stock.Characters = esiChars
 		deps.Production.Characters = esiChars
+		deps.Research.Characters = esiChars
+		deps.Research.Research = queries
 		deps.IndustryDeps.Characters = esiChars
 		deps.IndustryDeps.Universe = esiUniverse
 	}
