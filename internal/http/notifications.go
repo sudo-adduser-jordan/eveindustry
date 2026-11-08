@@ -10,6 +10,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
@@ -431,11 +432,35 @@ func handleNotifyUpdate(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /notifications/test — no sender in the Go port yet: 503 like an
-// unconfigured server.
+// POST /notifications/test — delivers a sample to every device, 503 when
+// no sender is configured.
 func handleNotifyTest(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return Failure(c, http.StatusServiceUnavailable, "Push notifications are not configured on this server.", nil)
+		if d.NotifySender == nil {
+			return Failure(c, http.StatusServiceUnavailable, "Push notifications are not configured on this server.", nil)
+		}
+		uid := c.Get(string(ctxUIDKey)).(int64)
+		ctx := c.Request().Context()
+		subs, err := d.Notify.PushSubscriptions(ctx, uid)
+		if err != nil {
+			return dbError(c, err)
+		}
+		msg := notify.Message{
+			Type: "industry.job_completed", DedupeKey: "test",
+			Title: "Notifications are working",
+			Body:  "This is a test notification from Eve Industrialist.",
+			URL:   "/app/dashboard",
+		}
+		sent := 0
+		for _, sub := range subs {
+			ok, gone := d.NotifySender.Send(ctx, sub, msg.Payload())
+			if gone {
+				_ = d.Notify.DeletePushSubscription(ctx, uid, sub.EndpointHash)
+			} else if ok {
+				sent++
+			}
+		}
+		return Success(c, http.StatusOK, map[string]any{"sent": sent}, nil)
 	}
 }
 

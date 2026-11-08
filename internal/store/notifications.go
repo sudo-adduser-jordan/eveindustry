@@ -40,6 +40,12 @@ type QuietHours struct {
 
 // NotifyStore covers push subscriptions and notification preferences.
 type NotifyStore interface {
+	PushSubscriptions(ctx context.Context, userID int64) ([]PushSubscription, error)
+	UpdateSubscriptionUsed(ctx context.Context, id int64, at time.Time) error
+	DeleteSubscription(ctx context.Context, id int64) error
+	ClaimNotification(ctx context.Context, userID int64, typ, dedupe string, at time.Time) (bool, error)
+	ReleaseNotificationClaim(ctx context.Context, userID int64, dedupe string) error
+	NotifyCorporationIDs(ctx context.Context, userID int64) ([]int64, error)
 	UpsertPushSubscription(ctx context.Context, s PushSubscription) error
 	DeletePushSubscription(ctx context.Context, userID int64, endpointHash string) error
 	PushSubscriptionCount(ctx context.Context, userID int64) (int, error)
@@ -125,4 +131,65 @@ func (s *SQL) UpdateQuietHours(ctx context.Context, q QuietHours) error {
 			timezone = VALUES(timezone), updated_at = NOW()`,
 		q.UserID, q.Start, q.End, q.Timezone)
 	return err
+}
+
+// PushSubscriptions lists a user's devices.
+func (s *SQL) PushSubscriptions(ctx context.Context, userID int64) ([]PushSubscription, error) {
+	var out []PushSubscription
+	err := s.db.SelectContext(ctx, &out, `SELECT `+pushCols+`
+		FROM push_subscriptions WHERE user_id = ? ORDER BY id`, userID)
+	if out == nil {
+		out = []PushSubscription{}
+	}
+	return out, err
+}
+
+// UpdateSubscriptionUsed stamps last_used_at after a delivery.
+func (s *SQL) UpdateSubscriptionUsed(ctx context.Context, id int64, at time.Time) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE push_subscriptions SET last_used_at = ? WHERE id = ?`, at, id)
+	return err
+}
+
+// DeleteSubscription removes one device.
+func (s *SQL) DeleteSubscription(ctx context.Context, id int64) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM push_subscriptions WHERE id = ?`, id)
+	return err
+}
+
+// ClaimNotification ports the deliver() claim: insertOrIgnore on the
+// (user, dedupe) key. False means already sent.
+func (s *SQL) ClaimNotification(ctx context.Context, userID int64, typ, dedupe string, at time.Time) (bool, error) {
+	res, err := s.db.ExecContext(ctx, `INSERT IGNORE INTO notification_log (user_id, type, dedupe_key, sent_at)
+		VALUES (?, ?, ?, ?)`, userID, typ, dedupe, at)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	return n > 0, err
+}
+
+// ReleaseNotificationClaim drops the claim so the next run retries.
+func (s *SQL) ReleaseNotificationClaim(ctx context.Context, userID int64, dedupe string) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM notification_log WHERE user_id = ? AND dedupe_key = ?`, userID, dedupe)
+	return err
+}
+
+// PruneNotificationLog deletes entries older than 14 days.
+func (s *SQL) PruneNotificationLog(ctx context.Context) (int64, error) {
+	res, err := s.db.ExecContext(ctx, `DELETE FROM notification_log WHERE sent_at < DATE_SUB(NOW(), INTERVAL 14 DAY)`)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
+// NotifyCorporationIDs lists distinct non-zero corporation ids of a user.
+func (s *SQL) NotifyCorporationIDs(ctx context.Context, userID int64) ([]int64, error) {
+	var out []int64
+	err := s.db.SelectContext(ctx, &out, `SELECT DISTINCT corporation_id FROM characters
+		WHERE user_id = ? AND corporation_id > 0`, userID)
+	if out == nil {
+		out = []int64{}
+	}
+	return out, err
 }

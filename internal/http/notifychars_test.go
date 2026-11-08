@@ -55,6 +55,28 @@ func (s *stubNotify) QuietHours(ctx context.Context, uid int64) (*store.QuietHou
 	}
 	return &store.QuietHours{UserID: uid, Timezone: "UTC"}, nil
 }
+func (s *stubNotify) PushSubscriptions(ctx context.Context, uid int64) ([]store.PushSubscription, error) {
+	var out []store.PushSubscription
+	for _, sub := range s.subs[uid] {
+		out = append(out, sub)
+	}
+	return out, nil
+}
+func (s *stubNotify) UpdateSubscriptionUsed(ctx context.Context, id int64, at time.Time) error {
+	return nil
+}
+func (s *stubNotify) DeleteSubscription(ctx context.Context, id int64) error {
+	return nil
+}
+func (s *stubNotify) ClaimNotification(ctx context.Context, uid int64, typ, dedupe string, at time.Time) (bool, error) {
+	return true, nil
+}
+func (s *stubNotify) ReleaseNotificationClaim(ctx context.Context, uid int64, dedupe string) error {
+	return nil
+}
+func (s *stubNotify) NotifyCorporationIDs(ctx context.Context, uid int64) ([]int64, error) {
+	return []int64{2001}, nil
+}
 func (s *stubNotify) UpdateQuietHours(ctx context.Context, q store.QuietHours) error {
 	if s.quiet == nil {
 		s.quiet = map[int64]*store.QuietHours{}

@@ -17,6 +17,7 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/jobs"
+		"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
@@ -75,12 +76,17 @@ func main() {
 		hd.ESIChars = esi.NewCharacterClient(esiClient, nil, hd.DB, nil, nil)
 		hd.ESIUniverse = esi.NewUniverseClient(esiClient, hd.DB, nil, hd.DB)
 		hd.ESIMarket = esi.NewMarketClient(esiClient, nil)
+		hd.Sender = &notify.WebPushSender{
+			Subject: os.Getenv("VAPID_SUBJECT"), PublicKey: os.Getenv("VAPID_PUBLIC_KEY"),
+			PrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
+		}
 	}
 	r := jobs.NewRunner(jobs.Deps{Log: log, Redis: rdb})
 	jobs.RegisterRefreshJobs(r, hd)
 	jobs.RegisterSweepJobs(r, hd)
 	jobs.RegisterImportJobs(r, hd)
 	jobs.RegisterPrecomputeJobs(r, hd)
+	jobs.RegisterNotifyJobs(r, hd)
 	jobs.RegisterImportJobs(r, hd)
 	for _, e := range jobs.RefreshSchedule(hd) {
 		_ = e

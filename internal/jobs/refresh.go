@@ -12,6 +12,7 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/cache"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/pi"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
@@ -26,6 +27,7 @@ type HandlerDeps struct {
 	ESIChars    *esi.CharacterClient
 	ESIUniverse *esi.UniverseClient
 	ESIMarket   *esi.MarketClient
+	Sender      notify.Sender
 }
 
 func (d HandlerDeps) logger() *slog.Logger {

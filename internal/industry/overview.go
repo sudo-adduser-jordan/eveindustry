@@ -192,3 +192,15 @@ func BuildSummary(rows []JobRow) []SummaryItem {
 	sort.Slice(out, func(i, j int) bool { return out[i].ItemName < out[j].ItemName })
 	return out
 }
+
+// FinishedJob mirrors getFinishedJobsForUser rows: active or ready jobs
+// whose end date fell in (since, until] and still await delivery.
+type FinishedJob struct {
+	JobID         int64  `json:"job_id"`
+	CharacterID   int64  `json:"character_id"`
+	CharacterName string `json:"character_name"`
+	ActivityID    int    `json:"activity_id"`
+	ActivityName  string `json:"activity_name"`
+	ItemName      string `json:"item_name"`
+	EndDate       string `json:"end_date"`
+}

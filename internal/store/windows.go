@@ -3,6 +3,8 @@ package store
 import (
 	"context"
 	"database/sql"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // StructureWindow mirrors one structure_vulnerability_windows row.
@@ -95,4 +97,23 @@ func (s *SQL) UpdateStructureWindow(ctx context.Context, w StructureWindow) (*St
 func (s *SQL) DeleteStructureWindow(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM structure_vulnerability_windows WHERE id = ?`, id)
 	return err
+}
+
+// CorpWindows lists tracked windows for corporations (notification scan).
+func (s *SQL) CorpWindows(ctx context.Context, corpIDs []int64) ([]StructureWindow, error) {
+	if len(corpIDs) == 0 {
+		return nil, nil
+	}
+	q, args, err := sqlx.In(`SELECT `+windowCols+` FROM structure_vulnerability_windows WHERE corporation_id IN (?)`, corpIDs)
+	if err != nil {
+		return nil, err
+	}
+	var out []StructureWindow
+	if err := s.db.SelectContext(ctx, &out, s.db.Rebind(q), args...); err != nil {
+		return nil, err
+	}
+	if out == nil {
+		out = []StructureWindow{}
+	}
+	return out, nil
 }
