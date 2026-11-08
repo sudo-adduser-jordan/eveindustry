@@ -15,6 +15,9 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
 
 ## Done
 
+- Phase 3a (`51ac980`): session auth — signed cookies, RequireAuth +
+  demo-guard on `/api/v1`, real `/me`, `/logout`, account delete.
+
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
 - Phase 1 (`b375707`): reference basics — types, market-groups (+tree,
@@ -43,6 +46,11 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
   include the candidate with volume 0.
 - Unknown calculator/material edge: float `quantity_per_run` serializes as
   `90` not `90.0` (numerically equal); `quantity_per_run` uses ceil float.
+- Unknown `/api/v1/*` paths 401 for anonymous callers (Echo runs group
+  middleware on its not-found route); PHP 404s before auth. Authenticated
+  callers get the JSON 404 in both.
+- `api/v1/appraisals` in the demo allow-list is the legacy path, so demo
+  users are blocked from `POST /market/appraisals` — faithful to PHP.
 - Aggregates always scope to `market_region_states.active_sweep_id`.
 - Freshness `source` vocabulary differs from price `source`
   (`market_orders`/`market_prices`/`none` vs `orders`/`fallback`/`none`).
@@ -53,8 +61,9 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
 - [ ] Industry group (`routes/api_v1/industry.php`), planetary, heavy
       (moon scans, structures, wholemap), corp tools, programs + planning
       writes, admin, notifications, session/characters/me.
-- [ ] Auth phase: EVE SSO, session middleware, character-scoped skills/stock,
-      demo-guard/admin/stock-manager/feature middleware.
+- [ ] Auth phase (part 1 done `51ac980`: sessions, RequireAuth,
+      demo-guard, /me, /logout, account delete): EVE SSO, character-scoped
+      skills/stock, admin/stock-manager gates.
 - [ ] ESI phase: `internal/esi` (rate limiter, token refresh, HTTP cache,
       diagnostics), live fallbacks, adjusted prices, cost indices.
 - [ ] Jobs phase: `cmd/worker` queue (17 jobs), `cmd/scheduler` tick loop,
