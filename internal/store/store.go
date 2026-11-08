@@ -135,6 +135,7 @@ type MarketStore interface {
 	PagedOrders(ctx context.Context, typeID, regionID int, buy bool, limit, offset int) ([]MarketOrderRow, int, error)
 	History(ctx context.Context, typeID, regionID, days int) ([]MarketHistoryRow, error)
 	FreshnessTimestamps(ctx context.Context, regionID int) (orders, costs, global *time.Time, err error)
+	MarketPriceRows(ctx context.Context, typeIDs []int, regionID int) ([]MarketPriceRowFull, error)
 }
 
 // RawOrder is the minimal order shape for the percentile calc.
@@ -150,6 +151,30 @@ type FallbackPrice struct {
 	RegionID int             `db:"region_id"`
 	SellMin  sql.NullFloat64 `db:"sell_min"`
 	Average  sql.NullFloat64 `db:"average_price"`
+}
+
+// MarketPriceRowFull is one market_prices row for factory/calculator pricing.
+type MarketPriceRowFull struct {
+	TypeID  int             `db:"type_id"`
+	BuyMax  sql.NullFloat64 `db:"buy_max"`
+	SellMin sql.NullFloat64 `db:"sell_min"`
+	Average sql.NullFloat64 `db:"average_price"`
+}
+
+// MarketPriceRows batch-loads market_prices rows (buy_max/sell_min/average)
+// for the given types in one region.
+func (s *SQL) MarketPriceRows(ctx context.Context, typeIDs []int, regionID int) ([]MarketPriceRowFull, error) {
+	if len(typeIDs) == 0 {
+		return nil, nil
+	}
+	q, args, err := sqlx.In(`SELECT type_id, buy_max, sell_min, average_price
+		FROM market_prices WHERE type_id IN (?) AND region_id = ?`, typeIDs, regionID)
+	if err != nil {
+		return nil, err
+	}
+	var out []MarketPriceRowFull
+	err = s.db.SelectContext(ctx, &out, s.db.Rebind(q), args...)
+	return out, err
 }
 
 // SQL is the sqlx implementation of ReferenceStore + MarketStore.

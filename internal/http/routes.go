@@ -67,6 +67,7 @@ func New(d Deps) *echo.Echo {
 	registerInvention(v1, d)
 	registerContracts(v1, d)
 	registerBrowser(v1, d)
+	registerFactoryPlanner(v1, d)
 
 	return e
 }

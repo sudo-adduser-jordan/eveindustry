@@ -58,6 +58,9 @@ func (s *stubMarket) History(ctx context.Context, typeID, regionID, days int) ([
 func (s *stubMarket) FreshnessTimestamps(ctx context.Context, regionID int) (*time.Time, *time.Time, *time.Time, error) {
 	return s.ordersAt, s.costsAt, s.globalAt, nil
 }
+func (s *stubMarket) MarketPriceRows(ctx context.Context, typeIDs []int, regionID int) ([]store.MarketPriceRowFull, error) {
+	return nil, nil
+}
 
 func marketTestDeps() Deps {
 	now := time.Now()
