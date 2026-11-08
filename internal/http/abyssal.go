@@ -314,7 +314,7 @@ func analyzeAbyssalItem(ctx context.Context, uni AbyssalUniverse, a enrichedAsse
 		attrs = append(attrs, map[string]any{
 			"attribute_id": attrID, "name": c.name, "unit_id": unitID, "icon_id": iconID,
 			"value": abyssFormat(c.value, c.unit), "base_value": abyssFormat(c.base, c.unit),
-			"change": abyssChange(c.value, c.base, c.unit),
+			"change":     abyssChange(c.value, c.base, c.unit),
 			"pct_change": pct, "high_is_good": c.highGood, "is_good": c.isGood,
 		})
 	}
