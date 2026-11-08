@@ -47,6 +47,7 @@ per the existing rule.
 - Phase 5k: moon scans (TSV analyse, pricing modes, systems + system reprice).
 - Phase 5l: wholemap reads (map, jump logs, live location).
 - Phase 6a: asset browser (personal/corporate index, by-location, refresh).
+- Phase 6b: asset materials, ships, stock-manager type search.
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
