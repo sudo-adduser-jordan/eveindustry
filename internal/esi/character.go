@@ -442,6 +442,122 @@ func (c *CharacterClient) ClearCorporationWalletCache(corporationID int64) {
 	}
 }
 
+// cursorProjects walks opaque cursors until exhausted, keyed by idField
+// (falling back to project_id); any failure aborts the whole collection,
+// like the PHP cursorPages (never publish a prefix).
+func (c *CharacterClient) cursorProjects(ctx context.Context, characterID int64, endpoint, field, idField string, params map[string]string) ([]map[string]any, error) {
+	auth, err := c.credential(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+	byID := map[string]map[string]any{}
+	seen := map[string]bool{}
+	after := "0"
+	for {
+		if seen[after] {
+			return nil, &RequestError{Outcome: OutcomeIncomplete, RetryAfterSecs: 30}
+		}
+		seen[after] = true
+		q := map[string]string{"after": after, "limit": "100"}
+		for k, v := range params {
+			q[k] = v
+		}
+		resp, err := c.client.DoJSON(ctx, http.MethodGet, endpoint, q, nil, nil, &auth)
+		if err != nil {
+			return nil, err
+		}
+		data, ok := resp.JSON().(map[string]any)
+		if !ok {
+			return nil, &RequestError{Outcome: OutcomeIncomplete, RetryAfterSecs: 30}
+		}
+		var page []any
+		if p, ok := data[field].([]any); ok {
+			page = p
+		} else if list, ok := resp.JSON().([]any); ok {
+			page = list
+		} else {
+			return nil, &RequestError{Outcome: OutcomeIncomplete, RetryAfterSecs: 30}
+		}
+		for _, item := range page {
+			m, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			id, _ := m[idField]
+			if id == nil {
+				id, _ = m["project_id"]
+			}
+			if id == nil {
+				return nil, &RequestError{Outcome: OutcomeIncomplete, RetryAfterSecs: 30}
+			}
+			byID[fmt.Sprintf("%v", id)] = m
+		}
+		next := ""
+		if cur, ok := data["cursor"].(map[string]any); ok {
+			next, _ = cur["after"].(string)
+		}
+		if next == "" {
+			break
+		}
+		after = next
+	}
+	out := make([]map[string]any, 0, len(byID))
+	for _, m := range byID {
+		out = append(out, m)
+	}
+	return out, nil
+}
+
+// GetCorporationProjects ports getCorporationProjects(): all projects via
+// cursor pagination, 5-minute memo.
+func (c *CharacterClient) GetCorporationProjects(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error) {
+	key := fmt.Sprintf("esi.corp_projects.%d", corporationID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.([]map[string]any), nil
+	}
+	out, err := c.cursorProjects(ctx, characterID,
+		fmt.Sprintf("/corporations/%d/projects/", corporationID), "projects", "id",
+		map[string]string{"state": "All"})
+	if err != nil {
+		return nil, err
+	}
+	c.memo.Set(key, out, 5*time.Minute)
+	return out, nil
+}
+
+// GetCorporationProjectContributors ports getCorporationProjectContributors(),
+// 5-minute memo.
+func (c *CharacterClient) GetCorporationProjectContributors(ctx context.Context, characterID, corporationID int64, projectID string) ([]map[string]any, error) {
+	key := fmt.Sprintf("esi.corp_project_contributors.%d.%s", corporationID, projectID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.([]map[string]any), nil
+	}
+	out, err := c.cursorProjects(ctx, characterID,
+		fmt.Sprintf("/corporations/%d/projects/%s/contributors/", corporationID, projectID),
+		"contributors", "character_id", nil)
+	if err != nil {
+		return nil, err
+	}
+	c.memo.Set(key, out, 5*time.Minute)
+	return out, nil
+}
+
+// ClearCorporationProjectsCache drops memoized projects + contributors.
+func (c *CharacterClient) ClearCorporationProjectsCache(corporationID int64) {
+	c.memo.Forget(fmt.Sprintf("esi.corp_projects.%d", corporationID))
+}
+
+// ClearCorporationProjectContributorsCache drops one project's contributors.
+func (c *CharacterClient) ClearCorporationProjectContributorsCache(corporationID int64, projectID string) {
+	c.memo.Forget(fmt.Sprintf("esi.corp_project_contributors.%d.%s", corporationID, projectID))
+}
+
 // GetAssetNames ports getCharacterAssetNames(): POST chunks of 1000,
 // skipping blank/'None' names.
 func (c *CharacterClient) GetAssetNames(ctx context.Context, characterID int64, itemIDs []int64) (map[int64]string, error) {

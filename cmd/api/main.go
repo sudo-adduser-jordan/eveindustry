@@ -110,6 +110,7 @@ func main() {
 		deps.DonationCharacters = esiChars
 		deps.Ess = queries
 		deps.Windows = queries
+		deps.Projects = esiChars
 		deps.CorpPrograms = queries
 		deps.StockItems = queries
 		deps.Plans = queries
