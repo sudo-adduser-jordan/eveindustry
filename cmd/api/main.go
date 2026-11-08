@@ -57,6 +57,7 @@ func main() {
 		deps.Reference = queries
 		deps.Market = queries
 		deps.Trading = queries
+		deps.Contracts = queries
 		deps.Industry = industry.NewSQL(sqlxDB)
 	}
 	if rdb != nil {
