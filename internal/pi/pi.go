@@ -134,7 +134,7 @@ var p0Names = map[int]string{
 	2270: "Noble Metals", 2272: "Heavy Metals", 2286: "Planktic Colonies",
 	2287: "Complex Organisms", 2288: "Carbon Compounds", 2305: "Autotrophs",
 	2306: "Non-CS Crystals", 2307: "Felsic Magma", 2308: "Suspended Plasma",
-	2309: "Ionic Solutions", 2310: "Noble Gas", 2311: "Reactive Gas",
+	2309: "Ionic Solutions", 2310: "Noble Gas",
 }
 
 var p1Names = map[int]string{
@@ -159,8 +159,7 @@ var p2Names = map[int]string{
 
 // ResolveInputName mirrors resolveInputName(): P0 → P1 → P2 → P3/P4
 // schematic names, else "Type {id}". (P0_NAMES has no 2311 entry, so
-// Reactive Gas resolves via... nothing: the map above adds it, matching the
-// spirit; the PHP falls back to "Type 2311". See note in plan.md.)
+// Reactive Gas falls back to "Type 2311", exactly like the PHP.)
 func ResolveInputName(typeID int) string {
 	if n, ok := p0Names[typeID]; ok {
 		return n
