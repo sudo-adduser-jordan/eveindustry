@@ -326,3 +326,37 @@ func TestCorpProgramPages(t *testing.T) {
 		t.Fatalf("enable wrong char = %d", code)
 	}
 }
+
+func TestStructuresIndex(t *testing.T) {
+	d := programsTestDeps()
+	d.Planning = &stubPlanning{rows: map[int64]store.StationConfig{
+		1: {ID: 1, UserID: 1, ActivityType: "manufacturing", Name: "Alpha", StructureType: "raitaru", RigME: "t1", RigTE: "none", SystemSecurity: "lowsec"},
+		2: {ID: 2, UserID: 1, ActivityType: "reaction", Name: "Beta", StructureType: "athanor", RigME: "t1", RigTE: "none", SystemSecurity: "lowsec"},
+		3: {ID: 3, UserID: 9, ActivityType: "manufacturing", Name: "Foreign"},
+	}, nextID: 10}
+	d.Reference = &stubReferenceSystems{}
+	code, body := get(t, d, "/api/v1/structures")
+	if code != http.StatusOK {
+		t.Fatalf("index = %d %v", code, body)
+	}
+	if body["meta"].(map[string]any)["pagination"].(map[string]any)["total"] != 2.0 {
+		t.Fatalf("total = %v", body)
+	}
+	first := body["data"].([]any)[0].(map[string]any)
+	if first["effective_bonuses"] == nil {
+		t.Fatalf("bonuses missing: %v", first)
+	}
+	code, body = get(t, d, "/api/v1/structures?activity_type=reaction")
+	if code != http.StatusOK || body["meta"].(map[string]any)["pagination"].(map[string]any)["total"] != 1.0 {
+		t.Fatalf("filtered = %d %v", code, body)
+	}
+	if code, _ := get(t, d, "/api/v1/structures?activity_type=nope"); code != http.StatusUnprocessableEntity {
+		t.Fatalf("bad filter = %d", code)
+	}
+}
+
+type stubReferenceSystems struct{ store.ReferenceStore }
+
+func (s *stubReferenceSystems) FindSystem(ctx context.Context, id int) (*store.SolarSystem, error) {
+	return nil, nil
+}

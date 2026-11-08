@@ -18,6 +18,19 @@ type stubPlanning struct {
 	nextID int64
 }
 
+func (s *stubPlanning) AllStationConfigs(ctx context.Context, userID int64, activity *string) ([]store.StationConfig, error) {
+	var out []store.StationConfig
+	for _, r := range s.rows {
+		if r.UserID != userID {
+			continue
+		}
+		if activity != nil && r.ActivityType != *activity {
+			continue
+		}
+		out = append(out, r)
+	}
+	return out, nil
+}
 func (s *stubPlanning) StationConfigs(ctx context.Context, userID int64, activity string, limit, offset int) ([]store.StationConfig, int, error) {
 	var out []store.StationConfig
 	now := time.Now()

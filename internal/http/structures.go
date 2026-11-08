@@ -5,6 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sudo-adduser-jordan/eveindustry/internal/calc"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
@@ -14,6 +15,7 @@ func registerStructures(v1 *echo.Group, d Deps) {
 	if d.Planning == nil {
 		return
 	}
+	v1.GET("/structures", handleStructuresIndex(d))
 	v1.POST("/structures", handleStructureStore(d))
 	v1.PUT("/structures/:id", handleStructureUpdate(d))
 	v1.DELETE("/structures/:id", handleStructureDestroy(d))
@@ -228,4 +230,60 @@ func strOf2(v any) *string {
 	}
 	e := ""
 	return &e
+}
+
+// GET /structures — the user's station configs, defaults first then by
+// name, with solar system names and effective bonuses. ?activity_type
+// filters (present-but-empty matches nothing, like the old route).
+func handleStructuresIndex(d Deps) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		page, perPage, ok := listPage(c)
+		if !ok {
+			return errHandled
+		}
+		var activity *string
+		if vals, present := c.QueryParams()["activity_type"]; present {
+			// Key present (even empty) filters, mirroring forUser.
+			v := ""
+			if len(vals) > 0 {
+				v = vals[0]
+			}
+			if !validActivities[v] {
+				verrs := validationErrors{}
+				verrs.add("activity_type", "The activity type field must be one of manufacturing, invention, reaction.")
+				return verrs.invalid(c)
+			}
+			activity = &v
+		}
+		uid := c.Get(string(ctxUIDKey)).(int64)
+		rows, err := d.Planning.AllStationConfigs(c.Request().Context(), uid, activity)
+		if err != nil {
+			return dbError(c, err)
+		}
+		items := make([]any, 0, len(rows))
+		for _, r := range rows {
+			items = append(items, structureIndexShape(c, d, r))
+		}
+		return paginated(c, items, page, perPage)
+	}
+}
+
+func structureIndexShape(c echo.Context, d Deps, r store.StationConfig) map[string]any {
+	m := structureShape(r)
+	var sysName any
+	if r.SolarSystemID != nil && d.Reference != nil {
+		if s, err := d.Reference.FindSystem(c.Request().Context(), *r.SolarSystemID); err == nil && s != nil {
+			sysName = s.SolarSystemName
+		}
+	}
+	m["solar_system_name"] = sysName
+	var me, te float64
+	if r.ActivityType == "reaction" {
+		me = calc.ReactionME(r.RigME, r.SystemSecurity)
+	} else {
+		me = calc.ManufacturingME(r.StructureType, r.RigME, r.SystemSecurity)
+		te = calc.ManufacturingTE(r.StructureType, r.RigTE, r.SystemSecurity)
+	}
+	m["effective_bonuses"] = map[string]any{"me": me, "te": te}
+	return m
 }

@@ -38,6 +38,9 @@ type StationConfigInput struct {
 // PlanningStore covers the planning writes (station configs first).
 type PlanningStore interface {
 	StationConfigs(ctx context.Context, userID int64, activity string, limit, offset int) ([]StationConfig, int, error)
+	// AllStationConfigs lists the user's configs (optional activity filter),
+	// defaults first then by name — the structures index.
+	AllStationConfigs(ctx context.Context, userID int64, activity *string) ([]StationConfig, error)
 	StationConfig(ctx context.Context, id, userID int64) (*StationConfig, error)
 	CreateStationConfig(ctx context.Context, userID int64, activity string, in StationConfigInput) (*StationConfig, error)
 	UpdateStationConfig(ctx context.Context, id, userID int64, in StationConfigInput) (*StationConfig, error)
@@ -279,4 +282,24 @@ func strVal(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+// AllStationConfigs ports StructureListService::forUser.
+func (s *SQL) AllStationConfigs(ctx context.Context, userID int64, activity *string) ([]StationConfig, error) {
+	q := `SELECT ` + stationConfigColumns + ` FROM station_configs WHERE user_id = ?`
+	args := []any{userID}
+	if activity != nil {
+		q += ` AND activity_type = ?`
+		args = append(args, *activity)
+	}
+	q += ` ORDER BY is_default DESC, name ASC`
+	var rows []stationConfigRow
+	if err := s.db.SelectContext(ctx, &rows, q, args...); err != nil {
+		return nil, err
+	}
+	out := make([]StationConfig, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, *scanStationConfig(r))
+	}
+	return out, nil
 }
