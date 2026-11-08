@@ -109,3 +109,109 @@ func (s *SQL) DeleteBuildProgram(ctx context.Context, id, userID int64) (bool, e
 	n, err := res.RowsAffected()
 	return n > 0, err
 }
+
+// CorpProgram mirrors one corporation_build_programs row.
+type CorpProgram struct {
+	ID              int64          `db:"id"`
+	CorporationID   int64          `db:"corporation_id"`
+	CreatedByUserID int64          `db:"created_by_user_id"`
+	Name            string         `db:"name"`
+	ProgramType     string         `db:"program_type"`
+	T2TypeID        sql.NullInt64  `db:"t2_type_id"`
+	T2TypeName      sql.NullString `db:"t2_type_name"`
+	StepsJSON       string         `db:"steps"`
+	SettingsJSON    sql.NullString `db:"settings"`
+	CreatedAt       time.Time      `db:"created_at"`
+	UpdatedAt       time.Time      `db:"updated_at"`
+}
+
+// CorpProgramStore covers corporate build programs, scoped by corporation.
+type CorpProgramStore interface {
+	CorpPrograms(ctx context.Context, corpID int64) ([]CorpProgram, error)
+	CorpProgram(ctx context.Context, id, corpID int64) (*CorpProgram, error)
+	CorpProgramsByIDs(ctx context.Context, corpID int64, ids []int64) ([]CorpProgram, error)
+	CreateCorpProgram(ctx context.Context, p CorpProgram) (*CorpProgram, error)
+	RenameCorpProgram(ctx context.Context, id, corpID int64, name string) (*CorpProgram, error)
+	UpdateCorpProgramSettings(ctx context.Context, id, corpID int64, settingsJSON string) (*CorpProgram, error)
+	DeleteCorpProgram(ctx context.Context, id, corpID int64) (bool, error)
+}
+
+const corpProgramCols = `id, corporation_id, created_by_user_id, name, program_type,
+	t2_type_id, t2_type_name, steps, settings, created_at, updated_at`
+
+func (s *SQL) CorpPrograms(ctx context.Context, corpID int64) ([]CorpProgram, error) {
+	var out []CorpProgram
+	err := s.db.SelectContext(ctx, &out, `SELECT `+corpProgramCols+`
+		FROM corporation_build_programs WHERE corporation_id = ? ORDER BY updated_at DESC`, corpID)
+	if out == nil {
+		out = []CorpProgram{}
+	}
+	return out, err
+}
+
+func (s *SQL) CorpProgram(ctx context.Context, id, corpID int64) (*CorpProgram, error) {
+	var out CorpProgram
+	err := s.db.GetContext(ctx, &out, `SELECT `+corpProgramCols+`
+		FROM corporation_build_programs WHERE id = ? AND corporation_id = ?`, id, corpID)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	return &out, err
+}
+
+func (s *SQL) CorpProgramsByIDs(ctx context.Context, corpID int64, ids []int64) ([]CorpProgram, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	q, args, err := sqlx.In(`SELECT `+corpProgramCols+` FROM corporation_build_programs
+		WHERE corporation_id = ? AND id IN (?)`, corpID, ids)
+	if err != nil {
+		return nil, err
+	}
+	var out []CorpProgram
+	if err := s.db.SelectContext(ctx, &out, s.db.Rebind(q), args...); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (s *SQL) CreateCorpProgram(ctx context.Context, p CorpProgram) (*CorpProgram, error) {
+	res, err := s.db.ExecContext(ctx, `
+		INSERT INTO corporation_build_programs
+			(corporation_id, created_by_user_id, name, program_type, t2_type_id,
+			 t2_type_name, steps, settings, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+		p.CorporationID, p.CreatedByUserID, p.Name, p.ProgramType, p.T2TypeID,
+		p.T2TypeName, p.StepsJSON, p.SettingsJSON)
+	if err != nil {
+		return nil, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+	return s.CorpProgram(ctx, id, p.CorporationID)
+}
+
+func (s *SQL) RenameCorpProgram(ctx context.Context, id, corpID int64, name string) (*CorpProgram, error) {
+	if _, err := s.db.ExecContext(ctx, `UPDATE corporation_build_programs SET name = ?, updated_at = NOW() WHERE id = ? AND corporation_id = ?`, name, id, corpID); err != nil {
+		return nil, err
+	}
+	return s.CorpProgram(ctx, id, corpID)
+}
+
+func (s *SQL) UpdateCorpProgramSettings(ctx context.Context, id, corpID int64, settingsJSON string) (*CorpProgram, error) {
+	if _, err := s.db.ExecContext(ctx, `UPDATE corporation_build_programs SET settings = ?, updated_at = NOW() WHERE id = ? AND corporation_id = ?`, settingsJSON, id, corpID); err != nil {
+		return nil, err
+	}
+	return s.CorpProgram(ctx, id, corpID)
+}
+
+func (s *SQL) DeleteCorpProgram(ctx context.Context, id, corpID int64) (bool, error) {
+	res, err := s.db.ExecContext(ctx, `DELETE FROM corporation_build_programs WHERE id = ? AND corporation_id = ?`, id, corpID)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	return n > 0, err
+}

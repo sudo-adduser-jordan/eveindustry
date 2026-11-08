@@ -30,14 +30,16 @@ type StationConfigInput struct {
 	RigME          *string
 	RigTE          *string
 	SystemSecurity *string
+	SolarSystemID  *int
+	TaxRate        *float64
 	IsDefault      *bool
 }
 
 // PlanningStore covers the planning writes (station configs first).
 type PlanningStore interface {
-	StationConfigs(ctx context.Context, userID int64, limit, offset int) ([]StationConfig, int, error)
+	StationConfigs(ctx context.Context, userID int64, activity string, limit, offset int) ([]StationConfig, int, error)
 	StationConfig(ctx context.Context, id, userID int64) (*StationConfig, error)
-	CreateStationConfig(ctx context.Context, userID int64, in StationConfigInput) (*StationConfig, error)
+	CreateStationConfig(ctx context.Context, userID int64, activity string, in StationConfigInput) (*StationConfig, error)
 	UpdateStationConfig(ctx context.Context, id, userID int64, in StationConfigInput) (*StationConfig, error)
 	DeleteStationConfig(ctx context.Context, id, userID int64) (bool, error)
 	SetDefaultStationConfig(ctx context.Context, id, userID int64) (*StationConfig, error)
@@ -81,18 +83,18 @@ type stationConfigRow struct {
 	UpdatedAt      time.Time       `db:"updated_at"`
 }
 
-func (s *SQL) StationConfigs(ctx context.Context, userID int64, limit, offset int) ([]StationConfig, int, error) {
+func (s *SQL) StationConfigs(ctx context.Context, userID int64, activity string, limit, offset int) ([]StationConfig, int, error) {
 	var total int
 	err := s.db.GetContext(ctx, &total, `
-		SELECT COUNT(*) FROM station_configs WHERE user_id = ? AND activity_type = 'manufacturing'`, userID)
+		SELECT COUNT(*) FROM station_configs WHERE user_id = ? AND activity_type = ?`, userID, activity)
 	if err != nil {
 		return nil, 0, err
 	}
 	var rows []stationConfigRow
 	err = s.db.SelectContext(ctx, &rows, `
 		SELECT `+stationConfigColumns+` FROM station_configs
-		WHERE user_id = ? AND activity_type = 'manufacturing'
-		ORDER BY is_default DESC, name ASC LIMIT ? OFFSET ?`, userID, limit, offset)
+		WHERE user_id = ? AND activity_type = ?
+		ORDER BY is_default DESC, name ASC LIMIT ? OFFSET ?`, userID, activity, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -118,7 +120,7 @@ func (s *SQL) StationConfig(ctx context.Context, id, userID int64) (*StationConf
 	return scanStationConfig(row), nil
 }
 
-func (s *SQL) CreateStationConfig(ctx context.Context, userID int64, in StationConfigInput) (*StationConfig, error) {
+func (s *SQL) CreateStationConfig(ctx context.Context, userID int64, activity string, in StationConfigInput) (*StationConfig, error) {
 	isDefault := in.IsDefault != nil && *in.IsDefault
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -128,16 +130,16 @@ func (s *SQL) CreateStationConfig(ctx context.Context, userID int64, in StationC
 	if isDefault {
 		if _, err := tx.ExecContext(ctx, `
 			UPDATE station_configs SET is_default = 0
-			WHERE user_id = ? AND activity_type = 'manufacturing'`, userID); err != nil {
+			WHERE user_id = ? AND activity_type = ?`, userID, activity); err != nil {
 			return nil, err
 		}
 	}
 	res, err := tx.ExecContext(ctx, `
 		INSERT INTO station_configs
-			(user_id, activity_type, name, structure_type, rig_me, rig_te, system_security, is_default, created_at, updated_at)
-		VALUES (?, 'manufacturing', ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-		userID, strVal(in.Name), strVal(in.StructureType), strVal(in.RigME),
-		strVal(in.RigTE), strVal(in.SystemSecurity), isDefault)
+			(user_id, activity_type, name, structure_type, rig_me, rig_te, system_security, solar_system_id, tax_rate, is_default, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+		userID, activity, strVal(in.Name), strVal(in.StructureType), strVal(in.RigME),
+		strVal(in.RigTE), strVal(in.SystemSecurity), intVal(in.SolarSystemID), floatVal(in.TaxRate), isDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -188,6 +190,12 @@ func (s *SQL) UpdateStationConfig(ctx context.Context, id, userID int64, in Stat
 	}
 	if in.SystemSecurity != nil {
 		set["system_security"] = *in.SystemSecurity
+	}
+	if in.SolarSystemID != nil {
+		set["solar_system_id"] = *in.SolarSystemID
+	}
+	if in.TaxRate != nil {
+		set["tax_rate"] = *in.TaxRate
 	}
 	if in.IsDefault != nil {
 		set["is_default"] = *in.IsDefault
@@ -250,6 +258,20 @@ func (s *SQL) SetDefaultStationConfig(ctx context.Context, id, userID int64) (*S
 		return nil, err
 	}
 	return scanStationConfig(row), nil
+}
+
+func intVal(v *int) any {
+	if v == nil {
+		return nil
+	}
+	return *v
+}
+
+func floatVal(v *float64) any {
+	if v == nil {
+		return nil
+	}
+	return *v
 }
 
 func strVal(s *string) string {

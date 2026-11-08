@@ -18,7 +18,7 @@ type stubPlanning struct {
 	nextID int64
 }
 
-func (s *stubPlanning) StationConfigs(ctx context.Context, userID int64, limit, offset int) ([]store.StationConfig, int, error) {
+func (s *stubPlanning) StationConfigs(ctx context.Context, userID int64, activity string, limit, offset int) ([]store.StationConfig, int, error) {
 	var out []store.StationConfig
 	now := time.Now()
 	for _, r := range s.rows {
@@ -44,7 +44,7 @@ func (s *stubPlanning) StationConfig(ctx context.Context, id, userID int64) (*st
 	}
 	return nil, nil
 }
-func (s *stubPlanning) CreateStationConfig(ctx context.Context, userID int64, in store.StationConfigInput) (*store.StationConfig, error) {
+func (s *stubPlanning) CreateStationConfig(ctx context.Context, userID int64, activity string, in store.StationConfigInput) (*store.StationConfig, error) {
 	s.nextID++
 	r := store.StationConfig{ID: s.nextID, UserID: userID, ActivityType: "manufacturing",
 		Name: strVal(in.Name), StructureType: strVal(in.StructureType), RigME: strVal(in.RigME),

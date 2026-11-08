@@ -119,7 +119,7 @@ func handleStationConfigsIndex(d Deps) echo.HandlerFunc {
 			return verrs.invalid(c)
 		}
 		uid := c.Get(string(ctxUIDKey)).(int64)
-		rows, total, err := d.Planning.StationConfigs(c.Request().Context(), uid, perPage, (page-1)*perPage)
+		rows, total, err := d.Planning.StationConfigs(c.Request().Context(), uid, "manufacturing", perPage, (page-1)*perPage)
 		if err != nil {
 			return dbError(c, err)
 		}
@@ -141,7 +141,7 @@ func handleStationConfigStore(d Deps) echo.HandlerFunc {
 			return verrs.invalid(c)
 		}
 		uid := c.Get(string(ctxUIDKey)).(int64)
-		row, err := d.Planning.CreateStationConfig(c.Request().Context(), uid, in)
+		row, err := d.Planning.CreateStationConfig(c.Request().Context(), uid, "manufacturing", in)
 		if err != nil {
 			return dbError(c, err)
 		}

@@ -41,6 +41,8 @@ type Deps struct {
 	StockReport  StockReportDeps
 	Planning     store.PlanningStore
 	Plans        store.PlanStore
+	CorpPrograms store.CorpProgramStore
+	StockItems   store.StockStore
 	Wholemap     store.WholemapStore
 	Programs     store.ProgramStore
 	IndustryDeps IndustryDeps
@@ -52,6 +54,10 @@ type Deps struct {
 
 	// App carries the public metadata /me exposes.
 	App AppConfig
+
+	// RefreshThrottle keeps the 30-minute clear throttle for industry
+	// caches. Nil means a fresh in-memory throttle (tests override).
+	RefreshThrottle *RefreshThrottle
 }
 
 // New builds the Echo router for the Go API. Routes mirror routes/api.php
@@ -98,6 +104,10 @@ func New(d Deps) *echo.Echo {
 	registerPlanning(authed, d)
 	registerWholemap(authed, d)
 	registerPlans(authed, d)
+	registerCorpPrograms(authed, d)
+	registerStockItems(authed, d)
+	registerStructures(authed, d)
+	registerIndustryRefresh(authed, d)
 	registerPrograms(authed, d)
 
 	return e

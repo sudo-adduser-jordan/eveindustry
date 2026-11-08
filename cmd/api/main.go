@@ -98,6 +98,8 @@ func main() {
 		deps.IndustryDeps.Characters = esiChars
 		deps.IndustryDeps.Universe = esiUniverse
 		deps.Planning = queries
+		deps.CorpPrograms = queries
+		deps.StockItems = queries
 		deps.Plans = queries
 		deps.Wholemap = queries
 		deps.Programs = queries

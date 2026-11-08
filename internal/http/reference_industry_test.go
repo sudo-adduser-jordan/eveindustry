@@ -18,6 +18,7 @@ type stubIndustry struct {
 	mfgActs          []industry.MfgActivity
 	precomputed      []industry.PrecomputedCost
 	precomputedTotal int
+	names            map[int]string
 }
 
 func (s *stubIndustry) SearchBlueprintTypes(ctx context.Context, like string, limit int) ([]industry.BlueprintTypeHit, error) {
@@ -50,7 +51,16 @@ func (s *stubIndustry) HasActivity(ctx context.Context, bp, act int) (bool, erro
 	return ok, nil
 }
 func (s *stubIndustry) TypeNames(ctx context.Context, ids []int) (map[int]string, error) {
-	return map[int]string{}, nil
+	if s.names == nil {
+		return map[int]string{}, nil
+	}
+	out := map[int]string{}
+	for _, id := range ids {
+		if n, ok := s.names[id]; ok {
+			out[id] = n
+		}
+	}
+	return out, nil
 }
 func (s *stubIndustry) ProductTypeIDsExcludingInvented(ctx context.Context) ([]int, error) {
 	return []int{587}, nil

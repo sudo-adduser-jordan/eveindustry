@@ -28,6 +28,46 @@ func (s *stubStockReport) GetCorporationAssets(ctx context.Context, charID, corp
 func (s *stubStockReport) WatchedItems(ctx context.Context, uid int64) ([]store.WatchedItem, error) {
 	return s.items, nil
 }
+func (s *stubStockReport) WatchedItem(ctx context.Context, id, uid int64) (*store.WatchedItem, error) {
+	for _, it := range s.items {
+		if it.ID == id {
+			it := it
+			return &it, nil
+		}
+	}
+	return nil, nil
+}
+func (s *stubStockReport) UpsertWatchedItem(ctx context.Context, in store.WatchedItemUpsert) (*store.WatchedItem, error) {
+	for i, it := range s.items {
+		if it.TypeID == in.TypeID {
+			s.items[i].DesiredQuantity = in.DesiredQuantity
+			out := s.items[i]
+			return &out, nil
+		}
+	}
+	out := store.WatchedItem{ID: int64(len(s.items)) + 1, TypeID: in.TypeID, TypeName: in.TypeName, DesiredQuantity: in.DesiredQuantity}
+	s.items = append(s.items, out)
+	return &out, nil
+}
+func (s *stubStockReport) UpdateWatchedItemQuantity(ctx context.Context, id, uid, qty int64) (*store.WatchedItem, error) {
+	for i, it := range s.items {
+		if it.ID == id {
+			s.items[i].DesiredQuantity = qty
+			out := s.items[i]
+			return &out, nil
+		}
+	}
+	return nil, nil
+}
+func (s *stubStockReport) DeleteWatchedItem(ctx context.Context, id, uid int64) (bool, error) {
+	for i, it := range s.items {
+		if it.ID == id {
+			s.items = append(s.items[:i], s.items[i+1:]...)
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 func stockReportTestDeps(stockManager bool, roles []string) Deps {
 	stub := testAuth()
