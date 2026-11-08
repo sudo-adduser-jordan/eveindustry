@@ -1,0 +1,127 @@
+version: "3"
+
+# Eve Industrialist task runner. Every task mirrors the working rules in
+# AGENTS.md. Run `task --list` to see them all.
+
+vars:
+  GO_TAGS: '{{.GO_TAGS | default ""}}'
+
+tasks:
+  default:
+    desc: Build everything (Go + frontend typecheck)
+    cmds:
+      - task: build
+
+  build:
+    desc: Compile all Go packages
+    cmds:
+      - go build {{if .GO_TAGS}}-tags {{.GO_TAGS}}{{end}} ./...
+
+  test:
+    desc: Run the full Go test suite (no cache)
+    cmds:
+      - go test -count=1 ./...
+
+  test:race:
+    desc: Run the full Go test suite with the race detector
+    cmds:
+      - go test -race -count=1 ./...
+
+  vet:
+    desc: go vet the whole module
+    cmds:
+      - go vet ./...
+
+  fmt:
+    desc: Report files needing gofmt (fails if any)
+    cmds:
+      - |
+        out=$(gofmt -l cmd internal migrations)
+        if [ -n "$out" ]; then
+          echo "$out"
+          exit 1
+        fi
+
+  fmt:write:
+    desc: Apply gofmt to the Go tree
+    cmds:
+      - gofmt -w cmd internal migrations
+
+  check:
+    desc: vet + gofmt check + full test suite
+    cmds:
+      - task: vet
+      - task: fmt
+      - task: test
+
+  run:api:
+    desc: Run the API server (env from environment, see README)
+    cmds:
+      - go run ./cmd/api
+
+  run:worker:
+    desc: Run the background job worker
+    cmds:
+      - go run ./cmd/worker
+
+  run:scheduler:
+    desc: Run the cron tick dispatcher
+    cmds:
+      - go run ./cmd/scheduler
+
+  migrate:
+    desc: "Apply pending SQL migrations (usage: task migrate -- [up|down|status] [n])"
+    cmds:
+      - go run ./cmd/migrate {{.CLI_ARGS}}
+
+  migrate:test:
+    desc: Verify the migration chain test only
+    cmds:
+      - go test -count=1 ./cmd/migrate/
+
+  frontend:install:
+    desc: Install frontend dependencies
+    dir: frontend
+    cmds:
+      - npm ci
+
+  frontend:gen:
+    desc: Regenerate the typed API client from docs/openapi.json
+    dir: frontend
+    cmds:
+      - npm run gen:api
+    sources:
+      - ../docs/openapi.json
+    generates:
+      - src/api/schema.d.ts
+
+  frontend:typecheck:
+    desc: Strict TypeScript check (app + service worker)
+    dir: frontend
+    cmds:
+      - npm run typecheck
+
+  frontend:test:
+    desc: Run Vitest suite once
+    dir: frontend
+    cmds:
+      - npm run test
+
+  frontend:build:
+    desc: Typecheck + production Vite build
+    dir: frontend
+    cmds:
+      - npm run build
+
+  frontend:size:
+    desc: size-limit budget check
+    dir: frontend
+    cmds:
+      - npm run size
+
+  frontend:check:
+    desc: gen:api (verifies in sync) + typecheck + tests
+    cmds:
+      - task: frontend:gen
+      - task: frontend:typecheck
+      - task: frontend:test
