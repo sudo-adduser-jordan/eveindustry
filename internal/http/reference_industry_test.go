@@ -72,6 +72,12 @@ func (s *stubIndustry) AllReactionFormulas(ctx context.Context) ([]industry.Reac
 		Time:      600,
 	}}, nil
 }
+func (s *stubIndustry) ActivityProducing(ctx context.Context, typeID, activityID int) (*industry.BlueprintActivityRow, error) {
+	return s.ActivityProducingType(ctx, typeID, activityID)
+}
+func (s *stubIndustry) GroupsOf(ctx context.Context, typeIDs []int) (map[int]int, error) {
+	return map[int]int{}, nil
+}
 func (s *stubIndustry) AllManufacturingActivities(ctx context.Context) ([]industry.MfgActivity, error) {
 	return s.mfgActs, nil
 }

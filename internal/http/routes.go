@@ -42,6 +42,7 @@ type Deps struct {
 	Planning     store.PlanningStore
 	Plans        store.PlanStore
 	Wholemap     store.WholemapStore
+	Programs     store.ProgramStore
 	IndustryDeps IndustryDeps
 
 	// Sessions and Users drive RequireAuth. Either nil means nobody can
@@ -97,6 +98,7 @@ func New(d Deps) *echo.Echo {
 	registerPlanning(authed, d)
 	registerWholemap(authed, d)
 	registerPlans(authed, d)
+	registerPrograms(authed, d)
 
 	return e
 }

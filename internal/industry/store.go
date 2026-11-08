@@ -262,6 +262,8 @@ type IndustryStore interface {
 	SearchT2Candidates(ctx context.Context, like string) ([]BlueprintTypeHit, error)
 	ActivityByBlueprint(ctx context.Context, blueprintTypeID, activityID int) (*BlueprintActivityRow, error)
 	ActivityProducingType(ctx context.Context, typeID, activityID int) (*BlueprintActivityRow, error)
+	ActivityProducing(ctx context.Context, typeID, activityID int) (*BlueprintActivityRow, error)
+	GroupsOf(ctx context.Context, typeIDs []int) (map[int]int, error)
 	HasActivity(ctx context.Context, blueprintTypeID, activityID int) (bool, error)
 	TypeNames(ctx context.Context, typeIDs []int) (map[int]string, error)
 	AllReactionFormulas(ctx context.Context) ([]ReactionFormula, error)
@@ -335,6 +337,36 @@ func (s *SQL) ActivityByBlueprint(ctx context.Context, blueprintTypeID, activity
 		return nil, err
 	}
 	return &row, nil
+}
+
+// ActivityProducing aliases ActivityProducingType for calc.ChainResolver.
+func (s *SQL) ActivityProducing(ctx context.Context, typeID, activityID int) (*BlueprintActivityRow, error) {
+	return s.ActivityProducingType(ctx, typeID, activityID)
+}
+
+// GroupsOf returns eve_types.group_id per type for chain fuel-block checks.
+func (s *SQL) GroupsOf(ctx context.Context, typeIDs []int) (map[int]int, error) {
+	out := map[int]int{}
+	if len(typeIDs) == 0 {
+		return out, nil
+	}
+	q, args, err := sqlx.In(`SELECT type_id, group_id FROM eve_types WHERE type_id IN (?)`, typeIDs)
+	if err != nil {
+		return nil, err
+	}
+	var rows []struct {
+		TypeID  int          `db:"type_id"`
+		GroupID sql.NullInt64 `db:"group_id"`
+	}
+	if err := s.db.SelectContext(ctx, &rows, s.db.Rebind(q), args...); err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		if r.GroupID.Valid {
+			out[r.TypeID] = int(r.GroupID.Int64)
+		}
+	}
+	return out, nil
 }
 
 // ActivityProducingType ports BlueprintActivity::scopeWhereProducesType() on

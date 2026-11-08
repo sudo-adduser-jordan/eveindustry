@@ -100,6 +100,7 @@ func main() {
 		deps.Planning = queries
 		deps.Plans = queries
 		deps.Wholemap = queries
+		deps.Programs = queries
 	}
 	if rdb != nil {
 		deps.CachePing = func(ctx context.Context) bool {

@@ -62,6 +62,12 @@ func (s *chainStub) CategoryNames(ctx context.Context, ids []int) (map[int]strin
 func (s *chainStub) AllReactionFormulas(ctx context.Context) ([]industry.ReactionFormula, error) {
 	return nil, nil
 }
+func (s *chainStub) ActivityProducing(ctx context.Context, typeID, activityID int) (*industry.BlueprintActivityRow, error) {
+	return s.ActivityProducingType(ctx, typeID, activityID)
+}
+func (s *chainStub) GroupsOf(ctx context.Context, typeIDs []int) (map[int]int, error) {
+	return map[int]int{}, nil
+}
 func (s *chainStub) AllManufacturingActivities(ctx context.Context) ([]industry.MfgActivity, error) {
 	return nil, nil
 }

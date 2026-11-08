@@ -21,6 +21,9 @@ func nullString(ns sql.NullString) *string {
 	return &ns.String
 }
 
+// StrVal exposes nullString for other packages (raw JSON columns).
+func StrVal(ns sql.NullString) *string { return nullString(ns) }
+
 // Activity IDs mirror BlueprintActivity::ACTIVITY_*.
 const (
 	ActivityManufacturing = 1

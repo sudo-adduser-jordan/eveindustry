@@ -82,6 +82,12 @@ func (s *stubStore) CategoryNames(ctx context.Context, ids []int) (map[int]strin
 func (s *stubStore) AllReactionFormulas(ctx context.Context) ([]ReactionFormula, error) {
 	return nil, nil
 }
+func (s *stubStore) ActivityProducing(ctx context.Context, typeID, activityID int) (*BlueprintActivityRow, error) {
+	return s.ActivityProducingType(ctx, typeID, activityID)
+}
+func (s *stubStore) GroupsOf(ctx context.Context, typeIDs []int) (map[int]int, error) {
+	return map[int]int{}, nil
+}
 func (s *stubStore) AllManufacturingActivities(ctx context.Context) ([]MfgActivity, error) {
 	return nil, nil
 }
