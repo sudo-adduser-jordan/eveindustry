@@ -1,12 +1,23 @@
 package http
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 )
+
+func industryActivityRow(bp, act, tm int, mats, prods string) *industry.BlueprintActivityRow {
+	return &industry.BlueprintActivityRow{
+		BlueprintTypeID: bp, ActivityID: act, Time: tm,
+		Materials: sql.NullString{String: mats, Valid: true},
+		Products:  sql.NullString{String: prods, Valid: true},
+	}
+}
 
 func calcTestDeps() Deps {
 	_, _, mkt := testDeps()
@@ -71,8 +82,38 @@ func TestManufacturingCalculateValidation(t *testing.T) {
 	}
 }
 
-func TestQueueSummary(t *testing.T) {
+func TestReactionCalculate(t *testing.T) {
 	d := calcTestDeps()
+	stub := d.Industry.(*stubIndustry)
+	stub.activities[[2]int{999, 11}] = industryActivityRow(
+		999, 11, 600,
+		`[{"type_id":34,"name":"Tritanium","quantity":50}]`,
+		`[{"type_id":587,"name":"Product","quantity":5}]`,
+	)
+	code, body := post(t, d, "/api/v1/calculators/reactions", `{
+		"formula_type_id": 999, "product_type_id": 587, "runs": 5, "reactions_skill": 5
+	}`)
+	if code != http.StatusOK {
+		t.Fatalf("code = %d %v", code, body)
+	}
+	data := body["data"].(map[string]any)
+	mats := data["materials"].([]any)
+	// 50 x 5 runs, no rig: 250
+	if len(mats) != 1 || mats[0].(map[string]any)["adjusted_quantity"].(float64) != 250 {
+		t.Fatalf("materials = %v", mats)
+	}
+	if data["product"].(map[string]any)["total_output"].(float64) != 25 {
+		t.Fatalf("output = %v", data["product"])
+	}
+	// unknown formula -> 422
+	if code, _ := post(t, d, "/api/v1/calculators/reactions", `{
+		"formula_type_id": 1, "product_type_id": 587, "runs": 1, "reactions_skill": 0
+	}`); code != http.StatusUnprocessableEntity {
+		t.Fatalf("no materials = %d", code)
+	}
+}
+
+func TestQueueSummary(t *testing.T) {	d := calcTestDeps()
 	code, body := post(t, d, "/api/v1/calculators/manufacturing/queue-summary",
 		`{"items": [{"revenue": 1000, "input_cost": 800, "fees": 40}]}`)
 	if code != http.StatusOK {

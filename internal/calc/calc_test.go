@@ -45,6 +45,18 @@ func TestFormatDuration(t *testing.T) {
 	}
 }
 
+func TestReactionMaterialsAndTime(t *testing.T) {
+	got := ReactionMaterials([]BaseMaterial{{TypeID: 34, Quantity: 50}}, 5, 0)
+	if got[0].AdjustedQuantity != 250 {
+		t.Fatalf("got %+v", got[0])
+	}
+	tm := ReactionTime(600, 5, 5, 0)
+	// 600 * 0.8 = 480/run -> 480; total 2400
+	if tm.TimePerRunSeconds != 480 || tm.TotalTimeSeconds != 2400 {
+		t.Fatalf("got %+v", tm)
+	}
+}
+
 func TestSummaryAndTotals(t *testing.T) {
 	scc, profit, margin := Summary(1000, 800, 0)
 	if scc != 40 || profit != 160 || margin != 20.0 {

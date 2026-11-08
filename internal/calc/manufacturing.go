@@ -170,3 +170,50 @@ func itoa(n int) string {
 }
 
 func Round2(v float64) float64 { return math.Round(v*100) / 100 }
+
+// ReactionMaterials ports ReactionsCalculatorService::calculateMaterials():
+// adjusted = max(runs, ceil(round(base*runs*rigFactor, 2))).
+func ReactionMaterials(base []BaseMaterial, runs int, rigBonus float64) []Material {
+	rigFactor := 1 - rigBonus/100
+	out := make([]Material, 0, len(base))
+	for _, m := range base {
+		adjusted := runs
+		if q := int(math.Ceil(math.Round(float64(m.Quantity)*float64(runs)*rigFactor*100) / 100)); q > adjusted {
+			adjusted = q
+		}
+		perRun := float64(adjusted)
+		if runs > 0 {
+			perRun = math.Ceil(float64(adjusted) / float64(runs))
+		}
+		name := m.Name
+		if name == "" {
+			name = "Unknown"
+		}
+		out = append(out, Material{
+			TypeID: m.TypeID, Name: name,
+			BaseQuantity: m.Quantity, AdjustedQuantity: adjusted, QuantityPerRun: perRun,
+		})
+	}
+	return out
+}
+
+// ReactionTime ports ReactionsCalculatorService::calculateProductionTime().
+func ReactionTime(baseTimeSeconds, runs, reactionsSkill int, structureTeBonus float64) JobTime {
+	skillFactor := 1 - float64(reactionsSkill)*4/100
+	structFactor := 1 - structureTeBonus/100
+	perRun := float64(baseTimeSeconds) * skillFactor * structFactor
+	total := perRun * float64(runs)
+	return JobTime{
+		BaseTimeSeconds:     baseTimeSeconds,
+		TimePerRunSeconds:   int(math.Round(perRun)),
+		TotalTimeSeconds:    int(math.Round(total)),
+		TimePerRunFormatted: FormatDuration(int(math.Round(perRun))),
+		TotalTimeFormatted:  FormatDuration(int(math.Round(total))),
+	}
+}
+
+// ReactionCostProfit ports ReactionsCalculatorService::calculateCostProfit()
+// (no buyback multiplier, unlike manufacturing).
+func ReactionCostProfit(materials []Material, productTypeID, runs, portionSize int, prices map[int]PricedValue) CostProfit {
+	return costProfit(materials, productTypeID, runs, portionSize, prices, 1.0)
+}

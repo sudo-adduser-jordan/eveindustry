@@ -21,6 +21,7 @@ func registerCalculators(v1 *echo.Group, d Deps) {
 	calcGroup := v1.Group("/calculators")
 	calcGroup.POST("/manufacturing", handleManufacturingCalculate(d))
 	calcGroup.POST("/manufacturing/queue-summary", handleQueueSummary)
+	calcGroup.POST("/reactions", handleReactionCalculate(d))
 }
 
 // manufacturingInput mirrors ManufacturingCalculateRequest rules.
@@ -369,6 +370,154 @@ func intVal(v any, fallback int) int {
 		return int(n)
 	}
 	return fallback
+}
+
+// POST /calculators/reactions — mirrors ReactionsController@calculate.
+// SDE auto-resolves materials/time/portion when not posted; a formula with
+// no materials is a 422 on formula_type_id.
+func handleReactionCalculate(d Deps) echo.HandlerFunc {
+	type input struct {
+		FormulaTypeID   *int             `json:"formula_type_id"`
+		ProductTypeID   *int             `json:"product_type_id"`
+		Runs            *int             `json:"runs"`
+		ReactionsSkill  *int             `json:"reactions_skill"`
+		RigBonus        *float64         `json:"rig_bonus"`
+		StructureTEBonus *float64        `json:"structure_te_bonus"`
+		Materials       []postedMaterial `json:"materials"`
+		BaseTime        *int             `json:"base_time"`
+		PortionSize     *int             `json:"portion_size"`
+		RegionID        *int             `json:"region_id"`
+	}
+	return func(c echo.Context) error {
+		var in input
+		if err := json.NewDecoder(c.Request().Body).Decode(&in); err != nil {
+			verrs := validationErrors{}
+			verrs.add("body", "The request body must be valid JSON.")
+			return verrs.invalid(c)
+		}
+		verrs := validationErrors{}
+		formulaID, _ := intField(verrs, "formula_type_id", in.FormulaTypeID, 1, 1<<31-1, true)
+		productID, _ := intField(verrs, "product_type_id", in.ProductTypeID, 1, 1<<31-1, true)
+		runs, _ := intField(verrs, "runs", in.Runs, 1, 100000, true)
+		skill, _ := intField(verrs, "reactions_skill", in.ReactionsSkill, 0, 5, true)
+		rigBonus, _ := numField(verrs, "rig_bonus", in.RigBonus, 0, 10)
+		structTE, _ := numField(verrs, "structure_te_bonus", in.StructureTEBonus, 0, 30)
+		for _, m := range in.Materials {
+			if m.TypeID == nil || m.Name == nil || m.Quantity == nil || *m.Quantity < 0 {
+				verrs.add("materials", "Material rows need type id, name and quantity >= 0.")
+				break
+			}
+		}
+		regionID := market.DefaultRegion
+		if in.RegionID != nil {
+			regionID = *in.RegionID
+		}
+		portionSize := 1
+		if in.PortionSize != nil {
+			if *in.PortionSize < 1 {
+				verrs.add("portion_size", "The portion size field must be at least 1.")
+			} else {
+				portionSize = *in.PortionSize
+			}
+		}
+		baseTime := 0
+		if in.BaseTime != nil {
+			if *in.BaseTime < 0 {
+				verrs.add("base_time", "The base time field must be at least 0.")
+			} else {
+				baseTime = *in.BaseTime
+			}
+		}
+		if len(verrs) > 0 {
+			return verrs.invalid(c)
+		}
+		ctx := c.Request().Context()
+
+		base := make([]calc.BaseMaterial, 0, len(in.Materials))
+		for _, m := range in.Materials {
+			name := ""
+			if m.Name != nil {
+				name = *m.Name
+			}
+			base = append(base, calc.BaseMaterial{TypeID: *m.TypeID, Name: name, Quantity: *m.Quantity})
+		}
+		if len(base) == 0 || baseTime == 0 {
+			row, err := d.Industry.ActivityByBlueprint(ctx, formulaID, industry.ActivityReaction)
+			if err != nil {
+				return dbError(c, err)
+			}
+			if row != nil {
+				if len(base) == 0 {
+					for _, m := range industry.DecodeJSONList(nullStrPtr(row.Materials)) {
+						name, _ := m["name"].(string)
+						base = append(base, calc.BaseMaterial{TypeID: intVal(m["type_id"], 0), Name: name, Quantity: intVal(m["quantity"], 0)})
+					}
+				}
+				if baseTime == 0 {
+					baseTime = row.Time
+				}
+				if portionSize == 1 {
+					for _, p := range industry.DecodeJSONList(nullStrPtr(row.Products)) {
+						if q := intVal(p["quantity"], 0); q > 0 {
+							portionSize = q
+							break
+						}
+					}
+				}
+			}
+		}
+		if len(base) == 0 {
+			verrs.add("formula_type_id", "No materials found for this reaction formula.")
+			return verrs.invalid(c)
+		}
+
+		materials := calc.ReactionMaterials(base, runs, rigBonus)
+		jobTime := calc.ReactionTime(baseTime, runs, skill, structTE)
+
+		typeIDs := []int{productID}
+		for _, m := range materials {
+			typeIDs = append(typeIDs, m.TypeID)
+		}
+		resolved, err := resolvePrices(ctx, d.Market, typeIDs, regionID)
+		if err != nil {
+			return dbError(c, err)
+		}
+		prices := make(map[int]calc.PricedValue, len(resolved))
+		for id, r := range resolved {
+			prices[id] = calc.PricedValue{Price: r.Price, Source: r.Source}
+		}
+		cp := calc.ReactionCostProfit(materials, productID, runs, portionSize, prices)
+
+		mats := make([]any, 0, len(cp.Materials))
+		for _, m := range cp.Materials {
+			mats = append(mats, map[string]any{
+				"type_id": m.TypeID, "name": m.Name,
+				"base_quantity": m.BaseQuantity, "adjusted_quantity": m.AdjustedQuantity,
+				"quantity_per_run": m.QuantityPerRun, "unit_price": m.UnitPrice,
+				"total_cost": m.TotalCost, "price_source": m.PriceSource,
+			})
+		}
+		return Success(c, http.StatusOK, map[string]any{
+			"product": map[string]any{
+				"sell_price": cp.ProductSellPrice, "price_source": cp.ProductPriceSource,
+				"total_output": cp.TotalOutput, "total_revenue": cp.TotalRevenue,
+			},
+			"time": map[string]any{
+				"base_time_seconds": jobTime.BaseTimeSeconds,
+				"time_per_run_seconds": jobTime.TimePerRunSeconds,
+				"total_time_seconds": jobTime.TotalTimeSeconds,
+			},
+			"materials": mats,
+			"summary": map[string]any{
+				"material_cost": cp.TotalMaterialCost, "total_revenue": cp.TotalRevenue,
+				"scc_fee": cp.TotalRevenue * calc.SCCFeeRate, "profit": cp.Profit,
+				"profit_positive": cp.ProfitPositive, "profit_per_unit": cp.ProfitPerUnit,
+				"profit_margin": cp.ProfitMargin,
+			},
+		}, map[string]any{
+			"freshness": freshnessFor(c, d, regionID),
+		})
+	}
 }
 
 // POST /calculators/manufacturing/queue-summary — mirrors
