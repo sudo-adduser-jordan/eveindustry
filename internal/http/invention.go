@@ -254,7 +254,7 @@ func inventionPayload(r calc.InventionResult, chain *industry.Chain) map[string]
 		"t1_item": map[string]any{
 			"type_id": chain.T1ItemTypeID, "name": chain.T1ItemName,
 		},
-		"t2_bpc": r.BPC,
+		"t2_bpc":       r.BPC,
 		"t2_materials": mats,
 		"material_costs": map[string]any{
 			"buy": r.TotalT2MaterialCost, "build": r.TotalT2BuildCost,
@@ -302,7 +302,7 @@ func pricedMaterialShape(m calc.PricedMaterial) map[string]any {
 			"is_buildable": true, "blueprint_type_id": m.Component.BlueprintTypeID,
 			"portion_size": m.Component.PortionSize, "runs_needed": m.Component.RunsNeeded,
 			"base_time": m.Component.BaseTime, "materials": subs,
-			"build_cost": m.Component.BuildCost,
+			"build_cost":    m.Component.BuildCost,
 			"material_cost": m.Component.MaterialCost, "job_cost": m.Component.JobCost,
 		}
 	}

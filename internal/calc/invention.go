@@ -107,13 +107,13 @@ func ReactionME(rigMe, systemSecurity string) float64 {
 
 // Decryptor mirrors one InventionPlannerService::DECRYPTORS entry.
 type Decryptor struct {
-	Key                   string   `json:"key"`
-	Name                  string   `json:"name"`
-	TypeID                *int     `json:"type_id"`
-	ProbabilityMultiplier float64  `json:"probability_multiplier"`
-	MEModifier            int      `json:"me_modifier"`
-	TEModifier            int      `json:"te_modifier"`
-	RunModifier           int      `json:"run_modifier"`
+	Key                   string  `json:"key"`
+	Name                  string  `json:"name"`
+	TypeID                *int    `json:"type_id"`
+	ProbabilityMultiplier float64 `json:"probability_multiplier"`
+	MEModifier            int     `json:"me_modifier"`
+	TEModifier            int     `json:"te_modifier"`
+	RunModifier           int     `json:"run_modifier"`
 }
 
 // Decryptors ports InventionPlannerService::DECRYPTORS in the controller's
@@ -202,52 +202,52 @@ type InventionInput struct {
 
 // DatacoreSpec is one chain datacore (quantity per attempt).
 type DatacoreSpec struct {
-	TypeID   int
-	Name     string
-	Quantity int
-	SkillID  *int
+	TypeID    int
+	Name      string
+	Quantity  int
+	SkillID   *int
 	SkillName *string
 }
 
 // InventionResult mirrors InventionJobCalculator::calculate() return keys.
 type InventionResult struct {
-	Probability            float64
-	ExpectedAttempts       int
+	Probability             float64
+	ExpectedAttempts        int
 	InventionCostPerAttempt float64
 	InventionCostPerSuccess float64
-	TotalInventionCost     float64
-	BPC                    T2BPC
-	T2Materials            []PricedMaterial
-	TotalT2MaterialCost    float64
-	TotalT2BuildCost       float64
-	Datacores              []InventionDatacore
-	DatacoreCostPerAttempt float64
-	DecryptorUnitPrice     float64
-	DecryptorVolume        float64
-	TotalAttempts          int
-	DecryptorTotalQuantity int
-	DecryptorTotalCost     float64
-	T2JobFee               float64
-	T2FacilityTax          float64
-	T2TotalJobCost         float64
-	TotalOutput            int
-	TotalOutputValue       float64
-	T2SellPrice            float64
-	TotalCost              float64
-	Profit                 float64
-	ProfitMargin           float64
-	ProfitPerUnit          float64
-	BuildCheaper           bool
-	TotalCostFullBuy       float64
-	ProfitFullBuy          float64
-	MarginFullBuy          float64
-	PerUnitFullBuy         float64
-	TotalCostFullBuild     float64
-	ProfitFullBuild        float64
-	MarginFullBuild        float64
-	PerUnitFullBuild       float64
-	StructureMEBonus       float64
-	StructureTEBonus       float64
+	TotalInventionCost      float64
+	BPC                     T2BPC
+	T2Materials             []PricedMaterial
+	TotalT2MaterialCost     float64
+	TotalT2BuildCost        float64
+	Datacores               []InventionDatacore
+	DatacoreCostPerAttempt  float64
+	DecryptorUnitPrice      float64
+	DecryptorVolume         float64
+	TotalAttempts           int
+	DecryptorTotalQuantity  int
+	DecryptorTotalCost      float64
+	T2JobFee                float64
+	T2FacilityTax           float64
+	T2TotalJobCost          float64
+	TotalOutput             int
+	TotalOutputValue        float64
+	T2SellPrice             float64
+	TotalCost               float64
+	Profit                  float64
+	ProfitMargin            float64
+	ProfitPerUnit           float64
+	BuildCheaper            bool
+	TotalCostFullBuy        float64
+	ProfitFullBuy           float64
+	MarginFullBuy           float64
+	PerUnitFullBuy          float64
+	TotalCostFullBuild      float64
+	ProfitFullBuild         float64
+	MarginFullBuild         float64
+	PerUnitFullBuild        float64
+	StructureMEBonus        float64
+	StructureTEBonus        float64
 }
 
 // CalculateInventionJob ports InventionJobCalculator::calculate().
@@ -275,7 +275,7 @@ func CalculateInventionJob(in InventionInput, probability float64) InventionResu
 				IsBuildable: true, BlueprintTypeID: comp.BlueprintTypeID,
 				PortionSize: comp.PortionSize, RunsNeeded: comp.RunsNeeded,
 				BaseTime: comp.BaseTime, Materials: subs,
-				BuildCost: Round2(buildCost + compFee + compTax),
+				BuildCost:    Round2(buildCost + compFee + compTax),
 				MaterialCost: Round2(buildCost), JobCost: Round2(compFee + compTax),
 			}
 			totalBuildCost += buildCost + compFee + compTax
@@ -353,7 +353,7 @@ func CalculateInventionJob(in InventionInput, probability float64) InventionResu
 		Probability: probability, ExpectedAttempts: expectedAttempts,
 		InventionCostPerAttempt: costPerAttempt, InventionCostPerSuccess: Round2(costPerSuccess),
 		TotalInventionCost: Round2(totalInvCost), BPC: CalculateT2BPC(in.BPCRuns, in.Decryptor),
-		T2Materials: mats,
+		T2Materials:         mats,
 		TotalT2MaterialCost: totalMatCost, TotalT2BuildCost: Round2(totalBuildCost),
 		Datacores: dcs, DatacoreCostPerAttempt: dcCost,
 		DecryptorUnitPrice: decPrice, DecryptorVolume: decVol, TotalAttempts: totalAttempts,
@@ -362,7 +362,7 @@ func CalculateInventionJob(in InventionInput, probability float64) InventionResu
 		TotalOutput: totalOutput, TotalOutputValue: totalValue, T2SellPrice: t2Price,
 		TotalCost: Round2(totalCost), Profit: Round2(profit),
 		ProfitMargin: marginOf(profit, totalCost), ProfitPerUnit: Round2(perUnit),
-		BuildCheaper: buildCheaper,
+		BuildCheaper:     buildCheaper,
 		TotalCostFullBuy: Round2(costBuy), ProfitFullBuy: Round2(profitBuy),
 		MarginFullBuy: marginOf(profitBuy, costBuy), PerUnitFullBuy: Round2(perUnitBuy),
 		TotalCostFullBuild: Round2(costBuild), ProfitFullBuild: Round2(profitBuild),
