@@ -50,10 +50,10 @@ func researchTestDeps() Deps {
 	d := Deps{Sessions: stub, Users: stub, Research: ResearchDeps{
 		Characters: &stubResearchChars{
 			blueprints: map[int64][]map[string]any{
-				11: {{ "type_id": 786, "material_efficiency": 10, "time_efficiency": 8}},
+				11: {{"type_id": 786, "material_efficiency": 10, "time_efficiency": 8}},
 			},
 			jobs: map[int64][]map[string]any{
-				11: {{ "blueprint_type_id": 999, "status": "active", "activity_id": 9}},
+				11: {{"blueprint_type_id": 999, "status": "active", "activity_id": 9}},
 			},
 		},
 		Research: &stubResearch{

@@ -335,7 +335,7 @@ func handleFormulaResearch(d Deps) echo.HandlerFunc {
 			out = append(out, map[string]any{
 				"type_id": r.TypeID, "name": r.Name, "group_id": r.GroupID,
 				"category": formulaCategory(r.GroupID),
-				"owned": isOwned, "quantity": ownedQty[r.TypeID], "owner_names": owners,
+				"owned":    isOwned, "quantity": ownedQty[r.TypeID], "owner_names": owners,
 			})
 		}
 		cats := []any{
