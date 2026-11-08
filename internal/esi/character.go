@@ -362,6 +362,57 @@ func (c *CharacterClient) GetCorporationIndustryJobs(ctx context.Context, charac
 	return all, nil
 }
 
+// GetCharacterPlanets ports getCharacterPlanets(): colony list, 10-minute memo.
+func (c *CharacterClient) GetCharacterPlanets(ctx context.Context, characterID int64) ([]map[string]any, error) {
+	key := fmt.Sprintf("esi.planets.%d", characterID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.([]map[string]any), nil
+	}
+	raw, err := c.authed(ctx, http.MethodGet, fmt.Sprintf("/characters/%d/planets/", characterID), characterID, nil)
+	if err != nil {
+		return nil, err
+	}
+	list, _ := raw.([]any)
+	out := make([]map[string]any, 0, len(list))
+	for _, item := range list {
+		if m, ok := item.(map[string]any); ok {
+			out = append(out, m)
+		}
+	}
+	c.memo.Set(key, out, 10*time.Minute)
+	return out, nil
+}
+
+// GetCharacterPlanetDetails ports getCharacterPlanetDetails(): full colony
+// layout, 10-minute memo.
+func (c *CharacterClient) GetCharacterPlanetDetails(ctx context.Context, characterID int64, planetID int) (map[string]any, error) {
+	key := fmt.Sprintf("esi.planet_details.%d.%d", characterID, planetID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.(map[string]any), nil
+	}
+	raw, err := c.authed(ctx, http.MethodGet, fmt.Sprintf("/characters/%d/planets/%d/", characterID, planetID), characterID, nil)
+	if err != nil {
+		return nil, err
+	}
+	m, _ := raw.(map[string]any)
+	if m == nil {
+		return nil, nil
+	}
+	c.memo.Set(key, m, 10*time.Minute)
+	return m, nil
+}
+
+// ClearPlanetaryCache drops colony memos for a character.
+func (c *CharacterClient) ClearPlanetaryCache(characterID int64) {
+	c.memo.Forget(fmt.Sprintf("esi.planets.%d", characterID))
+}
+
 // GetCorporationAssetNames ports getCorporationAssetNames(): POST chunks of
 // 1000 against the corporation endpoint, skipping blank/'None' names.
 func (c *CharacterClient) GetCorporationAssetNames(ctx context.Context, characterID, corporationID int64, itemIDs []int64) (map[int64]string, error) {

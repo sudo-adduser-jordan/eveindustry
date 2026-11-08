@@ -117,6 +117,8 @@ func main() {
 		deps.Diag = queries
 		deps.Discord = queries
 		deps.DiscordBotEnabled = os.Getenv("FEATURE_DISCORD_BOT") == "true"
+		deps.Planetary.Characters = esiChars
+		deps.Planetary.Universe = esiUniverse
 		deps.SponsorImages = gohttp.DiskSponsorStorage{Dir: sponsorDir()}
 		deps.CorpPrograms = queries
 		deps.StockItems = queries

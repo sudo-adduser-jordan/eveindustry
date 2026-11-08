@@ -237,3 +237,46 @@ func (c *UniverseClient) GetStructure(ctx context.Context, structureID uint64, c
 	c.memo.Set(key, data, 24*time.Hour)
 	return data, nil
 }
+
+// GetPlanetarySchematic ports getPlanetarySchematic(): public schematic data,
+// 30-day memo.
+func (c *UniverseClient) GetPlanetarySchematic(ctx context.Context, schematicID int) (map[string]any, error) {
+	key := fmt.Sprintf("esi.schematic.%d", schematicID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.(map[string]any), nil
+	}
+	resp, err := c.client.DoJSON(ctx, http.MethodGet, fmt.Sprintf("/universe/schematics/%d/", schematicID), nil, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	m, _ := resp.JSON().(map[string]any)
+	if m == nil {
+		return nil, nil
+	}
+	c.memo.Set(key, m, 30*24*time.Hour)
+	return m, nil
+}
+
+// GetPlanetInfo ports getPlanetInfo(): public planet data, 30-day memo.
+func (c *UniverseClient) GetPlanetInfo(ctx context.Context, planetID int) (map[string]any, error) {
+	key := fmt.Sprintf("esi.planet_info.%d", planetID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.(map[string]any), nil
+	}
+	resp, err := c.client.DoJSON(ctx, http.MethodGet, fmt.Sprintf("/universe/planets/%d/", planetID), nil, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	m, _ := resp.JSON().(map[string]any)
+	if m == nil {
+		return nil, nil
+	}
+	c.memo.Set(key, m, 30*24*time.Hour)
+	return m, nil
+}

@@ -62,6 +62,7 @@ type Deps struct {
 	Diag               store.DiagStore
 	Discord            store.DiscordStore
 	DiscordBotEnabled  bool
+	Planetary          PlanetaryDeps
 
 	// Sessions and Users drive RequireAuth. Either nil means nobody can
 	// authenticate, so every authed route 401s (never silently open).
@@ -140,6 +141,7 @@ func New(d Deps) *echo.Echo {
 	registerSponsors(authed, d)
 	registerDiagnostics(authed, d)
 	registerDiscordBot(authed, d)
+	registerPlanetary(authed, d)
 
 	return e
 }
