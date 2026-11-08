@@ -306,24 +306,24 @@ func ExcludedBrowserProducts(metas []industry.TypeGroupMeta, groupCats map[int]i
 
 // ManufacturingBrowserItem is one live-priced browser row.
 type ManufacturingBrowserItem struct {
-	BlueprintTypeID   int     `json:"blueprint_type_id"`
-	BlueprintName     string  `json:"blueprint_name"`
-	ProductTypeID     int     `json:"product_type_id"`
-	ProductName       string  `json:"product_name"`
-	ProductIconURL    string  `json:"product_icon_url"`
-	PortionSize       int     `json:"portion_size"`
-	TotalOutput       int     `json:"total_output"`
-	TotalInputCost    float64 `json:"total_input_cost"`
-	TotalOutputValue  float64 `json:"total_output_value"`
-	JobFee            float64 `json:"job_fee"`
-	FacilityTax       float64 `json:"facility_tax"`
-	TotalJobCost      float64 `json:"total_job_cost"`
-	SCCFee            float64 `json:"scc_fee"`
-	Profit            float64 `json:"profit"`
-	ProfitPositive    bool    `json:"profit_positive"`
-	ProfitPerUnit     float64 `json:"profit_per_unit"`
-	ProfitMargin      float64 `json:"profit_margin"`
-	SellScore         SellScore `json:"sell_score"`
+	BlueprintTypeID  int       `json:"blueprint_type_id"`
+	BlueprintName    string    `json:"blueprint_name"`
+	ProductTypeID    int       `json:"product_type_id"`
+	ProductName      string    `json:"product_name"`
+	ProductIconURL   string    `json:"product_icon_url"`
+	PortionSize      int       `json:"portion_size"`
+	TotalOutput      int       `json:"total_output"`
+	TotalInputCost   float64   `json:"total_input_cost"`
+	TotalOutputValue float64   `json:"total_output_value"`
+	JobFee           float64   `json:"job_fee"`
+	FacilityTax      float64   `json:"facility_tax"`
+	TotalJobCost     float64   `json:"total_job_cost"`
+	SCCFee           float64   `json:"scc_fee"`
+	Profit           float64   `json:"profit"`
+	ProfitPositive   bool      `json:"profit_positive"`
+	ProfitPerUnit    float64   `json:"profit_per_unit"`
+	ProfitMargin     float64   `json:"profit_margin"`
+	SellScore        SellScore `json:"sell_score"`
 }
 
 // CalculateManufacturingBrowser ports calculateAllProfitability(): ME
@@ -371,7 +371,7 @@ func CalculateManufacturingBrowser(in BrowserManufacturingInput) []Manufacturing
 			BlueprintTypeID: item.BlueprintTypeID, BlueprintName: item.BlueprintName,
 			ProductTypeID: prod.TypeID, ProductName: pname,
 			ProductIconURL: market.TypeImageURL(prod.TypeID),
-			PortionSize: max(prod.Quantity, 1), TotalOutput: totalOutput,
+			PortionSize:    max(prod.Quantity, 1), TotalOutput: totalOutput,
 			TotalInputCost: inputCost, TotalOutputValue: outputValue,
 			JobFee: jobFee, FacilityTax: facilityTax, TotalJobCost: totalJobCost,
 			SCCFee: scc, Profit: profit, ProfitPositive: profit >= 0,

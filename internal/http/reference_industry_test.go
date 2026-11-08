@@ -11,12 +11,12 @@ import (
 
 // stubIndustry implements industry.IndustryStore for handler tests.
 type stubIndustry struct {
-	hits            []industry.BlueprintTypeHit
-	t2cands         []industry.BlueprintTypeHit
-	activities      map[[2]int]*industry.BlueprintActivityRow
-	cats            []industry.CategoryCount
-	mfgActs         []industry.MfgActivity
-	precomputed     []industry.PrecomputedCost
+	hits             []industry.BlueprintTypeHit
+	t2cands          []industry.BlueprintTypeHit
+	activities       map[[2]int]*industry.BlueprintActivityRow
+	cats             []industry.CategoryCount
+	mfgActs          []industry.MfgActivity
+	precomputed      []industry.PrecomputedCost
 	precomputedTotal int
 }
 

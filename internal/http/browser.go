@@ -149,7 +149,7 @@ func handleManufacturingBrowse(d Deps) echo.HandlerFunc {
 				"blueprint_type_id": r.BlueprintTypeID, "blueprint_name": r.BlueprintName,
 				"product_type_id": r.ProductTypeID, "product_name": r.ProductName,
 				"product_icon_url": market.TypeImageURL(r.ProductTypeID),
-				"portion_size": r.PortionSize, "total_output": adj.TotalOutput,
+				"portion_size":     r.PortionSize, "total_output": adj.TotalOutput,
 				"total_input_cost": adj.TotalInputCost, "total_output_value": adj.TotalOutputValue,
 				"job_fee": adj.JobFee, "facility_tax": adj.FacilityTax, "total_job_cost": adj.TotalJobCost,
 				"scc_fee": adj.SCCFee, "profit": adj.Profit, "profit_positive": adj.ProfitPositive,
@@ -162,14 +162,14 @@ func handleManufacturingBrowse(d Deps) echo.HandlerFunc {
 				"sell_score": map[string]any{
 					"score": r.SellScore, "avg_daily_volume": r.SellScoreAvgDailyVolume,
 					"avg_order_count": r.SellScoreAvgOrderCount,
-					"active_days": r.SellScoreActiveDays, "total_days": r.SellScoreTotalDays,
+					"active_days":     r.SellScoreActiveDays, "total_days": r.SellScoreTotalDays,
 				},
 			})
 		}
 		return Success(c, http.StatusOK, out, map[string]any{
 			"effective_structure_me_bonus": calc.Round2(structME),
-			"freshness": freshnessFor(c, d, regionID),
-			"pagination": pagination,
+			"freshness":                    freshnessFor(c, d, regionID),
+			"pagination":                   pagination,
 		})
 	}
 }
@@ -406,8 +406,8 @@ func handleManufacturingCalculate2(d Deps) echo.HandlerFunc {
 		}
 		return Success(c, http.StatusOK, out, map[string]any{
 			"effective_structure_me_bonus": calc.Round2(structME),
-			"freshness": freshnessFor(c, d, regionID),
-			"pagination": pagination,
+			"freshness":                    freshnessFor(c, d, regionID),
+			"pagination":                   pagination,
 		})
 	}
 }
@@ -425,7 +425,7 @@ func manufacturingBrowserShape(r calc.ManufacturingBrowserItem, base map[string]
 		"sell_score": map[string]any{
 			"score": r.SellScore.Score, "avg_daily_volume": r.SellScore.AvgDailyVolume,
 			"avg_order_count": r.SellScore.AvgOrderCount,
-			"active_days": r.SellScore.ActiveDays, "total_days": r.SellScore.TotalDays,
+			"active_days":     r.SellScore.ActiveDays, "total_days": r.SellScore.TotalDays,
 		},
 	}
 	if base != nil {

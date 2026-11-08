@@ -102,9 +102,9 @@ func (s *SQL) AllManufacturingActivities(ctx context.Context) ([]MfgActivity, er
 	for _, r := range rows {
 		out = append(out, MfgActivity{
 			BlueprintTypeID: r.BlueprintTypeID,
-			Materials: DecodeJSONList(nullString(r.Materials)),
-			Products:  DecodeJSONList(nullString(r.Products)),
-			Time:      r.Time,
+			Materials:       DecodeJSONList(nullString(r.Materials)),
+			Products:        DecodeJSONList(nullString(r.Products)),
+			Time:            r.Time,
 		})
 	}
 	return out, nil
@@ -180,9 +180,9 @@ func (s *SQL) PublishedTypesInGroups(ctx context.Context, groupIDs []int) ([]int
 // TypeGroupMeta returns group_id + meta_group_id per type for the browser
 // exclusion and category filters.
 type TypeGroupMeta struct {
-	TypeID      int            `db:"type_id"`
-	GroupID     sql.NullInt64  `db:"group_id"`
-	MetaGroupID sql.NullInt64  `db:"meta_group_id"`
+	TypeID      int           `db:"type_id"`
+	GroupID     sql.NullInt64 `db:"group_id"`
+	MetaGroupID sql.NullInt64 `db:"meta_group_id"`
 }
 
 func (s *SQL) TypeGroupMeta(ctx context.Context, typeIDs []int) ([]TypeGroupMeta, error) {
@@ -207,20 +207,20 @@ func (s *SQL) GroupsInCategory(ctx context.Context, categoryID int) ([]int, erro
 
 // PrecomputedCost mirrors one manufacturing_costs row.
 type PrecomputedCost struct {
-	ProductTypeID            int     `db:"product_type_id"`
-	BlueprintTypeID          int     `db:"blueprint_type_id"`
-	ProductName              string  `db:"product_name"`
-	BlueprintName            string  `db:"blueprint_name"`
-	PortionSize              int     `db:"portion_size"`
-	InputCost                float64 `db:"input_cost"`
-	OutputValue              float64 `db:"output_value"`
-	BaseProfit               float64 `db:"base_profit"`
-	ProfitMargin             float64 `db:"profit_margin"`
-	SellScore                int     `db:"sell_score"`
-	SellScoreAvgDailyVolume  float64 `db:"sell_score_avg_daily_volume"`
-	SellScoreAvgOrderCount   float64 `db:"sell_score_avg_order_count"`
-	SellScoreActiveDays      int     `db:"sell_score_active_days"`
-	SellScoreTotalDays       int     `db:"sell_score_total_days"`
+	ProductTypeID           int     `db:"product_type_id"`
+	BlueprintTypeID         int     `db:"blueprint_type_id"`
+	ProductName             string  `db:"product_name"`
+	BlueprintName           string  `db:"blueprint_name"`
+	PortionSize             int     `db:"portion_size"`
+	InputCost               float64 `db:"input_cost"`
+	OutputValue             float64 `db:"output_value"`
+	BaseProfit              float64 `db:"base_profit"`
+	ProfitMargin            float64 `db:"profit_margin"`
+	SellScore               int     `db:"sell_score"`
+	SellScoreAvgDailyVolume float64 `db:"sell_score_avg_daily_volume"`
+	SellScoreAvgOrderCount  float64 `db:"sell_score_avg_order_count"`
+	SellScoreActiveDays     int     `db:"sell_score_active_days"`
+	SellScoreTotalDays      int     `db:"sell_score_total_days"`
 }
 
 // PrecomputedCosts ports browsePrecomputed()'s query: costs for the group's

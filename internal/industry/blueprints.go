@@ -31,8 +31,8 @@ const (
 
 // Meta groups mirror EveType::META_GROUP_*.
 const (
-	MetaGroupTechI  = 1
-	MetaGroupTechII = 2
+	MetaGroupTechI   = 1
+	MetaGroupTechII  = 2
 	MetaGroupTechIII = 14
 )
 
