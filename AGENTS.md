@@ -4,15 +4,12 @@ Guide for engineers and AI agents working on Eve Industrialist. Read this before
 
 ## What this is
 
-A Go (Echo + sqlx) API for EVE Online industrialists, ported from a Laravel 12
-monolith. Players sign in with EVE SSO, link characters, and use planning and
-tracking tools built on their ESI data plus public market data. The Go API
-serves `/api/v1` consumed by `frontend/` (Vite, TypeScript).
+A Go (Echo + sqlx) API for EVE Online industrialists. Players sign in with
+EVE SSO, link characters, and use planning and tracking tools built on their
+ESI data plus public market data. The Go API serves `/api/v1` consumed by
+`frontend/` (Vite, TypeScript).
 
 Stack: Go 1.24+, Echo, sqlx (raw SQL, MySQL 8), Redis (cache, sessions).
-`example/` holds the original Laravel 12 app untouched for reference while
-the port completes; it is deleted at cutover. Do not extend `example/` —
-all new work goes in the Go tree (`plan.md` tracks port phases).
 
 Request flow: route → handler (`internal/http`, thin) → domain package
 (`internal/<area>`, pure logic + tests) → `internal/store` (sqlx) → MySQL /
@@ -23,12 +20,11 @@ Redis, or `internal/esi` for live EVE calls.
 | Path | Contents |
 |------|----------|
 | `cmd/api` | API server (`GET /up`, `/api/v1/*`, JSON `{data, meta}` envelope) |
-| `cmd/worker`, `cmd/scheduler`, `cmd/migrate` | Skeletons for the jobs + migrations phases |
+| `cmd/worker`, `cmd/scheduler`, `cmd/migrate` | Job runner, cron dispatcher, SQL migration runner |
 | `internal/http` | Echo router + handlers (one file per route group) |
-| `internal/store` | sqlx data layer; tables mirror `example/database/migrations` |
+| `internal/store` | sqlx data layer; tables defined in `migrations/*.sql` |
 | `internal/esi` | ESI transport (rate limiter, error circuit, token refresh, clients) |
 | `internal/auth`, `internal/market`, `internal/calc`, `internal/industry`, `internal/pi` | Domain logic, all with unit tests |
-| `example/` | Original Laravel app: `example/routes/api_v1/*.php` lists every v1 endpoint still to port; `example/app/Services` is the behavior reference |
 | `frontend/` | React app (installable PWA, see `docs/pwa.md`; Vite, React 19, strict TypeScript, React Router, TanStack Query). Builds to `public/app` (gitignored), served at `/app/{path?}` behind auth. Its API client is typed from `docs/openapi.json`: after regenerating the spec run `npm run gen:api` and commit `src/api/schema.d.ts`. CI runs type check, build, Vitest and size-limit. |
 
 Request flow: route → handler → domain package → sqlx store / Redis / `internal/esi`. Background work (jobs phase) fills tables and cache keys that the request path reads.
@@ -46,7 +42,7 @@ Request flow: route → handler → domain package → sqlx store / Redis / `int
 | Market and contracts | `MarketTradingService`, `MarketBrowserService`, `ContractAppraisalService` |
 | Corporation | `CorporateDonationService`, `CorporationProjectsService`, `MoonScanService`, `EsiService` |
 | Wormholes | `EsiService` |
-| Admin | `DiscordBotService` (Discord welcome bot, work in progress: off via `config/features.php`) |
+| Admin | `DiscordBotService` (Discord welcome bot, work in progress: off via `FEATURE_DISCORD_BOT`) |
 | Install and themes | `SetupStatusService`, `ThemeService`, command `app:install` |
 
 Market prices for calculators come from `MarketService::getSellPrices()`: a 5th-percentile average of sell orders, read from `market_aggregates` (the region's last complete order sweep, cached per sweep) or from raw `market_orders` for a region never swept, falling back to `market_prices`. Region order sweeps are run by `MarketOrderSweepService` (see `docs/phase-c.md`). The five trade regions are in `MarketTradingService::REGIONS` (Jita, Amarr, Dodixie, Rens, Hek).
@@ -61,7 +57,7 @@ Market prices for calculators come from `MarketService::getSellPrices()`: a 5th-
 
 ## Scheduled tasks
 
-Defined in `routes/console.php`. Times are UTC. Every entry uses `withoutOverlapping()->onOneServer()`. Production needs a cron running `php artisan schedule:run` every minute (see README, Laravel Forge).
+Dispatched by `cmd/scheduler` (one tick loop, run every minute). Times are UTC. Every entry has an overlap guard. The table below is the ported behavior; job names are the Go `internal/jobs` registrations.
 
 | Command | Schedule | Status | What it does | Writes |
 |---------|----------|--------|--------------|--------|
@@ -88,14 +84,12 @@ Defined in `routes/console.php`. Times are UTC. Every entry uses `withoutOverlap
 
 ## Queues and workers
 
-- Horizon runs three Redis supervisors: `supervisor-1` on `default` via the `redis` connection (timeout 60 s, 1 try, 128 MB, recycles hourly or after 500 jobs), `supervisor-2` on `updates` via `redis-long` (timeout 600 s, 3 tries, 256 MB, recycles hourly or after 250 jobs) and `supervisor-3` on `market` via `redis-market` (timeout 300 s, 3 tries, 256 MB, recycles hourly or after 1000 jobs). Production runs at most 5 processes: default 1–2, market 1–2, updates 1.
-- `config/queue.php` sets `retry_after` to 240 s on `redis`, 960 s on `redis-long` and 420 s on `redis-market`. All use the same Redis database, so jobs dispatch normally with `onQueue('updates')` / `onQueue('market')`; the worker's connection decides `retry_after`. `tests/Unit/JobTimeoutTest.php` fails if a job's `$timeout` is not at least 30 s under its queue's `retry_after`, or if Horizon exceeds 5 processes in any environment.
-- Per-user refresh jobs use `default`. Region order sweeps (`FetchRegionOrders`, `FetchRegionOrderPages`, `CompleteMarketOrderSweep`) use `market`. Imports and manufacturing precompute use `updates`. Job `$timeout` / `$tries` override supervisor values.
-- Redis has two roles: the `default` connection (queues, Horizon, cache locks; run with `noeviction`) and the `cache` connection (disposable cache; `allkeys-lru`), which uses `REDIS_CACHE_HOST` when set and otherwise database 1 on `REDIS_HOST`.
-- Sessions use the non-evicting Redis through the `sessions` connection (database 2 by default). See `docs/operations/esi-scaling.md` for rollout and encryption requirements.
-- ESI-calling jobs check `EsiService::isEsiErrorLimited()` and release themselves until the error window resets.
-- Horizon dashboard: `/horizon`, admin users only (`HorizonServiceProvider`).
-- Long-running processes: `php artisan horizon` and `php artisan discord:bot` (work in progress: exits unless `features.discord_bot` is set to `true` in `config/features.php`, which has no env var, and then unless enabled in Admin → Discord Bot; no daemon for it is defined in the repo).
+- `cmd/worker` drains three Redis queues: `default`, `updates` and `market`. Each job registration sets its own queue, `MaxTries` and `Timeout`.
+- Per-user refresh jobs use `default`. Region order sweeps use `market`. Imports and manufacturing precompute use `updates`.
+- Redis has two roles: non-evicting for queues, sessions and cache locks, and a disposable `allkeys-lru` cache (uses `REDIS_CACHE_HOST` when set, otherwise database 1 on `REDIS_HOST`).
+- Sessions use the non-evicting Redis (database 2 by default). See `docs/operations/esi-scaling.md` for rollout and encryption requirements.
+- ESI-calling jobs check the error limiter and back off until the error window resets.
+- Discord bot (work in progress): off unless `FEATURE_DISCORD_BOT=true` and enabled in Admin → Discord Bot.
 
 ## ESI diagnostics
 
@@ -103,26 +97,22 @@ Passive, flag-gated capture of ESI traffic (`app/Services/Esi/Diagnostics`), buf
 
 ## Known issues
 
-- Jita sweep timing has not been measured against real ESI; `php artisan market:sweep-status` shows each hub's last sweep and duration, and the Jita cadence drops to 30 min on its own when a sweep takes 10 min or more.
-- `sde:import` overlaps with `esi:import-types`, `esi:import-market-groups` and `sde:import-blueprints`, which write the same tables from other sources.
-- Deploy paths: README targets Forge (cron + Horizon). `docker/start.sh` takes `APP_ROLE=web|worker|scheduler|migrate|install|await-migrations` so one image (`Dockerfile.app`) runs nginx/FPM, Horizon, the scheduler or a one-off migration. `docker-compose.yml` is that role split (a `migrate` service the others wait for, two Redis roles); the bind-mounted dev setup is `docker-compose.dev.yml`. No long-running role migrates. After a deploy run `docker/smoke-test.sh BASE_URL` (checks `/up`, `/api/v1/health`, `/api/v1/me` → 401).
-- `.github/workflows/ci.yml` runs `php artisan test` on PRs. Local V2 baseline and scaling-branch suites pass with the test APP_KEY; keep external Redis concurrency checks separate from the default SQLite suite. `main.yml` is an unused Copilot setup step.
+- Jita sweep timing has not been measured against real ESI; the Jita cadence drops to 30 min on its own when a sweep takes 10 min or more.
+- `sde-import` overlaps with the `process-eve-type-chunk`, `process-market-group-chunk` and `process-blueprint-data-chunk` jobs, which write the same tables from other sources.
 
 ## Working rules
 
-1. Put logic in a service; keep controllers thin. Add a unit test in `tests/Unit` named after the service, and a feature test in `tests/Feature` for routes or commands.
-2. Run tests with `php artisan test` (or `vendor/bin/phpunit`). `phpunit.xml` uses in-memory SQLite, the array cache and the sync queue, so no MySQL or Redis is needed. Format with `vendor/bin/pint`.
-3. All ESI calls go through `EsiService` so they are rate-limited, error-limit tracked and cached. Never call ESI directly from a controller or job.
-4. New recurring work: add a command, schedule it in `routes/console.php` with `withoutOverlapping()->onOneServer()`, and fan out to jobs with explicit `$timeout`, `$tries` and queue. Limit per-user refreshes to users active in the last 7 days.
-5. Bulk writes use chunked `upsert()`. `upsert()` bypasses Eloquent casts, so `json_encode` JSON columns first.
-6. Schema changes are new dated migrations; never edit existing ones.
+1. Put logic in a domain package; keep handlers thin. Add unit tests alongside the logic, and a handler test with stubbed stores (`internal/http`) for new endpoints.
+2. Verify with `go build ./...`, `go test -count=1 ./...`, `go vet ./...`, and `gofmt -l .` (must print nothing).
+3. All ESI calls go through the `internal/esi` clients so they are rate-limited, error-limit tracked and cached. Never call ESI directly from a handler or job.
+4. New recurring work: register a job in `internal/jobs` with explicit queue, `MaxTries` and `Timeout`, and add a schedule entry in `cmd/scheduler` (with overlap guard). Limit per-user refreshes to users active in the last 7 days.
+5. Bulk writes use chunked upserts; marshal JSON columns explicitly first.
+6. Schema changes are new dated `migrations/*.up.sql`/`.down.sql` pairs; never edit existing ones (`cmd/migrate` chain test enforces ordering and key consistency).
 7. Work on a branch and merge to `master` by pull request.
 8. Do not add AI attribution (no `Co-Authored-By: Claude`, no "Generated with Claude Code") to commit messages or PR descriptions.
 
 ## Open-source release additions
 
 - **Licence:** AGPL-3.0-or-later, provided as is (`LICENSE`, `NOTICE`). The app shows a source link (`APP_SOURCE_URL`, exposed as `source_url` on `/api/v1/me`). Contributions are signed off (DCO). No tracking or analytics on by default, no account impersonation (a CI step fails if the word returns).
-- **Self-hosting:** `deploy/` holds the end-user stack (`docker-compose.yml` with Caddy, `.env.example`, `install.sh`/`install.ps1`, `update.sh`/`update.ps1` (refresh the stack files except `.env`, pull all images, restart), `backup.sh`, `restore.sh`); `docs/self-hosting/` explains it. The root `docker-compose.yml` builds from source. `deploy/helm/eve-industry` is a Helm chart for Kubernetes (`docs/self-hosting/kubernetes.md`): one Deployment per role, a migrate Job per release revision, app pods gated by an `APP_ROLE=await-migrations` init container, read-only root filesystem with `emptyDir` scratch for `storage/`, `bootstrap/cache` and `/tmp`, logs to stderr. CI lints it and validates the rendered manifests with kubeconform (`ci/*-values.yaml`). When you add an environment variable or a writable path, check the chart too. `Dockerfile.app` runs as `www-data`; `APP_ROLE` adds `install` (`php artisan app:install`: idempotent admin creation and first game-data import; prints a generated admin password once). Admin settings are read through `config('install.super_admin.*')`, never `env()`. `SetupStatusService` feeds `setup` in `/api/v1/health`.
-- **Release:** tag `vX.Y.Z` runs `.github/workflows/release.yml` (multi-arch image to GHCR, Trivy, cosign). `ci.yml` also runs gitleaks and boots the `deploy/` stack.
-- **Logging:** `config/logging.php` defaults to the `daily` channel, `LOG_DAILY_DAYS=5`.
-- **Themes:** `APP_THEME` selects `public/themes/<name>/theme.css` (or `public/themes-custom/<name>/`, the mounted `./themes`); `ThemeService` injects it into the SPA shell and the Blade layout. Tokens only, no raw colours: `docs/styling.md`.
+- **Logging:** slog JSON to stdout (see `cmd/api/main.go`).
+- **Themes:** tokens only, no raw colours: `docs/styling.md`.

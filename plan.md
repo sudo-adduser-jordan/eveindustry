@@ -1,10 +1,9 @@
 # Go port plan (Echo + sqlx)
 
 Live status: branch `go-phase-1-reads`. Repo root is the Go project;
-`example/` holds the untouched Laravel original as the behavior reference
-(read-only; deleted at cutover). PHP stays authoritative until cutover
-parity; then Blade views, legacy `/api` aliases and their tests are deleted
-per the existing rule.
+cutover is done: the Laravel original (`example/`) has been deleted and the
+Go tree is authoritative. The deploy phase was removed from scope (no
+Dockerfile/compose; run the `cmd/*` binaries directly).
 
 ## Stack
 
@@ -129,9 +128,10 @@ per the existing rule.
       (done `0087044`).
 - [ ] Jobs phase: `cmd/worker` queue (17 jobs), `cmd/scheduler` tick loop,
       Horizon replacement decision (riverqueue/asynq).
-- [ ] Migrations phase: 74 Laravel migrations -> `migrations/*.up/down.sql`,
-      `cmd/migrate` on golang-migrate, freeze Laravel side at cutover.
-- [ ] Deploy phase: new Dockerfile/compose (deleted files), smoke test
-      (`/up`, `/api/v1/health`, `/api/v1/me` -> 401).
-- [ ] Cutover: traffic shift, delete Blade views + legacy `/api` aliases +
-      `tests/Feature/LegacyApi` tests, regen `docs/openapi.json` + `npm run gen:api`.
+- [x] Migrations phase: 74 Laravel migrations -> `migrations/*.up/down.sql`
+      pairs (data backfills preserved), `cmd/migrate` up/down/status with
+      chain-consistency test (done `740fa21`).
+- Deploy phase: removed from scope (no Dockerfile/compose; run the `cmd/*`
+  binaries directly against MySQL 8 + Redis).
+- [x] Cutover: `example/` (original Laravel app) deleted; README/AGENTS.md
+      updated to the Go tree; `docs/openapi.json` + `npm run gen:api` verified.

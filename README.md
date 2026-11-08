@@ -1,21 +1,19 @@
 # Eve Industrialist — Go API
 
-Go (Echo + sqlx) port of the EVE Online industry tracker. Serves the JSON
+Go (Echo + sqlx) API for the EVE Online industry tracker. Serves the JSON
 API at `/api/v1` consumed by `frontend/` (React, Vite, TypeScript).
-The original Laravel application is preserved untouched under `example/`
-for reference while the port completes; it is deleted at cutover.
 
 ## Layout
 
 | Path | Contents |
 |------|----------|
 | `cmd/api` | API server (`GET /up`, `/api/v1/*`) |
-| `cmd/worker` | Background job runner (skeleton: Phase jobs) |
-| `cmd/scheduler` | Cron tick table (skeleton: Phase jobs) |
-| `cmd/migrate` | DB migrations runner (placeholder: Phase migrations) |
+| `cmd/worker` | Background job runner (Redis queues) |
+| `cmd/scheduler` | Cron tick table (scheduled dispatch) |
+| `cmd/migrate` | DB migrations runner (`migrations/*.up/down.sql`) |
 | `internal/http` | Echo router, handlers, `{data, meta}` envelope |
 | `internal/config` | Env-based config |
-| `internal/store` | sqlx data layer (tables mirror `example/database/migrations`) |
+| `internal/store` | sqlx data layer (`migrations/*.sql`) |
 | `internal/auth` | Session cookies, `/me` shaping, demo-guard |
 | `internal/market` | Pricing maths, freshness, trading scanners |
 | `internal/calc` | Calculator maths (manufacturing, reactions, invention, planners, browsers) |
@@ -23,7 +21,7 @@ for reference while the port completes; it is deleted at cutover.
 | `internal/pi` | Factory-planet planner |
 | `internal/esi` | ESI transport (rate limiter, circuit, token refresh, clients) |
 | `frontend/` | React SPA (typed from `docs/openapi.json`) |
-| `example/` | Original Laravel app (reference only — do not extend) |
+| `migrations/` | SQL schema (one `.up.sql`/`.down.sql` pair per version) |
 | `plan.md` | Port phases, conventions, remaining work |
 
 ## Run
