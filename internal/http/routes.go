@@ -40,6 +40,7 @@ type Deps struct {
 	Research     ResearchDeps
 	StockReport  StockReportDeps
 	Planning     store.PlanningStore
+	Plans        store.PlanStore
 	Wholemap     store.WholemapStore
 	IndustryDeps IndustryDeps
 
@@ -95,6 +96,7 @@ func New(d Deps) *echo.Echo {
 	registerStockReport(authed, d)
 	registerPlanning(authed, d)
 	registerWholemap(authed, d)
+	registerPlans(authed, d)
 
 	return e
 }

@@ -98,6 +98,7 @@ func main() {
 		deps.IndustryDeps.Characters = esiChars
 		deps.IndustryDeps.Universe = esiUniverse
 		deps.Planning = queries
+		deps.Plans = queries
 		deps.Wholemap = queries
 	}
 	if rdb != nil {
