@@ -23,6 +23,7 @@ func registerCalculators(v1 *echo.Group, d Deps) {
 	calcGroup.POST("/manufacturing", handleManufacturingCalculate(d))
 	calcGroup.POST("/manufacturing/queue-summary", handleQueueSummary)
 	calcGroup.POST("/reactions", handleReactionCalculate(d))
+	calcGroup.POST("/reaction-planner", handleReactionPlanner(d))
 }
 
 // manufacturingInput mirrors ManufacturingCalculateRequest rules.

@@ -129,6 +129,36 @@ func TestQueueSummary(t *testing.T) {
 	}
 }
 
+func TestReactionPlanner(t *testing.T) {
+	d := calcTestDeps()
+	stub := d.Industry.(*stubIndustry)
+	stub.activities[[2]int{999, 11}] = industryActivityRow(999, 11, 600,
+		`[{"type_id":34,"name":"Tritanium","quantity":50}]`,
+		`[{"type_id":587,"name":"Composite","quantity":5}]`,
+	)
+	m := d.Market.(*stubMarket)
+	m.aggregates = map[int]float64{34: 10.5}
+	m.hasSnapshot = true
+	code, body := post(t, d, "/api/v1/calculators/reaction-planner", `{
+		"entries": [{"formula_type_id": 999, "slots": 1, "runs_per_slot": 5}]
+	}`)
+	if code != http.StatusOK {
+		t.Fatalf("code = %d %v", code, body)
+	}
+	data := body["data"].(map[string]any)
+	raw := data["raw_materials"].([]any)
+	// 50 x 5 runs = 250 goo @ 10.5 -> input 2625
+	if len(raw) != 1 || raw[0].(map[string]any)["quantity"].(float64) != 250 {
+		t.Fatalf("raw = %v", raw)
+	}
+	if data["profit"].(float64) != -2625 || data["slots"].(map[string]any)["total"].(float64) != 1 {
+		t.Fatalf("summary = %v", data)
+	}
+	if code, _ := post(t, d, "/api/v1/calculators/reaction-planner", `{"entries": []}`); code != http.StatusUnprocessableEntity {
+		t.Fatalf("empty entries = %d", code)
+	}
+}
+
 func TestInventionCalculate(t *testing.T) {
 	d := calcTestDeps()
 	code, body := post(t, d, "/api/v1/calculators/invention", `{
