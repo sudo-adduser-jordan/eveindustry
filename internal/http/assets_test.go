@@ -91,7 +91,7 @@ func assetBrowserTestDeps(corpMain bool) Deps {
 		},
 		Industry: &stubIndustry{names: map[int]string{34: "Tritanium", 587: "Rifter"},
 			groups: map[int]int{34: 18, 587: 25}},
-		Market: &stubMarket{},
+		Market:    &stubMarket{},
 		Reference: &stubReference{types: []store.EveType{{TypeID: 34, Name: "Tritanium"}}},
 	}
 }
