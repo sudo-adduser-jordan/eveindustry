@@ -28,6 +28,7 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
 - Phase 2c (`8ede948`): invention calc + decryptors list.
 - Phase 2d (`c57be5e`): contract appraisal + contract browser.
 - Phase 2e (`a91a92e`): reaction planner (chain, pricing, fees).
+- Phase 2f (`7f0c017`): reaction browser (profitability + sell scores).
 - Each phase has a `gofmt` follow-up; `build` + `vet` + `test -count=1` green.
 
 ## Conventions / known deviations
@@ -46,8 +47,8 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
 
 ## Remaining
 
-- [ ] Calculators: reaction-planner stock, factory-planner,
-      manufacturing-browser, reaction-browser, corporate-export.
+- [ ] Calculators: factory-planner, manufacturing-browser,
+      corporate-export.
 - [ ] Industry group (`routes/api_v1/industry.php`), planetary, heavy
       (moon scans, structures, wholemap), corp tools, programs + planning
       writes, admin, notifications, session/characters/me.
