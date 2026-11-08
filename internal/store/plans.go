@@ -216,12 +216,12 @@ func (s *SQL) DeleteReactionPlan(ctx context.Context, id, userID int64) (bool, e
 
 // MoonOccupation is one moon row with its scan system's corporation.
 type MoonOccupation struct {
-	MoonID                 int64   `db:"id"`
-	MoonName               string  `db:"moon_name"`
-	Occupied               bool    `db:"occupied"`
-	OccupyingCorporationID *int64  `db:"occupying_corporation_id"`
+	MoonID                   int64   `db:"id"`
+	MoonName                 string  `db:"moon_name"`
+	Occupied                 bool    `db:"occupied"`
+	OccupyingCorporationID   *int64  `db:"occupying_corporation_id"`
 	OccupyingCorporationName *string `db:"occupying_corporation_name"`
-	SystemCorporationID    *int64  `db:"system_corporation_id"`
+	SystemCorporationID      *int64  `db:"system_corporation_id"`
 }
 
 // MoonForCorporation loads a moon with its system's corporation for the

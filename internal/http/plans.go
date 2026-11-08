@@ -853,7 +853,7 @@ func handleMoonOccupation(d Deps) echo.HandlerFunc {
 		}
 		return Success(c, http.StatusOK, map[string]any{
 			"moon_id": row.MoonID, "moon_name": row.MoonName, "occupied": row.Occupied,
-			"occupying_corporation_id": row.OccupyingCorporationID,
+			"occupying_corporation_id":   row.OccupyingCorporationID,
 			"occupying_corporation_name": row.OccupyingCorporationName,
 		}, nil)
 	}
