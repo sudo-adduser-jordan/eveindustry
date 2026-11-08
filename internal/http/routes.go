@@ -50,6 +50,8 @@ type Deps struct {
 	MoonScans     store.MoonScanStore
 	WholemapReads WholemapReadsDeps
 	AssetBrowser  AssetBrowserDeps
+	Donations         store.DonationStore
+	DonationCharacters DonationESI
 
 	// Sessions and Users drive RequireAuth. Either nil means nobody can
 	// authenticate, so every authed route 401s (never silently open).
@@ -120,6 +122,7 @@ func New(d Deps) *echo.Echo {
 	registerWholemapReads(authed, d)
 	registerAssets(authed, d)
 	registerAssetExtras(authed, d)
+	registerDonations(authed, d)
 
 	return e
 }

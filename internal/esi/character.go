@@ -393,6 +393,55 @@ func (c *CharacterClient) GetCorporationAssetNames(ctx context.Context, characte
 	return out, nil
 }
 
+// GetCorporationWallets ports getCorporationWallets(): division balances,
+// 5-minute memo. A nil slice with nil error means the provider may not
+// collect (eligibility handled by the caller).
+func (c *CharacterClient) GetCorporationWallets(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error) {
+	key := fmt.Sprintf("esi.corp_wallets.%d", corporationID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.([]map[string]any), nil
+	}
+	raw, err := c.authed(ctx, http.MethodGet, fmt.Sprintf("/corporations/%d/wallets/", corporationID), characterID, nil)
+	if err != nil {
+		return nil, err
+	}
+	list, _ := raw.([]any)
+	out := make([]map[string]any, 0, len(list))
+	for _, item := range list {
+		if m, ok := item.(map[string]any); ok {
+			out = append(out, m)
+		}
+	}
+	c.memo.Set(key, out, 5*time.Minute)
+	return out, nil
+}
+
+// GetCorporationWalletJournal ports getCorporationWalletJournal(): journal
+// entries for one division, 5-minute memo.
+func (c *CharacterClient) GetCorporationWalletJournal(ctx context.Context, characterID, corporationID int64, division int) ([]map[string]any, error) {
+	key := fmt.Sprintf("esi.corp_wallet_journal.%d.%d", corporationID, division)
+	if v, ok := c.memo.Get(key); ok {
+		return v.([]map[string]any), nil
+	}
+	out, err := c.Paginated(ctx, fmt.Sprintf("/corporations/%d/wallets/%d/journal/", corporationID, division), nil, characterID)
+	if err != nil {
+		return nil, err
+	}
+	c.memo.Set(key, out, 5*time.Minute)
+	return out, nil
+}
+
+// ClearCorporationWalletCache drops memoized wallets + journals for a corp.
+func (c *CharacterClient) ClearCorporationWalletCache(corporationID int64) {
+	c.memo.Forget(fmt.Sprintf("esi.corp_wallets.%d", corporationID))
+	for d := 1; d <= 7; d++ {
+		c.memo.Forget(fmt.Sprintf("esi.corp_wallet_journal.%d.%d", corporationID, d))
+	}
+}
+
 // GetAssetNames ports getCharacterAssetNames(): POST chunks of 1000,
 // skipping blank/'None' names.
 func (c *CharacterClient) GetAssetNames(ctx context.Context, characterID int64, itemIDs []int64) (map[int64]string, error) {
