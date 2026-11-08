@@ -79,6 +79,7 @@ func main() {
 	r := jobs.NewRunner(jobs.Deps{Log: log, Redis: rdb})
 	jobs.RegisterRefreshJobs(r, hd)
 	jobs.RegisterSweepJobs(r, hd)
+	jobs.RegisterImportJobs(r, hd)
 	for _, e := range jobs.RefreshSchedule(hd) {
 		_ = e
 	}
