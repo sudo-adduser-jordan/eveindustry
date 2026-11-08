@@ -86,7 +86,9 @@ func main() {
 		if len(key) >= 32 && !ephemeral {
 			appKey = key[:32]
 		}
-		deps.Skills.Characters = esi.NewCharacterClient(esiClient, refresher, queries, nil, appKey)
+		esiChars := esi.NewCharacterClient(esiClient, refresher, queries, nil, appKey)
+		deps.Skills.Characters = esiChars
+		deps.Stock.Characters = esiChars
 	}
 	if rdb != nil {
 		deps.CachePing = func(ctx context.Context) bool {

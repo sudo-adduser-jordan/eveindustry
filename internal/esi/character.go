@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -166,8 +165,9 @@ func (c *CharacterClient) GetSkills(ctx context.Context, characterID int64) (map
 
 // Paginated ports authenticatedPaginatedRequest(): complete lists only.
 // Guards: non-list JSON, bad/changed X-Pages, Last-Modified drift and the
-// 10000-page safety cap all fail as incomplete, never a prefix.
-func (c *CharacterClient) Paginated(ctx context.Context, endpoint string, characterID int64) ([]map[string]any, error) {
+// 10000-page safety cap all fail as incomplete, never a prefix. query
+// carries extra params like include_completed=true.
+func (c *CharacterClient) Paginated(ctx context.Context, endpoint string, query map[string]string, characterID int64) ([]map[string]any, error) {
 	auth, err := c.credential(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -177,12 +177,11 @@ func (c *CharacterClient) Paginated(ctx context.Context, endpoint string, charac
 	var lastModified string
 	var firstSeen = true
 	for page := 1; page <= 10000; page++ {
-		sep := "?"
-		ep := endpoint
-		if strings.Contains(ep, "?") {
-			sep = "&"
+		q := map[string]string{"page": fmt.Sprintf("%d", page)}
+		for k, v := range query {
+			q[k] = v
 		}
-		resp, err := c.client.DoJSON(ctx, http.MethodGet, ep+sep+fmt.Sprintf("page=%d", page), nil, nil, nil, &auth)
+		resp, err := c.client.DoJSON(ctx, http.MethodGet, endpoint, q, nil, nil, &auth)
 		if err != nil {
 			return nil, err
 		}
@@ -234,13 +233,47 @@ func (c *CharacterClient) GetAssets(ctx context.Context, characterID int64) ([]m
 	if v, ok := c.memo.Get(key); ok {
 		return v.([]map[string]any), nil
 	}
-	all, err := c.Paginated(ctx, fmt.Sprintf("/characters/%d/assets/", characterID), characterID)
+	all, err := c.Paginated(ctx, fmt.Sprintf("/characters/%d/assets/", characterID), nil, characterID)
 	if err != nil {
 		return nil, err
 	}
 	if len(all) > 0 {
 		c.memo.Set(key, all, time.Hour)
 	}
+	return all, nil
+}
+
+// GetBlueprints ports getCharacterBlueprints(): full snapshot, 1h cache.
+func (c *CharacterClient) GetBlueprints(ctx context.Context, characterID int64) ([]map[string]any, error) {
+	key := fmt.Sprintf("esi.blueprints.%d", characterID)
+	if v, ok := c.memo.Get(key); ok {
+		return v.([]map[string]any), nil
+	}
+	all, err := c.Paginated(ctx, fmt.Sprintf("/characters/%d/blueprints/", characterID), nil, characterID)
+	if err != nil {
+		return nil, err
+	}
+	c.memo.Set(key, all, time.Hour)
+	return all, nil
+}
+
+// GetIndustryJobs ports getCharacterIndustryJobs(): active jobs (or with
+// completed), 5 minute cache. Scope/active gating is the caller's job.
+func (c *CharacterClient) GetIndustryJobs(ctx context.Context, characterID int64, includeCompleted bool) ([]map[string]any, error) {
+	key := fmt.Sprintf("esi.industry_jobs.%d.active", characterID)
+	query := map[string]string{}
+	if includeCompleted {
+		key = fmt.Sprintf("esi.industry_jobs.%d.with_completed", characterID)
+		query["include_completed"] = "true"
+	}
+	if v, ok := c.memo.Get(key); ok {
+		return v.([]map[string]any), nil
+	}
+	all, err := c.Paginated(ctx, fmt.Sprintf("/characters/%d/industry/jobs/", characterID), query, characterID)
+	if err != nil {
+		return nil, err
+	}
+	c.memo.Set(key, all, 5*time.Minute)
 	return all, nil
 }
 
