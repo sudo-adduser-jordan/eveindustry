@@ -76,81 +76,81 @@ func handleAvailability(d Deps) echo.HandlerFunc {
 // availabilityData ports the slot computation shared by /availability and
 // the dashboard industry stats.
 func availabilityData(ctx context.Context, d Deps, uid int64, now time.Time) (map[string]any, error) {
-		chars, err := d.Users.CharactersForUser(ctx, uid)
+	chars, err := d.Users.CharactersForUser(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	charRows := []any{}
+	totals := map[string]map[string]int{
+		"manufacturing": {"total": 0, "active": 0, "available": 0},
+		"research":      {"total": 0, "active": 0, "available": 0},
+		"reactions":     {"total": 0, "active": 0, "available": 0},
+	}
+	var ready []any
+	for _, ch := range chars {
+		if !ch.IsEsiActive {
+			continue
+		}
+		skills, err := d.IndustryDeps.Characters.GetSkills(ctx, ch.CharacterID)
 		if err != nil {
-			return nil, err
+			continue
 		}
-		charRows := []any{}
-		totals := map[string]map[string]int{
-			"manufacturing": {"total": 0, "active": 0, "available": 0},
-			"research":      {"total": 0, "active": 0, "available": 0},
-			"reactions":     {"total": 0, "active": 0, "available": 0},
+		if skills == nil {
+			skills = map[int]int{}
 		}
-		var ready []any
-		for _, ch := range chars {
-			if !ch.IsEsiActive {
-				continue
-			}
-			skills, err := d.IndustryDeps.Characters.GetSkills(ctx, ch.CharacterID)
-			if err != nil {
-				continue
-			}
-			if skills == nil {
-				skills = map[int]int{}
-			}
-			jobs, err := d.IndustryDeps.Characters.GetIndustryJobs(ctx, ch.CharacterID, false)
-			if err != nil {
-				continue
-			}
-			for _, cj := range corpJobsFor(ctx, d, uid, ch) {
-				jobs = append(jobs, cj)
-			}
-			active := activeJobs(jobs)
-			mfgTotal := 1 + skills[skillMassProduction] + skills[skillAdvMassProduction]
-			resTotal := 1 + skills[skillLaboratoryOperation] + skills[skillAdvLaboratory]
-			reaTotal := 1 + skills[skillMassReactions] + skills[skillAdvMassReactions]
-			mfgJobs := detailedJobs(ctx, d, active, []int{activityManufacturing}, now)
-			resJobs := detailedJobs(ctx, d, active, researchActivities, now)
-			reaJobs := detailedJobs(ctx, d, active, []int{activityReactions}, now)
-			mfgActive := len(mfgJobs)
-			resActive := len(resJobs)
-			reaActive := len(reaJobs)
-			charRows = append(charRows, map[string]any{
-				"character_id": ch.CharacterID, "character_name": ch.Name,
-				"portrait_url": ch.PortraitURL(), "corporation_name": corpNameOf(ch),
-				"manufacturing":   slotGroup(mfgTotal, mfgActive, mfgJobs),
-				"research":        slotGroup(resTotal, resActive, resJobs),
-				"reactions":       slotGroup(reaTotal, reaActive, reaJobs),
-				"completing_soon": completingSoon(active, now),
-				"skills": map[string]any{
-					"mass_production": skills[skillMassProduction], "adv_mass_production": skills[skillAdvMassProduction],
-					"laboratory_operation": skills[skillLaboratoryOperation], "adv_laboratory_operation": skills[skillAdvLaboratory],
-					"mass_reactions": skills[skillMassReactions], "adv_mass_reactions": skills[skillAdvMassReactions],
-				},
-			})
-			totals["manufacturing"]["total"] += mfgTotal
-			totals["manufacturing"]["active"] += mfgActive
-			totals["manufacturing"]["available"] += max(0, mfgTotal-mfgActive)
-			totals["research"]["total"] += resTotal
-			totals["research"]["active"] += resActive
-			totals["research"]["available"] += max(0, resTotal-resActive)
-			totals["reactions"]["total"] += reaTotal
-			totals["reactions"]["active"] += reaActive
-			totals["reactions"]["available"] += max(0, reaTotal-reaActive)
-			ready = append(ready, readyJobs(ctx, d, ch, active, now)...)
+		jobs, err := d.IndustryDeps.Characters.GetIndustryJobs(ctx, ch.CharacterID, false)
+		if err != nil {
+			continue
 		}
-		sort.Slice(ready, func(i, j int) bool {
-			return ready[i].(map[string]any)["end_date"].(string) < ready[j].(map[string]any)["end_date"].(string)
-		})
-		return map[string]any{
-			"characters": charRows,
-			"totals": map[string]any{
-				"manufacturing": totals["manufacturing"],
-				"research":      totals["research"],
-				"reactions":     totals["reactions"],
+		for _, cj := range corpJobsFor(ctx, d, uid, ch) {
+			jobs = append(jobs, cj)
+		}
+		active := activeJobs(jobs)
+		mfgTotal := 1 + skills[skillMassProduction] + skills[skillAdvMassProduction]
+		resTotal := 1 + skills[skillLaboratoryOperation] + skills[skillAdvLaboratory]
+		reaTotal := 1 + skills[skillMassReactions] + skills[skillAdvMassReactions]
+		mfgJobs := detailedJobs(ctx, d, active, []int{activityManufacturing}, now)
+		resJobs := detailedJobs(ctx, d, active, researchActivities, now)
+		reaJobs := detailedJobs(ctx, d, active, []int{activityReactions}, now)
+		mfgActive := len(mfgJobs)
+		resActive := len(resJobs)
+		reaActive := len(reaJobs)
+		charRows = append(charRows, map[string]any{
+			"character_id": ch.CharacterID, "character_name": ch.Name,
+			"portrait_url": ch.PortraitURL(), "corporation_name": corpNameOf(ch),
+			"manufacturing":   slotGroup(mfgTotal, mfgActive, mfgJobs),
+			"research":        slotGroup(resTotal, resActive, resJobs),
+			"reactions":       slotGroup(reaTotal, reaActive, reaJobs),
+			"completing_soon": completingSoon(active, now),
+			"skills": map[string]any{
+				"mass_production": skills[skillMassProduction], "adv_mass_production": skills[skillAdvMassProduction],
+				"laboratory_operation": skills[skillLaboratoryOperation], "adv_laboratory_operation": skills[skillAdvLaboratory],
+				"mass_reactions": skills[skillMassReactions], "adv_mass_reactions": skills[skillAdvMassReactions],
 			},
-			"ready_for_collection": ready,
-		}, nil
+		})
+		totals["manufacturing"]["total"] += mfgTotal
+		totals["manufacturing"]["active"] += mfgActive
+		totals["manufacturing"]["available"] += max(0, mfgTotal-mfgActive)
+		totals["research"]["total"] += resTotal
+		totals["research"]["active"] += resActive
+		totals["research"]["available"] += max(0, resTotal-resActive)
+		totals["reactions"]["total"] += reaTotal
+		totals["reactions"]["active"] += reaActive
+		totals["reactions"]["available"] += max(0, reaTotal-reaActive)
+		ready = append(ready, readyJobs(ctx, d, ch, active, now)...)
+	}
+	sort.Slice(ready, func(i, j int) bool {
+		return ready[i].(map[string]any)["end_date"].(string) < ready[j].(map[string]any)["end_date"].(string)
+	})
+	return map[string]any{
+		"characters": charRows,
+		"totals": map[string]any{
+			"manufacturing": totals["manufacturing"],
+			"research":      totals["research"],
+			"reactions":     totals["reactions"],
+		},
+		"ready_for_collection": ready,
+	}, nil
 }
 
 func corpNameOf(ch auth.Character) any {

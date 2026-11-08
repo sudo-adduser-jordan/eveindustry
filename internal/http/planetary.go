@@ -197,7 +197,7 @@ func planetaryDashboardData(ctx context.Context, d Deps, uid int64, now time.Tim
 			"extractors": totalExt, "factories": totalFac,
 		},
 		"outputs": outputs, "alerts": alerts,
-		"capacity": pi.BuildCapacityAnalysis(planetsFlat),
+		"capacity":   pi.BuildCapacityAnalysis(planetsFlat),
 		"characters": charOut,
 	}, nil
 }

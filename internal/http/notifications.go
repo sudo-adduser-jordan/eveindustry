@@ -15,14 +15,14 @@ import (
 
 // notifyType mirrors NotificationType.
 type notifyType struct {
-	key               string
-	label             string
-	description       string
-	category          string
-	defaultEnabled    bool
-	leadOptions       []int
-	supportsChars     bool
-	requiresCorp      bool
+	key            string
+	label          string
+	description    string
+	category       string
+	defaultEnabled bool
+	leadOptions    []int
+	supportsChars  bool
+	requiresCorp   bool
 }
 
 var notifyTypes = []notifyType{
@@ -138,9 +138,9 @@ func notifyConfig(ctx context.Context, d Deps, uid int64) (map[string]any, error
 		}
 	}
 	return map[string]any{
-		"enabled": d.NotifyPush.Enabled && d.NotifyPush.VapidPublicKey != "",
+		"enabled":          d.NotifyPush.Enabled && d.NotifyPush.VapidPublicKey != "",
 		"vapid_public_key": strOrNil(d.NotifyPush.VapidPublicKey),
-		"devices": count, "types": types, "quiet_hours": qh,
+		"devices":          count, "types": types, "quiet_hours": qh,
 	}, nil
 }
 

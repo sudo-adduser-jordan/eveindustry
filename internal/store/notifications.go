@@ -10,24 +10,24 @@ import (
 
 // PushSubscription mirrors one push_subscriptions row.
 type PushSubscription struct {
-	ID            int64          `db:"id"`
-	UserID        int64          `db:"user_id"`
-	Endpoint      string         `db:"endpoint"`
-	EndpointHash  string         `db:"endpoint_hash"`
-	PublicKey     string         `db:"public_key"`
-	AuthToken     string         `db:"auth_token"`
-	ContentEncoding string       `db:"content_encoding"`
-	UserAgent     sql.NullString `db:"user_agent"`
-	SubscribedAt  time.Time      `db:"subscribed_at"`
+	ID              int64          `db:"id"`
+	UserID          int64          `db:"user_id"`
+	Endpoint        string         `db:"endpoint"`
+	EndpointHash    string         `db:"endpoint_hash"`
+	PublicKey       string         `db:"public_key"`
+	AuthToken       string         `db:"auth_token"`
+	ContentEncoding string         `db:"content_encoding"`
+	UserAgent       sql.NullString `db:"user_agent"`
+	SubscribedAt    time.Time      `db:"subscribed_at"`
 }
 
 // NotificationPref mirrors one notification_preferences row.
 type NotificationPref struct {
-	UserID       int64          `db:"user_id"`
-	Type         string         `db:"type"`
-	Enabled      bool           `db:"enabled"`
-	LeadMinutes  sql.NullInt64  `db:"lead_minutes"`
-	CharacterIDs string         `db:"character_ids"`
+	UserID       int64         `db:"user_id"`
+	Type         string        `db:"type"`
+	Enabled      bool          `db:"enabled"`
+	LeadMinutes  sql.NullInt64 `db:"lead_minutes"`
+	CharacterIDs string        `db:"character_ids"`
 }
 
 // QuietHours mirrors one notification_settings row.
