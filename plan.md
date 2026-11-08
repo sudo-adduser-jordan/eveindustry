@@ -1,8 +1,10 @@
 # Go port plan (Echo + sqlx)
 
-Live status: branch `go-phase-1-reads`, 31 endpoints, ~7.5k lines Go.
-PHP stays authoritative until cutover parity; then Blade views, legacy
-`/api` aliases and their tests are deleted per the existing rule.
+Live status: branch `go-phase-1-reads`. Repo root is the Go project;
+`example/` holds the untouched Laravel original as the behavior reference
+(read-only; deleted at cutover). PHP stays authoritative until cutover
+parity; then Blade views, legacy `/api` aliases and their tests are deleted
+per the existing rule.
 
 ## Stack
 
