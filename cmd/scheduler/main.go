@@ -52,7 +52,7 @@ func main() {
 		circuit := esi.NewCircuit(coord)
 		esiClient := esi.NewClient(coord, limiter, circuit, cfg.ESIUserAgent)
 		esiClient.Cache = esi.NewHTTPCache(coord)
-			hd.ESIChars = esi.NewCharacterClient(esiClient, nil, hd.DB, nil, nil)
+		hd.ESIChars = esi.NewCharacterClient(esiClient, nil, hd.DB, nil, nil)
 		hd.ESIUniverse = esi.NewUniverseClient(esiClient, hd.DB, nil, hd.DB)
 		hd.ESIMarket = esi.NewMarketClient(esiClient, nil)
 	}

@@ -238,7 +238,7 @@ func storeSweepPage(ctx context.Context, h HandlerDeps, sweepID string, regionID
 			OrderID: id, RegionID: regionID, TypeID: int(tid),
 			IsBuy: boolOf(o["is_buy_order"]), Price: floatOf(o["price"]),
 			VolumeRemain: volRem, VolumeTotal: volTot,
-			MinVolume: intOr(o["min_volume"], 1),
+			MinVolume:  intOr(o["min_volume"], 1),
 			LocationID: intPtrOf(o["location_id"]), Duration: dur,
 			Range: strPtrOf(o["range"]), Issued: issued,
 		})
@@ -304,8 +304,8 @@ func RebuildAggregates(ctx context.Context, h HandlerDeps, regionID int, sweepID
 		return 0, err
 	}
 	type agg struct {
-		bestBid, bestAsk *float64
-		sellVol, buyVol  int64
+		bestBid, bestAsk      *float64
+		sellVol, buyVol       int64
 		sellOrders, buyOrders int
 	}
 	rows := map[int]*agg{}
@@ -403,7 +403,6 @@ func setSweepPageCache(ctx context.Context, h HandlerDeps, regionID, page int, e
 }
 
 func pageCacheKey(k string) string { return pageCacheBase + k }
-
 
 func intOf(v any) (int64, bool) {
 	switch n := v.(type) {

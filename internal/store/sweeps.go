@@ -77,12 +77,12 @@ type SweepOrder struct {
 
 // AggregateSide is one grouped side row for rebuild.
 type AggregateSide struct {
-	TypeID    int     `db:"type_id"`
-	IsBuy     bool    `db:"is_buy_order"`
-	MinPrice  float64 `db:"min_price"`
-	MaxPrice  float64 `db:"max_price"`
-	Volume    int64   `db:"volume"`
-	Orders    int     `db:"orders"`
+	TypeID   int     `db:"type_id"`
+	IsBuy    bool    `db:"is_buy_order"`
+	MinPrice float64 `db:"min_price"`
+	MaxPrice float64 `db:"max_price"`
+	Volume   int64   `db:"volume"`
+	Orders   int     `db:"orders"`
 }
 
 // SellOrderPrice is one sell order price/volume pair.
