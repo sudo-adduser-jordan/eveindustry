@@ -266,6 +266,7 @@ type IndustryStore interface {
 	GroupsOf(ctx context.Context, typeIDs []int) (map[int]int, error)
 	HasActivity(ctx context.Context, blueprintTypeID, activityID int) (bool, error)
 	TypeNames(ctx context.Context, typeIDs []int) (map[int]string, error)
+	TypeVolumes(ctx context.Context, typeIDs []int) (map[int]float64, error)
 	AllReactionFormulas(ctx context.Context) ([]ReactionFormula, error)
 	AllManufacturingActivities(ctx context.Context) ([]MfgActivity, error)
 	InventedBlueprintIDs(ctx context.Context) (map[int]bool, error)
@@ -411,6 +412,30 @@ func (s *SQL) TypeNames(ctx context.Context, typeIDs []int) (map[int]string, err
 	}
 	for _, r := range rows {
 		out[r.TypeID] = r.Name
+	}
+	return out, nil
+}
+
+// TypeVolumes ports the show-page volume lookup: packaged_volume wins over
+// volume, missing types read as 0.
+func (s *SQL) TypeVolumes(ctx context.Context, typeIDs []int) (map[int]float64, error) {
+	out := map[int]float64{}
+	if len(typeIDs) == 0 {
+		return out, nil
+	}
+	q, args, err := sqlx.In(`SELECT type_id, COALESCE(packaged_volume, volume, 0) AS v FROM eve_types WHERE type_id IN (?)`, typeIDs)
+	if err != nil {
+		return nil, err
+	}
+	var rows []struct {
+		TypeID int     `db:"type_id"`
+		V      float64 `db:"v"`
+	}
+	if err := s.db.SelectContext(ctx, &rows, s.db.Rebind(q), args...); err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		out[r.TypeID] = r.V
 	}
 	return out, nil
 }

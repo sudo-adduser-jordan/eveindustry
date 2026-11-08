@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 	"testing"
 
@@ -12,6 +13,31 @@ import (
 type stubCorp struct {
 	configs map[int64]*store.CorpConfig
 	members map[int64][]store.CorpCharacter
+	full    map[int64]*store.CorpConfigFull
+}
+
+func (s *stubCorp) CorpConfigForCorps(ctx context.Context, corpIDs []int64) (*store.CorpConfigFull, error) {
+	for _, id := range corpIDs {
+		if c, ok := s.full[id]; ok && c.IsActive {
+			return c, nil
+		}
+	}
+	return nil, nil
+}
+func (s *stubCorp) UpsertCorpConfig(ctx context.Context, corpID int64, corpName string, characterID, userID int64) (*store.CorpConfigFull, error) {
+	if s.full == nil {
+		s.full = map[int64]*store.CorpConfigFull{}
+	}
+	c := &store.CorpConfigFull{CorporationID: corpID, CharacterID: characterID, EnabledByUserID: userID, IsActive: true}
+	c.CorporationName = sqlNullStrCorp(corpName)
+	s.full[corpID] = c
+	return c, nil
+}
+func (s *stubCorp) DeactivateCorpConfig(ctx context.Context, corpID int64) error {
+	if c, ok := s.full[corpID]; ok {
+		c.IsActive = false
+	}
+	return nil
 }
 
 func (s *stubCorp) ActiveCorpConfig(ctx context.Context, corpID int64) (*store.CorpConfig, error) {
@@ -71,4 +97,11 @@ func TestCorporateExportUnavailable(t *testing.T) {
 	if code, _ := get(t, d, "/api/v1/calculators/corporate-export"); code != http.StatusOK {
 		t.Fatalf("fm = %d", code)
 	}
+}
+
+func sqlNullStrCorp(s string) sql.NullString {
+	if s == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: s, Valid: true}
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // CorpStore covers the corporate-export availability check: active corp
@@ -11,6 +13,11 @@ import (
 type CorpStore interface {
 	ActiveCorpConfig(ctx context.Context, corporationID int64) (*CorpConfig, error)
 	UserCorpCharacters(ctx context.Context, userID, corporationID int64) ([]CorpCharacter, error)
+	// CorpConfigForCorps returns the active feature config for the first
+	// matching corporation, else nil.
+	CorpConfigForCorps(ctx context.Context, corpIDs []int64) (*CorpConfigFull, error)
+	UpsertCorpConfig(ctx context.Context, corpID int64, corpName string, characterID, userID int64) (*CorpConfigFull, error)
+	DeactivateCorpConfig(ctx context.Context, corpID int64) error
 }
 
 // CorpConfig mirrors the corporation_build_program_configs row the endpoint reads.
@@ -77,4 +84,84 @@ func (s *SQL) UserCorpCharacters(ctx context.Context, userID, corporationID int6
 		out = append(out, cc)
 	}
 	return out, nil
+}
+
+// CorpConfigFull mirrors one corporation_build_program_configs row.
+type CorpConfigFull struct {
+	ID              int64          `db:"id"`
+	CorporationID   int64          `db:"corporation_id"`
+	CorporationName sql.NullString `db:"corporation_name"`
+	CharacterID     int64          `db:"character_id"`
+	EnabledByUserID int64          `db:"enabled_by_user_id"`
+	IsActive        bool           `db:"is_active"`
+}
+
+// CorpPageStore covers the corporate build-program feature flag: the active
+// config for the user's corporations, enable (upsert) and disable.
+type CorpPageStore interface {
+	CorpConfigForCorps(ctx context.Context, corpIDs []int64) (*CorpConfigFull, error)
+	UpsertCorpConfig(ctx context.Context, corpID int64, corpName string, characterID, userID int64) (*CorpConfigFull, error)
+	DeactivateCorpConfig(ctx context.Context, corpID int64) error
+}
+
+const corpConfigFullCols = `id, corporation_id, corporation_name, character_id, enabled_by_user_id, is_active`
+
+// CorpConfigForCorps returns the active config for the first matching
+// corporation (caller order = user's character order), else nil.
+func (s *SQL) CorpConfigForCorps(ctx context.Context, corpIDs []int64) (*CorpConfigFull, error) {
+	if len(corpIDs) == 0 {
+		return nil, nil
+	}
+	q, args, err := sqlx.In(`SELECT `+corpConfigFullCols+` FROM corporation_build_program_configs
+		WHERE corporation_id IN (?) AND is_active = 1`, corpIDs)
+	if err != nil {
+		return nil, err
+	}
+	var rows []CorpConfigFull
+	if err := s.db.SelectContext(ctx, &rows, s.db.Rebind(q), args...); err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	byCorp := make(map[int64]*CorpConfigFull, len(rows))
+	for i := range rows {
+		r := rows[i]
+		byCorp[r.CorporationID] = &r
+	}
+	for _, id := range corpIDs {
+		if c, ok := byCorp[id]; ok {
+			return c, nil
+		}
+	}
+	return nil, nil
+}
+
+// UpsertCorpConfig mirrors CorporationBuildProgramService::enable.
+func (s *SQL) UpsertCorpConfig(ctx context.Context, corpID int64, corpName string, characterID, userID int64) (*CorpConfigFull, error) {
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO corporation_build_program_configs
+			(corporation_id, corporation_name, character_id, enabled_by_user_id, is_active, created_at, updated_at)
+		VALUES (?, ?, ?, ?, 1, NOW(), NOW())
+		ON DUPLICATE KEY UPDATE corporation_name = VALUES(corporation_name), character_id = VALUES(character_id),
+			enabled_by_user_id = VALUES(enabled_by_user_id), is_active = 1, updated_at = NOW()`,
+		corpID, corpName, characterID, userID)
+	if err != nil {
+		return nil, err
+	}
+	var out CorpConfigFull
+	err = s.db.GetContext(ctx, &out, `SELECT `+corpConfigFullCols+`
+		FROM corporation_build_program_configs WHERE corporation_id = ?`, corpID)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// DeactivateCorpConfig mirrors CorporationBuildProgramService::disable:
+// the row stays (programs are kept) but goes inactive.
+func (s *SQL) DeactivateCorpConfig(ctx context.Context, corpID int64) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE corporation_build_program_configs
+		SET is_active = 0, updated_at = NOW() WHERE corporation_id = ?`, corpID)
+	return err
 }

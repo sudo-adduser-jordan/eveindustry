@@ -67,6 +67,9 @@ func (s *stubStore) HasActivity(ctx context.Context, bp, act int) (bool, error) 
 func (s *stubStore) TypeNames(ctx context.Context, ids []int) (map[int]string, error) {
 	return map[int]string{}, nil
 }
+func (s *stubStore) TypeVolumes(ctx context.Context, ids []int) (map[int]float64, error) {
+	return map[int]float64{}, nil
+}
 func (s *stubStore) ProductTypeIDsExcludingInvented(ctx context.Context) ([]int, error) {
 	return []int{587}, nil
 }

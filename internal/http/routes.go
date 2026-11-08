@@ -105,6 +105,7 @@ func New(d Deps) *echo.Echo {
 	registerWholemap(authed, d)
 	registerPlans(authed, d)
 	registerCorpPrograms(authed, d)
+	registerCorpProgramPages(authed, d)
 	registerStockItems(authed, d)
 	registerStructures(authed, d)
 	registerIndustryRefresh(authed, d)

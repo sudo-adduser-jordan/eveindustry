@@ -44,6 +44,9 @@ func (s *chainStub) HasActivity(ctx context.Context, bp, act int) (bool, error) 
 	_, ok := s.byBP[[2]int{bp, act}]
 	return ok, nil
 }
+func (s *chainStub) TypeVolumes(ctx context.Context, ids []int) (map[int]float64, error) {
+	return map[int]float64{}, nil
+}
 func (s *chainStub) TypeNames(ctx context.Context, ids []int) (map[int]string, error) {
 	return map[int]string{}, nil
 }

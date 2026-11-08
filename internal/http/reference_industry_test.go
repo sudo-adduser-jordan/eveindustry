@@ -68,6 +68,13 @@ func (s *stubIndustry) ProductTypeIDsExcludingInvented(ctx context.Context) ([]i
 func (s *stubIndustry) ProductGroupCounts(ctx context.Context, ids []int) (map[int]int, error) {
 	return map[int]int{25: 2}, nil
 }
+func (s *stubIndustry) TypeVolumes(ctx context.Context, ids []int) (map[int]float64, error) {
+	out := map[int]float64{}
+	for _, id := range ids {
+		out[id] = 1.5
+	}
+	return out, nil
+}
 func (s *stubIndustry) GroupCategories(ctx context.Context, ids []int) (map[int]int, error) {
 	return map[int]int{25: 6}, nil
 }
