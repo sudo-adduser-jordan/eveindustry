@@ -7,20 +7,20 @@ import (
 
 // SdeType mirrors the eve_types upsert shape.
 type SdeType struct {
-	TypeID        int
-	Name          string
-	Description   string
-	GroupID       *int64
-	MarketGroupID *int64
-	Volume        *float64
+	TypeID         int
+	Name           string
+	Description    string
+	GroupID        *int64
+	MarketGroupID  *int64
+	Volume         *float64
 	PackagedVolume *float64
-	Mass          *float64
-	Capacity      *float64
-	PortionSize   *int64
-	IconID        *int64
-	GraphicID     *int64
-	MetaGroupID   *int64
-	Published     bool
+	Mass           *float64
+	Capacity       *float64
+	PortionSize    *int64
+	IconID         *int64
+	GraphicID      *int64
+	MetaGroupID    *int64
+	Published      bool
 }
 
 // SdeStore covers static-data imports.
@@ -39,15 +39,15 @@ type SdeStore interface {
 
 // SdeStation mirrors one sde_stations row.
 type SdeStation struct {
-	StationID     uint64
-	Name          string
-	SolarSystemID *int
+	StationID       uint64
+	Name            string
+	SolarSystemID   *int
 	ConstellationID *int
-	RegionID      *int
-	TypeID        *int
-	CorporationID *int
-	Reprocessing  *float64
-	Security      *float64
+	RegionID        *int
+	TypeID          *int
+	CorporationID   *int
+	Reprocessing    *float64
+	Security        *float64
 }
 
 // SdeSystem mirrors one sde_solar_systems row.
@@ -62,10 +62,10 @@ type SdeSystem struct {
 
 // SdeStargate mirrors one sde_stargates row.
 type SdeStargate struct {
-	GateID      uint64
-	SystemID    *int
-	DestGateID  *uint64
-	TypeID      *int
+	GateID     uint64
+	SystemID   *int
+	DestGateID *uint64
+	TypeID     *int
 }
 
 // SdeMaterial mirrors one type_materials row.
@@ -96,10 +96,10 @@ type SdeMarketGroup struct {
 
 // SdeGroup mirrors one inv_groups row.
 type SdeGroup struct {
-	GroupID     int
-	Name        string
-	CategoryID  *int
-	Published   bool
+	GroupID    int
+	Name       string
+	CategoryID *int
+	Published  bool
 }
 
 // SdeCategory mirrors one inv_categories row.

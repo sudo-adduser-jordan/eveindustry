@@ -756,10 +756,10 @@ func ProcessEveTypeChunk(ctx context.Context, h HandlerDeps, typeIDs []int, publ
 				}
 			}
 			rows = append(rows, store.SdeType{
-				TypeID: id,
-				Name:   locStr(info["name"], "Unknown"),
+				TypeID:      id,
+				Name:        locStr(info["name"], "Unknown"),
 				Description: locStr(info["description"], ""),
-				GroupID: intPtrAny(info["group_id"]), MarketGroupID: intPtrAny(info["market_group_id"]),
+				GroupID:     intPtrAny(info["group_id"]), MarketGroupID: intPtrAny(info["market_group_id"]),
 				Volume: floatPtrAny(info["volume"]), PackagedVolume: floatPtrAny(info["packaged_volume"]),
 				Mass: floatPtrAny(info["mass"]), Capacity: floatPtrAny(info["capacity"]),
 				PortionSize: intPtrAny(info["portion_size"]), IconID: intPtrAny(info["icon_id"]),
@@ -908,9 +908,9 @@ func fetchFuzzworkBlueprint(ctx context.Context, typeID int) (mats []map[string]
 		ActivityMaterials map[string][]map[string]any `json:"activityMaterials"`
 		BlueprintDetails  struct {
 			Times           map[string]int `json:"times"`
-			ProductTypeID   int             `json:"productTypeID"`
-			ProductTypeName string          `json:"productTypeName"`
-			ProductQuantity int             `json:"productQuantity"`
+			ProductTypeID   int            `json:"productTypeID"`
+			ProductTypeName string         `json:"productTypeName"`
+			ProductQuantity int            `json:"productQuantity"`
 		} `json:"blueprintDetails"`
 	}
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 8<<20)).Decode(&data); err != nil {
