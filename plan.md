@@ -44,6 +44,7 @@ per the existing rule.
   progress and asset-location endpoints.
 - Phase 5i: heavy industry availability + reprocessing reads.
 - Phase 5j: structures index (all activities + bonuses).
+- Phase 5k: moon scans (TSV analyse, pricing modes, systems + system reprice).
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
