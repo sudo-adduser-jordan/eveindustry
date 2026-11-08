@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -395,4 +396,31 @@ func (c *UniverseClient) GetAlliance(ctx context.Context, allianceID int64) (map
 	}
 	c.memo.Set(key, m, 30*24*time.Hour)
 	return m, nil
+}
+
+// UniverseTypePage is one page of /universe/types.
+type UniverseTypePage struct {
+	TypeIDs    []int
+	TotalPages int
+}
+
+// GetUniverseTypeIds ports the type-id enumeration (1000 per page).
+func (c *UniverseClient) GetUniverseTypeIDs(ctx context.Context, page int) ([]int, int, error) {
+	q := map[string]string{"page": strconv.Itoa(page)}
+	resp, err := c.client.DoJSON(ctx, http.MethodGet, "/universe/types/", q, nil, nil, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	if !resp.Successful() {
+		return nil, 0, nil
+	}
+	pages := resp.Pages()
+	list, _ := resp.JSON().([]any)
+	out := make([]int, 0, len(list))
+	for _, item := range list {
+		if n, ok := item.(float64); ok {
+			out = append(out, int(n))
+		}
+	}
+	return out, pages, nil
 }

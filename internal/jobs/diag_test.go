@@ -40,13 +40,13 @@ func TestEndpointAggMath(t *testing.T) {
 		"operation_key": "get /x", "http_status": 200, "reason": "ok",
 		"dataset": "d", "source_identity": "s", "limiter_group": "g",
 		"duration_ms": 120,
-	}, intPtr(200))
+	}, intPtrTest(200))
 	addEndpoint(rows, map[string]any{
 		"kind": "http_attempt", "occurred_at": "2026-11-08 10:45:00",
 		"operation_key": "get /x", "http_status": 500, "reason": "upstream_failure",
 		"dataset": "d", "source_identity": "s", "limiter_group": "g",
 		"duration_ms": 80,
-	}, intPtr(500))
+	}, intPtrTest(500))
 	// status is part of the dimension hash: two buckets
 	if len(rows) != 2 {
 		t.Fatalf("rows = %d", len(rows))
@@ -69,7 +69,7 @@ func TestEndpointAggMath(t *testing.T) {
 	}
 }
 
-func intPtr(n int) *int { v := n; return &v }
+func intPtrTest(n int) *int { v := n; return &v }
 
 func TestBudgetAggMath(t *testing.T) {
 	rows := map[string]*store.BudgetMetricDelta{}
