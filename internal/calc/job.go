@@ -4,10 +4,10 @@ package calc
 // mirroring one calculateCostProfit() material row.
 type PricedMaterial struct {
 	Material
-	UnitPrice   float64 `json:"unit_price"`
-	TotalCost   float64 `json:"total_cost"`
-	PriceSource string  `json:"price_source"`
-	Volume      float64 `json:"volume"`
+	UnitPrice   float64          `json:"unit_price"`
+	TotalCost   float64          `json:"total_cost"`
+	PriceSource string           `json:"price_source"`
+	Volume      float64          `json:"volume"`
 	Component   *ComponentResult `json:"component"`
 }
 
@@ -36,21 +36,21 @@ type ComponentData struct {
 // JobInput carries everything CalculateJob needs after the handler has
 // fetched SDE rows, prices and volumes.
 type JobInput struct {
-	Materials          []Material
-	ProductTypeID      int
-	Runs               int
-	PortionSize        int
-	Prices             map[int]PricedValue
-	Volumes            map[int]float64
-	Components         map[int]*ComponentData
-	BuybackMultiplier  float64
-	AdjustedPrices     map[int]float64
-	SciManufacturing   float64
-	SciReaction        float64
-	TaxRate            float64
-	ReactionTaxRate    float64
-	HasMainSystem      bool
-	HasReactionSystem  bool
+	Materials         []Material
+	ProductTypeID     int
+	Runs              int
+	PortionSize       int
+	Prices            map[int]PricedValue
+	Volumes           map[int]float64
+	Components        map[int]*ComponentData
+	BuybackMultiplier float64
+	AdjustedPrices    map[int]float64
+	SciManufacturing  float64
+	SciReaction       float64
+	TaxRate           float64
+	ReactionTaxRate   float64
+	HasMainSystem     bool
+	HasReactionSystem bool
 }
 
 // PricedValue is one resolved sell price with its source.
@@ -61,24 +61,24 @@ type PricedValue struct {
 
 // JobResult mirrors ManufacturingJobCalculator::calculate() return keys.
 type JobResult struct {
-	Materials []PricedMaterial
-	CostProfit CostProfit
-	Time JobTime
-	TotalBuyCost   float64
-	TotalBuildCost float64
-	BuildCheaper   bool
-	TotalOutput    int
-	TotalRevenue   float64
-	SCCFee         float64
-	ProfitFullBuy  float64
-	MarginFullBuy  float64
-	PerUnitFullBuy float64
-	ProfitFullBuild  float64
-	MarginFullBuild  float64
-	PerUnitFullBuild float64
-	BuildFee BuildFee
-	TotalFeeFullBuy   float64
-	TotalFeeFullBuild float64
+	Materials                 []PricedMaterial
+	CostProfit                CostProfit
+	Time                      JobTime
+	TotalBuyCost              float64
+	TotalBuildCost            float64
+	BuildCheaper              bool
+	TotalOutput               int
+	TotalRevenue              float64
+	SCCFee                    float64
+	ProfitFullBuy             float64
+	MarginFullBuy             float64
+	PerUnitFullBuy            float64
+	ProfitFullBuild           float64
+	MarginFullBuild           float64
+	PerUnitFullBuild          float64
+	BuildFee                  BuildFee
+	TotalFeeFullBuy           float64
+	TotalFeeFullBuild         float64
 	TotalCostFullBuyWithFee   float64
 	ProfitFullBuyWithFee      float64
 	MarginFullBuyWithFee      float64
@@ -90,28 +90,28 @@ type JobResult struct {
 }
 
 type CostProfit struct {
-	Materials           []PricedMaterial
-	TotalMaterialCost   float64
-	ProductSellPrice    float64
-	ProductPriceSource  string
-	TotalOutput         int
-	TotalRevenue        float64
-	Profit              float64
-	ProfitPositive      bool
-	ProfitPerUnit       float64
-	ProfitMargin        float64
+	Materials          []PricedMaterial
+	TotalMaterialCost  float64
+	ProductSellPrice   float64
+	ProductPriceSource string
+	TotalOutput        int
+	TotalRevenue       float64
+	Profit             float64
+	ProfitPositive     bool
+	ProfitPerUnit      float64
+	ProfitMargin       float64
 }
 
 type BuildFee struct {
-	EIV             float64
-	SCI             float64
-	JobCost         float64
-	TaxRate         float64
-	FacilityTax     float64
-	Total           float64
-	ComponentsFee   float64
-	TotalFullBuild  float64
-	HasData         bool
+	EIV            float64
+	SCI            float64
+	JobCost        float64
+	TaxRate        float64
+	FacilityTax    float64
+	Total          float64
+	ComponentsFee  float64
+	TotalFullBuild float64
+	HasData        bool
 }
 
 // CalculateJob ports the body of ManufacturingJobCalculator::calculate()
@@ -229,7 +229,7 @@ func CalculateJob(in JobInput, time JobTime) JobResult {
 		Materials: costProfit.Materials, CostProfit: costProfit, Time: time,
 		TotalBuyCost: Round2(totalBuyCost), TotalBuildCost: Round2(totalBuildCost),
 		BuildCheaper: totalBuildCost < totalBuyCost,
-		TotalOutput: totalOutput, TotalRevenue: Round2(totalRevenue), SCCFee: Round2(sccFee),
+		TotalOutput:  totalOutput, TotalRevenue: Round2(totalRevenue), SCCFee: Round2(sccFee),
 		ProfitFullBuy: Round2(profitFullBuy), MarginFullBuy: marginFullBuy, PerUnitFullBuy: Round2(perUnitFullBuy),
 		ProfitFullBuild: Round2(profitFullBuild), MarginFullBuild: marginFullBuild, PerUnitFullBuild: Round2(perUnitFullBuild),
 		BuildFee: BuildFee{
@@ -239,10 +239,10 @@ func CalculateJob(in JobInput, time JobTime) JobResult {
 		},
 		TotalFeeFullBuy: Round2(totalFeeFullBuy), TotalFeeFullBuild: Round2(totalFeeFullBuild),
 		TotalCostFullBuyWithFee: Round2(totalCostFullBuyWithFee),
-		ProfitFullBuyWithFee: Round2(profitFullBuyWithFee), MarginFullBuyWithFee: marginFullBuyWithFee,
-		PerUnitFullBuyWithFee: Round2(perUnitFullBuyWithFee),
+		ProfitFullBuyWithFee:    Round2(profitFullBuyWithFee), MarginFullBuyWithFee: marginFullBuyWithFee,
+		PerUnitFullBuyWithFee:     Round2(perUnitFullBuyWithFee),
 		TotalCostFullBuildWithFee: totalCostFullBuildWithFee,
-		ProfitFullBuildWithFee: Round2(profitFullBuildWithFee), MarginFullBuildWithFee: marginFullBuildWithFee,
+		ProfitFullBuildWithFee:    Round2(profitFullBuildWithFee), MarginFullBuildWithFee: marginFullBuildWithFee,
 		PerUnitFullBuildWithFee: Round2(perUnitFullBuildWithFee),
 	}
 }

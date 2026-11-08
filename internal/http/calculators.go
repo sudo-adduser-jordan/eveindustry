@@ -25,25 +25,25 @@ func registerCalculators(v1 *echo.Group, d Deps) {
 
 // manufacturingInput mirrors ManufacturingCalculateRequest rules.
 type manufacturingInput struct {
-	BlueprintTypeID       *int              `json:"blueprint_type_id"`
-	ProductTypeID         *int              `json:"product_type_id"`
-	Runs                  *int              `json:"runs"`
-	MELLevel              *int              `json:"me_level"`
-	TELevel               *int              `json:"te_level"`
-	IndustrySkill         *int              `json:"industry_skill"`
-	AdvancedIndustrySkill *int              `json:"advanced_industry_skill"`
-	StructureMEBonus      *float64          `json:"structure_me_bonus"`
-	StructureTEBonus      *float64          `json:"structure_te_bonus"`
-	ReactionMEBonus       *float64          `json:"reaction_me_bonus"`
-	Materials             []postedMaterial  `json:"materials"`
-	BaseTime              *int              `json:"base_time"`
-	PortionSize           *int              `json:"portion_size"`
-	RegionID              *int              `json:"region_id"`
-	BuybackPercentage     *float64          `json:"buyback_percentage"`
-	SolarSystemID         *int              `json:"solar_system_id"`
-	TaxRate               *float64          `json:"tax_rate"`
-	ReactionSolarSystemID *int              `json:"reaction_solar_system_id"`
-	ReactionTaxRate       *float64          `json:"reaction_tax_rate"`
+	BlueprintTypeID       *int             `json:"blueprint_type_id"`
+	ProductTypeID         *int             `json:"product_type_id"`
+	Runs                  *int             `json:"runs"`
+	MELLevel              *int             `json:"me_level"`
+	TELevel               *int             `json:"te_level"`
+	IndustrySkill         *int             `json:"industry_skill"`
+	AdvancedIndustrySkill *int             `json:"advanced_industry_skill"`
+	StructureMEBonus      *float64         `json:"structure_me_bonus"`
+	StructureTEBonus      *float64         `json:"structure_te_bonus"`
+	ReactionMEBonus       *float64         `json:"reaction_me_bonus"`
+	Materials             []postedMaterial `json:"materials"`
+	BaseTime              *int             `json:"base_time"`
+	PortionSize           *int             `json:"portion_size"`
+	RegionID              *int             `json:"region_id"`
+	BuybackPercentage     *float64         `json:"buyback_percentage"`
+	SolarSystemID         *int             `json:"solar_system_id"`
+	TaxRate               *float64         `json:"tax_rate"`
+	ReactionSolarSystemID *int             `json:"reaction_solar_system_id"`
+	ReactionTaxRate       *float64         `json:"reaction_tax_rate"`
 }
 
 type postedMaterial struct {
@@ -320,13 +320,13 @@ func manufacturingPayload(r calc.JobResult) map[string]any {
 			"total_output": cp.TotalOutput, "total_revenue": cp.TotalRevenue,
 		},
 		"time": map[string]any{
-			"base_time_seconds": r.Time.BaseTimeSeconds,
+			"base_time_seconds":    r.Time.BaseTimeSeconds,
 			"time_per_run_seconds": r.Time.TimePerRunSeconds,
-			"total_time_seconds": r.Time.TotalTimeSeconds,
+			"total_time_seconds":   r.Time.TotalTimeSeconds,
 		},
-		"materials": mats,
+		"materials":     mats,
 		"build_cheaper": r.BuildCheaper,
-		"scc_fee": r.SCCFee,
+		"scc_fee":       r.SCCFee,
 		"build_fee": map[string]any{
 			"eiv": r.BuildFee.EIV, "sci": r.BuildFee.SCI, "job_cost": r.BuildFee.JobCost,
 			"tax_rate": r.BuildFee.TaxRate, "facility_tax": r.BuildFee.FacilityTax,

@@ -63,8 +63,8 @@ func TestCalculateJob(t *testing.T) {
 	mats := []Material{{TypeID: 34, Name: "Trit", BaseQuantity: 100, AdjustedQuantity: 900, QuantityPerRun: 90}}
 	in := JobInput{
 		Materials: mats, ProductTypeID: 587, Runs: 10, PortionSize: 1,
-		Prices: map[int]PricedValue{34: {Price: 10, Source: "orders"}, 587: {Price: 10000, Source: "orders"}},
-		Volumes: map[int]float64{34: 0.01},
+		Prices:            map[int]PricedValue{34: {Price: 10, Source: "orders"}, 587: {Price: 10000, Source: "orders"}},
+		Volumes:           map[int]float64{34: 0.01},
 		BuybackMultiplier: 1,
 	}
 	got := CalculateJob(in, JobTime{})
