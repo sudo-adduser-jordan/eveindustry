@@ -17,6 +17,7 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
 
 - Phase 3a (`51ac980`): session auth — signed cookies, RequireAuth +
   demo-guard on `/api/v1`, real `/me`, `/logout`, account delete.
+- Phase 3b (`532e568`): corporate-export availability.
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
@@ -57,7 +58,8 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
 
 ## Remaining
 
-- [ ] Calculators: corporate-export (auth-gated).
+- [ ] Calculators: corporate-export (done `532e568`), skills/stock
+      (need live ESI → ESI phase).
 - [ ] Industry group (`routes/api_v1/industry.php`), planetary, heavy
       (moon scans, structures, wholemap), corp tools, programs + planning
       writes, admin, notifications, session/characters/me.
