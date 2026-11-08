@@ -29,6 +29,7 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
 - Phase 4e (`41ce284`): corp blueprints/assets ESI + GET /industry/can-produce.
 - Phase 4f (`8a23c53`): blueprint + reaction-formula research pages.
 - Phase 4g (`a9c87cd`): industry stock report (gate, live shortfalls).
+- Phase 5a (`6b59c9d`): station-configs CRUD (first planning writes).
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
@@ -81,6 +82,8 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
       blueprints/jobs + stock `070a5ec`; still needed: diagnostics,
       HTTP cache, demo responses, 4 remaining sub-clients, route-group
       table): live fallbacks, adjusted prices, cost indices.
+- [ ] Writes: station-configs (done `6b59c9d`), wholemap, plans,
+      programs, stock items, industry refresh.
 - [ ] Jobs phase: `cmd/worker` queue (17 jobs), `cmd/scheduler` tick loop,
       Horizon replacement decision (riverqueue/asynq).
 - [ ] Migrations phase: 74 Laravel migrations -> `migrations/*.up/down.sql`,
