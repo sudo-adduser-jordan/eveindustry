@@ -11,6 +11,7 @@ import (
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/health"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/setup"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
 // Deps are the already-wired collaborators for the router. Probes are plain
@@ -22,6 +23,11 @@ type Deps struct {
 	SetupSDE    setup.Probe
 	SetupPrices setup.Probe
 	SetupOrders setup.Probe
+
+	// Reference and Market are nil when no database is configured: data
+	// routes answer 503 while /up and /health keep their contracts.
+	Reference store.ReferenceStore
+	Market    store.MarketStore
 }
 
 // New builds the Echo router for the Go API. Routes mirror routes/api.php
@@ -41,12 +47,16 @@ func New(d Deps) *echo.Echo {
 	v1 := e.Group("/api/v1")
 	v1.GET("/health", handleHealth(d))
 
-	// Phase 0 stub: auth (Sanctum cookies / EVE SSO) is not ported yet, so
-	// every caller is unauthenticated. This keeps the smoke test
-	// (GET /api/v1/me -> 401) green while Phase 2 is pending.
+	// Phase 2 ports auth (Sanctum cookies / EVE SSO); until then every
+	// caller is unauthenticated, so data routes below are unreachable
+	// without a session the same way PHP's auth:sanctum group is.
+	// The 401 stub keeps the smoke test (GET /api/v1/me -> 401) green.
 	v1.GET("/me", func(c echo.Context) error {
 		return Failure(c, http.StatusUnauthorized, "Unauthenticated.", nil)
 	})
+
+	registerReference(v1, d)
+	registerMarket(v1, d)
 
 	return e
 }

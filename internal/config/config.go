@@ -8,10 +8,10 @@ import (
 // Config mirrors the subset of .env / config/*.php the Go API needs in Phase 0.
 // Full game-data, ESI, queue and mail settings arrive with later phases.
 type Config struct {
-	AppEnv    string
-	Port      string
-	AppURL    string
-	SourceURL string
+	AppEnv     string
+	Port       string
+	AppURL     string
+	SourceURL  string
 	DiscordURL string
 
 	DBDSN string

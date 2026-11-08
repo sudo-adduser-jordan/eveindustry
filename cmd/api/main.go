@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -15,8 +14,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
 
-	gohttp "github.com/sudo-adduser-jordan/eveindustry/internal/http"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/config"
+	gohttp "github.com/sudo-adduser-jordan/eveindustry/internal/http"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
 // Phase 0 API server: GET /up, GET /api/v1/health (DB + Redis probes with
@@ -27,13 +27,13 @@ func main() {
 	cfg := config.Load()
 	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	var db *sql.DB
+	var sqlxDB *sqlx.DB
 	if cfg.DBDSN != "" {
-		sqlxDB, err := sqlx.Connect("mysql", cfg.DBDSN)
+		db, err := sqlx.Connect("mysql", cfg.DBDSN)
 		if err != nil {
 			log.Warn("database not reachable at startup; /health will report failed", "error", err)
 		} else {
-			db = sqlxDB.DB
+			sqlxDB = db
 			defer func() { _ = db.Close() }()
 		}
 	}
@@ -50,8 +50,11 @@ func main() {
 	}
 
 	deps := gohttp.Deps{}
-	if db != nil {
-		deps.DBPing = gohttp.PingDB(db)
+	if sqlxDB != nil {
+		deps.DBPing = gohttp.PingDB(sqlxDB.DB)
+		queries := store.NewSQL(sqlxDB)
+		deps.Reference = queries
+		deps.Market = queries
 	}
 	if rdb != nil {
 		deps.CachePing = func(ctx context.Context) bool {
