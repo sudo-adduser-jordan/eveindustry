@@ -69,6 +69,55 @@ tasks:
     cmds:
       - go run ./cmd/scheduler
 
+  start:
+    desc: Build and start api + worker + scheduler in the background (.run/)
+    cmds:
+      - |
+        set -e
+        mkdir -p .run/bin .run/log
+        go build -o .run/bin/api ./cmd/api
+        go build -o .run/bin/worker ./cmd/worker
+        go build -o .run/bin/scheduler ./cmd/scheduler
+        for svc in api worker scheduler; do
+          if [ -f .run/$svc.pid ] && kill -0 "$(cat .run/$svc.pid)" 2>/dev/null; then
+            echo "$svc already running (pid $(cat .run/$svc.pid))"
+          else
+            nohup ./.run/bin/$svc >.run/log/$svc.log 2>&1 < /dev/null &
+            echo $! > .run/$svc.pid
+            echo "$svc started (pid $!)"
+          fi
+        done
+        port="${PORT:-8080}"
+        for i in $(seq 1 30); do
+          if curl -fs -o /dev/null "http://localhost:$port/up" 2>/dev/null; then
+            echo "api healthy on :$port"
+            break
+          fi
+          sleep 0.5
+          if [ "$i" = "30" ]; then echo "api did not answer /up (see .run/log/api.log)"; exit 1; fi
+        done
+
+  stop:
+    desc: Stop the background api + worker + scheduler
+    cmds:
+      - |
+        for svc in api worker scheduler; do
+          if [ -f .run/$svc.pid ]; then
+            pid=$(cat .run/$svc.pid)
+            if kill -0 "$pid" 2>/dev/null; then
+              kill "$pid"
+              for i in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || break; sleep 0.5; done
+              kill -9 "$pid" 2>/dev/null || true
+              echo "$svc stopped (was $pid)"
+            else
+              echo "$svc not running (stale pid $pid)"
+            fi
+            rm -f .run/$svc.pid
+          else
+            echo "$svc not running"
+          fi
+        done
+
   migrate:
     desc: "Apply pending SQL migrations (usage: task migrate -- [up|down|status] [n])"
     cmds:

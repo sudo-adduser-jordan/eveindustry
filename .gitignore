@@ -19,3 +19,4 @@ eveapi
 /scheduler
 /api
 /migrate
+/.run/

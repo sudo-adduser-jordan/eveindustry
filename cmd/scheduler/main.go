@@ -85,26 +85,30 @@ func main() {
 		Runner: r, Queue: q, Redis: rdb, Now: time.Now,
 		Log: func(msg string, args ...any) { log.Warn(msg, args...) },
 	}
-	for _, e := range jobs.RefreshSchedule(hd) {
-		sched.Entries = append(sched.Entries, e)
-	}
-	for _, e := range jobs.SweepSchedule(hd, 10000002) {
-		sched.Entries = append(sched.Entries, e)
-	}
-	for _, e := range jobs.ImportSchedule(hd, 10000002) {
-		sched.Entries = append(sched.Entries, e)
-	}
-	for _, e := range jobs.PrecomputeSchedule(hd) {
-		sched.Entries = append(sched.Entries, e)
-	}
-	for _, e := range jobs.MaintenanceSchedule(hd, os.Getenv("DEMO_ENABLED") == "true", os.Getenv("DEMO_RESET_TIME")) {
-		sched.Entries = append(sched.Entries, e)
-	}
-	for _, e := range jobs.DiagSchedule(diagDeps) {
-		sched.Entries = append(sched.Entries, e)
-	}
-	for _, e := range jobs.NotifySchedule(hd) {
-		sched.Entries = append(sched.Entries, e)
+	if hd.DB == nil {
+		log.Warn("no database configured; scheduler idle (entries need MySQL)")
+	} else {
+		for _, e := range jobs.RefreshSchedule(hd) {
+			sched.Entries = append(sched.Entries, e)
+		}
+		for _, e := range jobs.SweepSchedule(hd, 10000002) {
+			sched.Entries = append(sched.Entries, e)
+		}
+		for _, e := range jobs.ImportSchedule(hd, 10000002) {
+			sched.Entries = append(sched.Entries, e)
+		}
+		for _, e := range jobs.PrecomputeSchedule(hd) {
+			sched.Entries = append(sched.Entries, e)
+		}
+		for _, e := range jobs.MaintenanceSchedule(hd, os.Getenv("DEMO_ENABLED") == "true", os.Getenv("DEMO_RESET_TIME")) {
+			sched.Entries = append(sched.Entries, e)
+		}
+		for _, e := range jobs.DiagSchedule(diagDeps) {
+			sched.Entries = append(sched.Entries, e)
+		}
+		for _, e := range jobs.NotifySchedule(hd) {
+			sched.Entries = append(sched.Entries, e)
+		}
 	}
 
 	log.Info("scheduler started", "entries", len(sched.Entries))
