@@ -38,7 +38,6 @@ func programID(c echo.Context) (int64, bool) {
 	return id, true
 }
 
-
 func nullInt64Val(v sql.NullInt64) any {
 	if v.Valid {
 		return v.Int64
@@ -148,14 +147,12 @@ func programResourceShape(p store.BuildProgram) map[string]any {
 	return map[string]any{
 		"id": p.ID, "name": p.Name, "program_type": p.ProgramType,
 		"t2_type_id": nullInt64Val(p.T2TypeID), "t2_type_name": nullStrVal(p.T2TypeName),
-		"steps": shapeSteps(decodeSteps(p.StepsJSON)),
-		"settings": decodeSettings(p.SettingsJSON),
+		"steps":      shapeSteps(decodeSteps(p.StepsJSON)),
+		"settings":   decodeSettings(p.SettingsJSON),
 		"created_at": p.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 		"updated_at": p.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}
 }
-
-
 
 func sqlNullInt(v *int) sql.NullInt64 {
 	if v == nil {
@@ -431,8 +428,8 @@ func nestProgramSteps(ctx context.Context, d Deps, steps []map[string]any, react
 		entry := map[string]any{
 			"type_id": int(tid), "name": strOfDefault(s["name"], "Unknown"),
 			"quantity_required": intOf(s["quantity_required"]),
-			"materials": s["materials"],
-			"children":  kids,
+			"materials":         s["materials"],
+			"children":          kids,
 		}
 		if v, ok := s["runs_needed"]; ok {
 			if n, isNum := toFloat(v); isNum {

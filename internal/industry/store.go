@@ -355,7 +355,7 @@ func (s *SQL) GroupsOf(ctx context.Context, typeIDs []int) (map[int]int, error) 
 		return nil, err
 	}
 	var rows []struct {
-		TypeID  int          `db:"type_id"`
+		TypeID  int           `db:"type_id"`
 		GroupID sql.NullInt64 `db:"group_id"`
 	}
 	if err := s.db.SelectContext(ctx, &rows, s.db.Rebind(q), args...); err != nil {

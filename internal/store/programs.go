@@ -11,16 +11,16 @@ import (
 // BuildProgram mirrors one build_programs row. Steps and Settings are raw
 // JSON payloads decoded by the handler layer.
 type BuildProgram struct {
-	ID          int64          `db:"id"`
-	UserID      int64          `db:"user_id"`
-	Name        string         `db:"name"`
-	ProgramType string         `db:"program_type"`
-	T2TypeID    sql.NullInt64  `db:"t2_type_id"`
-	T2TypeName  sql.NullString `db:"t2_type_name"`
-	StepsJSON   string         `db:"steps"`
-	SettingsJSON string        `db:"settings"`
-	CreatedAt   time.Time      `db:"created_at"`
-	UpdatedAt   time.Time      `db:"updated_at"`
+	ID           int64          `db:"id"`
+	UserID       int64          `db:"user_id"`
+	Name         string         `db:"name"`
+	ProgramType  string         `db:"program_type"`
+	T2TypeID     sql.NullInt64  `db:"t2_type_id"`
+	T2TypeName   sql.NullString `db:"t2_type_name"`
+	StepsJSON    string         `db:"steps"`
+	SettingsJSON string         `db:"settings"`
+	CreatedAt    time.Time      `db:"created_at"`
+	UpdatedAt    time.Time      `db:"updated_at"`
 }
 
 // ProgramStore covers personal build programs. Reads are owner-scoped

@@ -211,8 +211,8 @@ func MergePrograms(programs []MergeProgram, order []int) MergeResult {
 
 // ReactionPlanStep is one top-level step built from a plan entry.
 type ReactionPlanStep struct {
-	Step      ChainStep
-	ProductID int
+	Step        ChainStep
+	ProductID   int
 	ProductName string
 }
 
@@ -292,4 +292,3 @@ type ReactionPlanEntry struct {
 	Slots         int
 	RunsPerSlot   int
 }
-
