@@ -192,11 +192,11 @@ func (l *Limiter) TryConsume(group, identity string) (bool, error) {
 
 // ResponseHeaders carries the rate-limit headers of a finished response.
 type ResponseHeaders struct {
-	Status           int
-	Used             *int
-	Remaining        *int
-	Advertised       string // raw X-Ratelimit-Limit, e.g. "600/900s", "100/1m"
-	RetryAfterSecs   *int
+	Status         int
+	Used           *int
+	Remaining      *int
+	Advertised     string // raw X-Ratelimit-Limit, e.g. "600/900s", "100/1m"
+	RetryAfterSecs *int
 }
 
 // Reconcile mirrors reconcile(): replaces the pending cost with the actual

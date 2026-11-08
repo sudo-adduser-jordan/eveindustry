@@ -13,16 +13,16 @@ import (
 type Outcome string
 
 const (
-	OutcomeErrorLimited  Outcome = "error_limited"
-	OutcomeRateLimited   Outcome = "rate_limited"
-	OutcomeCoordination  Outcome = "coordination"
-	OutcomeTransient     Outcome = "transient"
-	OutcomeCredential    Outcome = "credential"
-	OutcomeMissingScope  Outcome = "missing_scope"
-	OutcomeForbidden     Outcome = "forbidden"
-	OutcomeNotFound      Outcome = "not_found"
-	OutcomeInvalid       Outcome = "invalid_response"
-	OutcomeIncomplete    Outcome = "incomplete"
+	OutcomeErrorLimited Outcome = "error_limited"
+	OutcomeRateLimited  Outcome = "rate_limited"
+	OutcomeCoordination Outcome = "coordination"
+	OutcomeTransient    Outcome = "transient"
+	OutcomeCredential   Outcome = "credential"
+	OutcomeMissingScope Outcome = "missing_scope"
+	OutcomeForbidden    Outcome = "forbidden"
+	OutcomeNotFound     Outcome = "not_found"
+	OutcomeInvalid      Outcome = "invalid_response"
+	OutcomeIncomplete   Outcome = "incomplete"
 )
 
 // RequestError mirrors EsiRequestException: an outcome plus how long the
