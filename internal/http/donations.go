@@ -344,14 +344,14 @@ func donationsForConfig(ctx context.Context, d Deps, cfg *store.DonationConfig, 
 		}
 	}
 	type donation struct {
-		id        any
-		date      string
-		amount    float64
-		party     int64
-		reason    string
-		balance   any
-		division  int
-		wallet    string
+		id       any
+		date     string
+		amount   float64
+		party    int64
+		reason   string
+		balance  any
+		division int
+		wallet   string
 	}
 	var all []donation
 	for _, dv := range divisions {
