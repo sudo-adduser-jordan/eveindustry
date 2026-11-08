@@ -20,6 +20,11 @@ type ComponentResult struct {
 	BaseTime        int              `json:"base_time"`
 	Materials       []PricedMaterial `json:"materials"`
 	BuildCost       float64          `json:"build_cost"`
+	// MaterialCost/JobCost split the build cost for the invention path
+	// (raw material cost vs component job fee); the manufacturing path
+	// leaves them zero and omits them from its payload.
+	MaterialCost float64 `json:"material_cost"`
+	JobCost      float64 `json:"job_cost"`
 }
 
 // ComponentData is the pre-resolved build data for one material, mirroring

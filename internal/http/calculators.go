@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -188,54 +189,13 @@ func handleManufacturingCalculate(d Deps) echo.HandlerFunc {
 		jobTime := calc.CalculateProductionTime(baseTime, teLevel, runs, indSkill, advSkill, structTE)
 
 		// Component build data at ME 10, like the PHP planner call.
-		effReactionME := reactionME
+		reactionMEBonus := reactionME
 		if in.ReactionMEBonus == nil {
-			effReactionME = structME
+			reactionMEBonus = structME
 		}
-		components := map[int]*calc.ComponentData{}
-		for _, m := range materials {
-			act, err := d.Industry.ActivityProducingType(ctx, m.TypeID, industry.ActivityManufacturing)
-			if err != nil {
-				return dbError(c, err)
-			}
-			isReaction := false
-			if act == nil {
-				act, err = d.Industry.ActivityProducingType(ctx, m.TypeID, industry.ActivityReaction)
-				if err != nil {
-					return dbError(c, err)
-				}
-				isReaction = act != nil
-			}
-			if act == nil {
-				continue
-			}
-			portion := 1
-			for _, p := range industry.DecodeJSONList(nullStrPtr(act.Products)) {
-				if intVal(p["type_id"], 0) == m.TypeID {
-					if q := intVal(p["quantity"], 0); q > 0 {
-						portion = q
-					}
-					break
-				}
-			}
-			runsNeeded := m.AdjustedQuantity
-			if portion > 0 {
-				runsNeeded = (m.AdjustedQuantity + portion - 1) / portion
-			}
-			effME, effBonus := 10, structME
-			if isReaction {
-				effME, effBonus = 0, effReactionME
-			}
-			subs := []calc.BaseMaterial{}
-			for _, sm := range industry.DecodeJSONList(nullStrPtr(act.Materials)) {
-				name, _ := sm["name"].(string)
-				subs = append(subs, calc.BaseMaterial{TypeID: intVal(sm["type_id"], 0), Name: name, Quantity: intVal(sm["quantity"], 0)})
-			}
-			components[m.TypeID] = &calc.ComponentData{
-				BlueprintTypeID: act.BlueprintTypeID, IsReaction: isReaction,
-				PortionSize: portion, RunsNeeded: runsNeeded, BaseTime: act.Time,
-				Materials: calc.CalculateMaterials(subs, effME, runsNeeded, effBonus),
-			}
+		components, err := resolveComponents(ctx, d.Industry, materials, structME, reactionMEBonus)
+		if err != nil {
+			return dbError(c, err)
 		}
 
 		// Prices for materials, product and sub-materials.
@@ -518,6 +478,59 @@ func handleReactionCalculate(d Deps) echo.HandlerFunc {
 			"freshness": freshnessFor(c, d, regionID),
 		})
 	}
+}
+
+// resolveComponents ports InventionPlannerService::resolveComponentBuildData()
+// at ME 10 for sub-component blueprints (reactions at ME 0): for each
+// material, the manufacturing activity producing it (else the reaction
+// formula), portion size, runs needed and ME-adjusted sub-materials.
+func resolveComponents(ctx context.Context, st industry.IndustryStore, materials []calc.Material, structureME, reactionME float64) (map[int]*calc.ComponentData, error) {
+	components := map[int]*calc.ComponentData{}
+	for _, m := range materials {
+		act, err := st.ActivityProducingType(ctx, m.TypeID, industry.ActivityManufacturing)
+		if err != nil {
+			return nil, err
+		}
+		isReaction := false
+		if act == nil {
+			act, err = st.ActivityProducingType(ctx, m.TypeID, industry.ActivityReaction)
+			if err != nil {
+				return nil, err
+			}
+			isReaction = act != nil
+		}
+		if act == nil {
+			continue
+		}
+		portion := 1
+		for _, p := range industry.DecodeJSONList(nullStrPtr(act.Products)) {
+			if intVal(p["type_id"], 0) == m.TypeID {
+				if q := intVal(p["quantity"], 0); q > 0 {
+					portion = q
+				}
+				break
+			}
+		}
+		runsNeeded := m.AdjustedQuantity
+		if portion > 0 {
+			runsNeeded = (m.AdjustedQuantity + portion - 1) / portion
+		}
+		effME, effBonus := 10, structureME
+		if isReaction {
+			effME, effBonus = 0, reactionME
+		}
+		subs := []calc.BaseMaterial{}
+		for _, sm := range industry.DecodeJSONList(nullStrPtr(act.Materials)) {
+			name, _ := sm["name"].(string)
+			subs = append(subs, calc.BaseMaterial{TypeID: intVal(sm["type_id"], 0), Name: name, Quantity: intVal(sm["quantity"], 0)})
+		}
+		components[m.TypeID] = &calc.ComponentData{
+			BlueprintTypeID: act.BlueprintTypeID, IsReaction: isReaction,
+			PortionSize: portion, RunsNeeded: runsNeeded, BaseTime: act.Time,
+			Materials: calc.CalculateMaterials(subs, effME, runsNeeded, effBonus),
+		}
+	}
+	return components, nil
 }
 
 // POST /calculators/manufacturing/queue-summary — mirrors

@@ -128,3 +128,40 @@ func TestQueueSummary(t *testing.T) {
 		t.Fatalf("empty items = %d", code)
 	}
 }
+
+func TestInventionCalculate(t *testing.T) {
+	d := calcTestDeps()
+	code, body := post(t, d, "/api/v1/calculators/invention", `{
+		"t2_type_id": 587, "encryption_skill": 5, "science1_skill": 5,
+		"science2_skill": 5, "invention_runs": 1
+	}`)
+	if code != http.StatusOK {
+		t.Fatalf("code = %d %v", code, body)
+	}
+	data := body["data"].(map[string]any)
+	inv := data["invention"].(map[string]any)
+	// 0.3 * (1 + 5/40 + 5/30 + 5/30) = 0.4375; ceil(1/0.4375) = 3 attempts
+	if inv["probability"].(float64) != 0.4375 || inv["expected_attempts"].(float64) != 3 {
+		t.Fatalf("invention = %v", inv)
+	}
+	mats := data["t2_materials"].([]any)
+	// 100 x (4*1) runs at ME 2: 400 x 0.98 = 392
+	if len(mats) != 1 || mats[0].(map[string]any)["adjusted_quantity"].(float64) != 392 {
+		t.Fatalf("materials = %v", mats)
+	}
+	// unknown item -> 422 on t2_type_id
+	if code, _ := post(t, d, "/api/v1/calculators/invention", `{
+		"t2_type_id": 1, "encryption_skill": 0, "science1_skill": 0,
+		"science2_skill": 0, "invention_runs": 1
+	}`); code != http.StatusUnprocessableEntity {
+		t.Fatalf("no chain = %d", code)
+	}
+}
+
+func TestDecryptors(t *testing.T) {
+	d := calcTestDeps()
+	code, body := get(t, d, "/api/v1/calculators/invention/decryptors")
+	if code != http.StatusOK || len(body["data"].([]any)) != 7 {
+		t.Fatalf("code = %d %v", code, body)
+	}
+}

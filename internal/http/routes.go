@@ -63,6 +63,7 @@ func New(d Deps) *echo.Echo {
 	registerIndustryReference(v1, d)
 	registerTrading(v1, d)
 	registerCalculators(v1, d)
+	registerInvention(v1, d)
 
 	return e
 }
