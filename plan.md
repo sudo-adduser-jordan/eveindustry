@@ -54,6 +54,7 @@ per the existing rule.
 - Phase 7a: admin users, account, user jobs + requireAdmin gate.
 - Phase 7b: admin dashboard + sponsor manager (banner uploads).
 - Phase 7c: admin ESI diagnostics reports (summary/trends/endpoints/events/batches/health).
+- Phase 7d: admin discord bot settings (feature-gated).
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
