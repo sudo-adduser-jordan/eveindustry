@@ -11,12 +11,12 @@ import (
 
 // stubWholemap implements store.WholemapStore in memory.
 type stubWholemap struct {
-	sigs    map[int64]store.WholemapSignature
-	conns   map[int64]store.WormholeConnection
-	notes   map[int64]store.WholemapNote
-	jumps   map[int64]store.WormholeJumpLog
-	nextID  int64
-	now     time.Time
+	sigs   map[int64]store.WholemapSignature
+	conns  map[int64]store.WormholeConnection
+	notes  map[int64]store.WholemapNote
+	jumps  map[int64]store.WormholeJumpLog
+	nextID int64
+	now    time.Time
 }
 
 func (s *stubWholemap) nid() int64 { s.nextID++; return s.nextID }
@@ -133,10 +133,10 @@ func wholemapTestDeps() Deps {
 			2: {ID: 2, UserID: 1, SignatureID: 1, FromSystemID: 30000142, Size: "large", Life: "stable", Mass: "stable"},
 			8: {ID: 8, UserID: 9, SignatureID: 9, FromSystemID: 1, Size: "large", Life: "stable", Mass: "stable"},
 		},
-		notes:   map[int64]store.WholemapNote{},
-		jumps:   map[int64]store.WormholeJumpLog{},
-		nextID:  100,
-		now:     time.Date(2026, 11, 8, 12, 0, 0, 0, time.UTC),
+		notes:  map[int64]store.WholemapNote{},
+		jumps:  map[int64]store.WormholeJumpLog{},
+		nextID: 100,
+		now:    time.Date(2026, 11, 8, 12, 0, 0, 0, time.UTC),
 	}}
 	return d
 }

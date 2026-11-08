@@ -8,37 +8,37 @@ import (
 
 // WholemapSignature mirrors one wholemap_signatures row.
 type WholemapSignature struct {
-	ID           int64     `db:"id"`
-	UserID       int64     `db:"user_id"`
-	SignatureID  *string   `db:"signature_id"`
-	SystemID     int       `db:"system_id"`
-	SystemName   *string   `db:"system_name"`
-	Type         string    `db:"type"`
-	Name         *string   `db:"name"`
-	Bookmark     *string   `db:"bookmark"`
-	Description  *string   `db:"description"`
-	Locked       bool      `db:"locked"`
-	CreatedBy    *string   `db:"created_by"`
-	UpdatedBy    *string   `db:"updated_by"`
-	CreatedAt    time.Time `db:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at"`
+	ID          int64     `db:"id"`
+	UserID      int64     `db:"user_id"`
+	SignatureID *string   `db:"signature_id"`
+	SystemID    int       `db:"system_id"`
+	SystemName  *string   `db:"system_name"`
+	Type        string    `db:"type"`
+	Name        *string   `db:"name"`
+	Bookmark    *string   `db:"bookmark"`
+	Description *string   `db:"description"`
+	Locked      bool      `db:"locked"`
+	CreatedBy   *string   `db:"created_by"`
+	UpdatedBy   *string   `db:"updated_by"`
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
 }
 
 // WormholeConnection mirrors one wormhole_connections row.
 type WormholeConnection struct {
-	ID            int64     `db:"id"`
-	UserID        int64     `db:"user_id"`
-	SignatureID   int64     `db:"signature_id"`
-	FromSystemID  int       `db:"from_system_id"`
-	FromSystemName *string  `db:"from_system_name"`
-	ToSystemID    *int      `db:"to_system_id"`
-	ToSystemName  *string   `db:"to_system_name"`
-	WormholeType  *string   `db:"wormhole_type"`
-	Size          string    `db:"size"`
-	Life          string    `db:"life"`
-	Mass          string    `db:"mass"`
-	CreatedAt     time.Time `db:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at"`
+	ID             int64     `db:"id"`
+	UserID         int64     `db:"user_id"`
+	SignatureID    int64     `db:"signature_id"`
+	FromSystemID   int       `db:"from_system_id"`
+	FromSystemName *string   `db:"from_system_name"`
+	ToSystemID     *int      `db:"to_system_id"`
+	ToSystemName   *string   `db:"to_system_name"`
+	WormholeType   *string   `db:"wormhole_type"`
+	Size           string    `db:"size"`
+	Life           string    `db:"life"`
+	Mass           string    `db:"mass"`
+	CreatedAt      time.Time `db:"created_at"`
+	UpdatedAt      time.Time `db:"updated_at"`
 }
 
 // WholemapNote mirrors one wholemap_system_notes row.
@@ -55,15 +55,15 @@ type WholemapNote struct {
 
 // WormholeJumpLog mirrors one wormhole_jump_logs row.
 type WormholeJumpLog struct {
-	ID          int64     `db:"id"`
-	ConnectionID int64    `db:"connection_id"`
-	UserID      int64     `db:"user_id"`
-	CharacterID *int64    `db:"character_id"`
-	CharacterName *string  `db:"character_name"`
-	ShipTypeID  *int      `db:"ship_type_id"`
-	ShipTypeName *string   `db:"ship_type_name"`
-	ShipMass    *float64  `db:"ship_mass"`
-	JumpedAt    time.Time `db:"jumped_at"`
+	ID            int64     `db:"id"`
+	ConnectionID  int64     `db:"connection_id"`
+	UserID        int64     `db:"user_id"`
+	CharacterID   *int64    `db:"character_id"`
+	CharacterName *string   `db:"character_name"`
+	ShipTypeID    *int      `db:"ship_type_id"`
+	ShipTypeName  *string   `db:"ship_type_name"`
+	ShipMass      *float64  `db:"ship_mass"`
+	JumpedAt      time.Time `db:"jumped_at"`
 }
 
 // WholemapStore covers wormhole-mapper writes. Ownership is the handler's
