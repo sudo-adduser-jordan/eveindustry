@@ -89,7 +89,7 @@ func optInt64(raw map[string]any, verrs validationErrors, field string) (*int64,
 }
 
 // registerPlans mounts the invention/reaction plan CRUD (apiResource without
-// show names: index, store, show, update, destroy).
+// show names: index, store, show, update, destroy) plus moon occupation.
 func registerPlans(v1 *echo.Group, d Deps) {
 	if d.Plans == nil {
 		return
@@ -104,6 +104,7 @@ func registerPlans(v1 *echo.Group, d Deps) {
 	v1.GET("/reaction-plans/:id", handleReactionPlanShow(d))
 	v1.PUT("/reaction-plans/:id", handleReactionPlanUpdate(d))
 	v1.DELETE("/reaction-plans/:id", handleReactionPlanDestroy(d))
+	v1.PUT("/moon-scans/moons/:moonId/occupation", handleMoonOccupation(d))
 }
 
 func planID(c echo.Context) (int64, bool) {
@@ -767,5 +768,93 @@ func handleReactionPlanDestroy(d Deps) echo.HandlerFunc {
 			return Failure(c, http.StatusNotFound, "Not found.", nil)
 		}
 		return c.NoContent(http.StatusNoContent)
+	}
+}
+
+// PUT /moon-scans/moons/:moonId/occupation — marks who occupies a scanned
+// moon. No corporation on the user: 422. A moon scanned by another
+// corporation: 404. Unoccupying clears the occupier.
+func handleMoonOccupation(d Deps) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		moonID, err := strconvParseID(c.Param("moonId"))
+		if err != nil || moonID < 1 {
+			return Failure(c, http.StatusNotFound, "Not found.", nil)
+		}
+		verrs := validationErrors{}
+		raw := decodePlanBody(c, verrs)
+		if raw == nil && len(verrs) > 0 {
+			return verrs.invalid(c)
+		}
+		occupied := false
+		if v, present := raw["occupied"]; !present || v == nil {
+			verrs.add("occupied", "The occupied field is required.")
+		} else if b, isBool := v.(bool); !isBool {
+			verrs.add("occupied", "The occupied field must be true or false.")
+		} else {
+			occupied = b
+		}
+		var corpID *int64
+		if v, present := raw["corporation_id"]; present && v != nil {
+			if n, ok := intFieldJSON2(map[string]any{"v": v}, verrs, "v", 1, 1<<31-1, true); ok {
+				id := int64(n)
+				corpID = &id
+			} else {
+				verrs.add("corporation_id", "The corporation id field must be an integer.")
+			}
+		}
+		var corpName *string
+		if v, present := raw["corporation_name"]; present && v != nil {
+			if s, isStr := v.(string); !isStr || len([]rune(s)) > 100 {
+				verrs.add("corporation_name", "The corporation name field is invalid.")
+			} else {
+				corpName = &s
+			}
+		}
+		if len(verrs) > 0 {
+			return verrs.invalid(c)
+		}
+		uid := c.Get(string(ctxUIDKey)).(int64)
+		ctx := c.Request().Context()
+		var userCorpID *int64
+		chars, err := d.Users.CharactersForUser(ctx, uid)
+		if err != nil {
+			return dbError(c, err)
+		}
+		for _, ch := range chars {
+			if ch.IsMain && ch.CorporationID != nil {
+				userCorpID = ch.CorporationID
+				break
+			}
+		}
+		if userCorpID == nil {
+			for _, ch := range chars {
+				if ch.CorporationID != nil {
+					userCorpID = ch.CorporationID
+					break
+				}
+			}
+		}
+		if userCorpID == nil {
+			return c.JSON(http.StatusUnprocessableEntity, map[string]any{
+				"message": "No corporation found.",
+				"code":    "validation_failed",
+			})
+		}
+		moon, err := d.Plans.MoonForCorporation(ctx, moonID)
+		if err != nil {
+			return dbError(c, err)
+		}
+		if moon == nil || moon.SystemCorporationID == nil || *moon.SystemCorporationID != *userCorpID {
+			return Failure(c, http.StatusNotFound, "Moon not found.", nil)
+		}
+		row, err := d.Plans.SetMoonOccupation(ctx, moonID, occupied, corpID, corpName)
+		if err != nil {
+			return dbError(c, err)
+		}
+		return Success(c, http.StatusOK, map[string]any{
+			"moon_id": row.MoonID, "moon_name": row.MoonName, "occupied": row.Occupied,
+			"occupying_corporation_id": row.OccupyingCorporationID,
+			"occupying_corporation_name": row.OccupyingCorporationName,
+		}, nil)
 	}
 }

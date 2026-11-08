@@ -64,6 +64,8 @@ type PlanStore interface {
 	CreateReactionPlan(ctx context.Context, p ReactionPlan) (*ReactionPlan, error)
 	UpdateReactionPlan(ctx context.Context, p ReactionPlan) (*ReactionPlan, error)
 	DeleteReactionPlan(ctx context.Context, id, userID int64) (bool, error)
+	MoonForCorporation(ctx context.Context, moonID int64) (*MoonOccupation, error)
+	SetMoonOccupation(ctx context.Context, moonID int64, occupied bool, corpID *int64, corpName *string) (*MoonOccupation, error)
 }
 
 const inventionPlanCols = `id, user_id, name, t2_type_id, t2_type_name, decryptor_key,
@@ -210,4 +212,48 @@ func (s *SQL) DeleteReactionPlan(ctx context.Context, id, userID int64) (bool, e
 	}
 	n, err := res.RowsAffected()
 	return n > 0, err
+}
+
+// MoonOccupation is one moon row with its scan system's corporation.
+type MoonOccupation struct {
+	MoonID                 int64   `db:"id"`
+	MoonName               string  `db:"moon_name"`
+	Occupied               bool    `db:"occupied"`
+	OccupyingCorporationID *int64  `db:"occupying_corporation_id"`
+	OccupyingCorporationName *string `db:"occupying_corporation_name"`
+	SystemCorporationID    *int64  `db:"system_corporation_id"`
+}
+
+// MoonForCorporation loads a moon with its system's corporation for the
+// occupation check.
+func (s *SQL) MoonForCorporation(ctx context.Context, moonID int64) (*MoonOccupation, error) {
+	var out MoonOccupation
+	err := s.db.GetContext(ctx, &out, `
+		SELECT r.id, r.moon_name, r.occupied, r.occupying_corporation_id,
+		       r.occupying_corporation_name, sys.corporation_id AS system_corporation_id
+		FROM moon_scan_results r
+		LEFT JOIN moon_scan_systems sys ON sys.id = r.system_id
+		WHERE r.id = ?`, moonID)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	return &out, err
+}
+
+// SetMoonOccupation applies the occupation edit (clearing the occupier when
+// unoccupied, whatever was sent).
+func (s *SQL) SetMoonOccupation(ctx context.Context, moonID int64, occupied bool, corpID *int64, corpName *string) (*MoonOccupation, error) {
+	var occID any
+	var occName any
+	if occupied {
+		occID = corpID
+		occName = corpName
+	}
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE moon_scan_results SET occupied = ?, occupying_corporation_id = ?, occupying_corporation_name = ?
+		WHERE id = ?`, occupied, occID, occName, moonID)
+	if err != nil {
+		return nil, err
+	}
+	return s.MoonForCorporation(ctx, moonID)
 }
