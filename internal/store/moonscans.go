@@ -8,27 +8,27 @@ import (
 
 // MoonScanSystem mirrors one moon_scan_systems row.
 type MoonScanSystem struct {
-	ID            int64          `db:"id"`
-	SystemName    string         `db:"system_name"`
-	CorporationID sql.NullInt64  `db:"corporation_id"`
-	RegionID      int64          `db:"region_id"`
-	PricingMode   string         `db:"pricing_mode"`
-	LastScannedAt time.Time      `db:"last_scanned_at"`
+	ID            int64         `db:"id"`
+	SystemName    string        `db:"system_name"`
+	CorporationID sql.NullInt64 `db:"corporation_id"`
+	RegionID      int64         `db:"region_id"`
+	PricingMode   string        `db:"pricing_mode"`
+	LastScannedAt time.Time     `db:"last_scanned_at"`
 }
 
 // MoonScanResult mirrors one moon_scan_results row.
 type MoonScanResult struct {
-	ID                      int64          `db:"id"`
-	SystemID                sql.NullInt64  `db:"system_id"`
-	MoonName                string         `db:"moon_name"`
-	PlanetName              sql.NullString `db:"planet_name"`
-	Grade                   string         `db:"grade"`
-	OresJSON                string         `db:"ores"`
-	TotalValue              int64          `db:"total_value"`
-	Occupied                bool           `db:"occupied"`
+	ID                       int64          `db:"id"`
+	SystemID                 sql.NullInt64  `db:"system_id"`
+	MoonName                 string         `db:"moon_name"`
+	PlanetName               sql.NullString `db:"planet_name"`
+	Grade                    string         `db:"grade"`
+	OresJSON                 string         `db:"ores"`
+	TotalValue               int64          `db:"total_value"`
+	Occupied                 bool           `db:"occupied"`
 	OccupyingCorporationID   sql.NullInt64  `db:"occupying_corporation_id"`
 	OccupyingCorporationName sql.NullString `db:"occupying_corporation_name"`
-	ScannedAt               time.Time      `db:"scanned_at"`
+	ScannedAt                time.Time      `db:"scanned_at"`
 }
 
 // MoonScanStore covers the moon-scan lookup tables, scoped by corporation.

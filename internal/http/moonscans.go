@@ -376,7 +376,7 @@ func handleMoonScanSystem(d Deps) echo.HandlerFunc {
 			"system": map[string]any{
 				"name": rec.SystemName, "region_id": rec.RegionID,
 				"pricing_mode": effective,
-				"scanned_at": rec.LastScannedAt.UTC().Format(time.RFC3339),
+				"scanned_at":   rec.LastScannedAt.UTC().Format(time.RFC3339),
 			},
 			"freshness": freshnessFor(c, d, int(rec.RegionID)),
 		})
@@ -418,7 +418,7 @@ func storedMoons(rows []store.MoonScanResult) []any {
 		out = append(out, map[string]any{
 			"id": r.ID, "name": r.MoonName, "grade": r.Grade,
 			"total_value": float64(r.TotalValue), "ores": ores,
-			"occupied": r.Occupied,
+			"occupied":                 r.Occupied,
 			"occupying_corporation_id": occID, "occupying_corporation_name": occName,
 		})
 	}
@@ -505,7 +505,7 @@ func repriceMoons(ctx context.Context, d Deps, rows []store.MoonScanResult, regi
 		out = append(out, map[string]any{
 			"id": p.row.ID, "name": p.row.MoonName,
 			"grade": calc.MoonGrade(maxTier), "total_value": total, "ores": ores,
-			"occupied": p.row.Occupied,
+			"occupied":                 p.row.Occupied,
 			"occupying_corporation_id": occID, "occupying_corporation_name": occName,
 		})
 	}

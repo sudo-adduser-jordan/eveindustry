@@ -148,20 +148,20 @@ func (moonNumErr) Error() string { return "not a number" }
 
 // OreType carries the type-table data moon valuation needs.
 type OreType struct {
-	TypeID     int
-	Name       string
-	Volume     float64
-	Portion    int
+	TypeID  int
+	Name    string
+	Volume  float64
+	Portion int
 }
 
 // ValuedOre is one enriched ore row.
 type ValuedOre struct {
-	Name             string
-	TypeID           int
-	Quantity         float64
-	PricePerUnit     float64
-	Tier             int
-	OreUnits         int
+	Name              string
+	TypeID            int
+	Quantity          float64
+	PricePerUnit      float64
+	Tier              int
+	OreUnits          int
 	ValueContribution float64
 }
 

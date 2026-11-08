@@ -83,10 +83,10 @@ func moonScanTestDeps() Deps {
 		CorporationID: &corpID,
 	}}
 	return Deps{Sessions: stub, Users: stub,
-		MoonScans:  &stubMoonScans{},
-		Market:     &stubMarket{},
-		Industry:   &stubIndustry{},
-		Reference:  &stubReference{},
+		MoonScans: &stubMoonScans{},
+		Market:    &stubMarket{},
+		Industry:  &stubIndustry{},
+		Reference: &stubReference{},
 	}
 }
 
