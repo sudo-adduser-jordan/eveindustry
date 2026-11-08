@@ -243,3 +243,13 @@ func TestMoonOccupation(t *testing.T) {
 		t.Fatalf("bad = %d", code)
 	}
 }
+
+func TestMoonOccupationNoCorp(t *testing.T) {
+	d := plansTestDeps()
+	stub := d.Sessions.(*stubAuth)
+	stub.chars = []auth.Character{{CharacterID: 11, Name: "Lonely", IsMain: true, IsEsiActive: true}}
+	code, body := putJSON(t, d, "/api/v1/moon-scans/moons/5/occupation", `{"occupied":true}`)
+	if code != http.StatusUnprocessableEntity || body["message"] != "No corporation found." {
+		t.Fatalf("no corp = %d %v", code, body)
+	}
+}
