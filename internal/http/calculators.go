@@ -24,6 +24,7 @@ func registerCalculators(v1 *echo.Group, d Deps) {
 	calcGroup.POST("/manufacturing/queue-summary", handleQueueSummary)
 	calcGroup.POST("/reactions", handleReactionCalculate(d))
 	calcGroup.POST("/reaction-planner", handleReactionPlanner(d))
+	calcGroup.POST("/reaction-browser", handleReactionBrowser(d))
 }
 
 // manufacturingInput mirrors ManufacturingCalculateRequest rules.
@@ -532,6 +533,159 @@ func resolveComponents(ctx context.Context, st industry.IndustryStore, materials
 		}
 	}
 	return components, nil
+}
+
+// POST /calculators/reaction-browser — mirrors BrowserController@reactions:
+// every reaction formula priced with the caller's settings, sorted by
+// profit, paginated.
+func handleReactionBrowser(d Deps) echo.HandlerFunc {
+	type input struct {
+		Runs            *int     `json:"runs"`
+		RigTier         *string  `json:"rig_tier"`
+		SecuritySpace   *string  `json:"security_space"`
+		FacilityTax     *float64 `json:"facility_tax"`
+		SystemCostIndex *float64 `json:"system_cost_index"`
+		PriceRegionID   *int     `json:"price_region_id"`
+		Page            *int     `json:"page"`
+		PerPage         *int     `json:"per_page"`
+	}
+	oneOf := func(verrs validationErrors, field string, v *string, allowed ...string) (string, bool) {
+		if v == nil {
+			return "", true
+		}
+		for _, a := range allowed {
+			if *v == a {
+				return *v, true
+			}
+		}
+		verrs.add(field, "The selected "+field+" is invalid.")
+		return "", false
+	}
+	return func(c echo.Context) error {
+		var in input
+		if err := json.NewDecoder(c.Request().Body).Decode(&in); err != nil {
+			verrs := validationErrors{}
+			verrs.add("body", "The request body must be valid JSON.")
+			return verrs.invalid(c)
+		}
+		verrs := validationErrors{}
+		runs, _ := intField(verrs, "runs", in.Runs, 1, 100000, true)
+		rigTier, _ := oneOf(verrs, "rig_tier", in.RigTier, "none", "t1", "t2")
+		secSpace, _ := oneOf(verrs, "security_space", in.SecuritySpace, "lowsec", "nullsec")
+		facilityTax, _ := numField(verrs, "facility_tax", in.FacilityTax, 0, 50)
+		sysCostIdx, _ := numField(verrs, "system_cost_index", in.SystemCostIndex, 0, 100)
+		page, perPage := 1, 50
+		if in.Page != nil {
+			if *in.Page < 1 {
+				verrs.add("page", "The page field must be at least 1.")
+			} else {
+				page = *in.Page
+			}
+		}
+		if in.PerPage != nil {
+			if *in.PerPage < 1 || *in.PerPage > 200 {
+				verrs.add("per_page", "The per page field must be between 1 and 200.")
+			} else {
+				perPage = *in.PerPage
+			}
+		}
+		if len(verrs) > 0 {
+			return verrs.invalid(c)
+		}
+		if secSpace == "" {
+			secSpace = "lowsec"
+		}
+		priceRegion := market.DefaultRegion
+		if in.PriceRegionID != nil {
+			priceRegion = *in.PriceRegionID
+		}
+		ctx := c.Request().Context()
+
+		formulas, err := d.Industry.AllReactionFormulas(ctx)
+		if err != nil {
+			return dbError(c, err)
+		}
+		typeIDs := []int{}
+		seen := map[int]bool{}
+		add := func(id int) {
+			if id > 0 && !seen[id] {
+				seen[id] = true
+				typeIDs = append(typeIDs, id)
+			}
+		}
+		for _, f := range formulas {
+			for _, m := range f.Materials {
+				add(intVal(m["type_id"], 0))
+			}
+			for _, p := range f.Products {
+				add(intVal(p["type_id"], 0))
+			}
+		}
+		resolved, err := resolvePrices(ctx, d.Market, typeIDs, priceRegion)
+		if err != nil {
+			return dbError(c, err)
+		}
+		prices := make(map[int]float64, len(resolved))
+		for id, r := range resolved {
+			prices[id] = r.Price
+		}
+		histories := make(map[int]calc.SellScoreInput, len(formulas))
+		for _, f := range formulas {
+			if len(f.Products) == 0 {
+				continue
+			}
+			pid := intVal(f.Products[0]["type_id"], 0)
+			if pid == 0 {
+				continue
+			}
+			rows, err := d.Market.History(ctx, pid, priceRegion, 30)
+			if err != nil {
+				return dbError(c, err)
+			}
+			var vols, ords []uint64
+			for _, r := range rows {
+				vols = append(vols, r.Volume)
+				ords = append(ords, r.OrderCount)
+			}
+			histories[pid] = calc.SellScoreInput{Volumes: vols, OrderCounts: ords}
+		}
+
+		rigBonus := calc.ResolveRigBonus(rigTier, secSpace)
+		results := calc.CalculateReactionBrowser(calc.BrowserReactionInput{
+			Formulas: formulas, Prices: prices, Histories: histories,
+			Runs: runs, RigBonus: rigBonus, FacilityTax: facilityTax, SystemCostIdx: sysCostIdx,
+		})
+		offset, pagination := paginate(len(results), page, perPage)
+		end := offset + perPage
+		if end > len(results) {
+			end = len(results)
+		}
+		out := make([]any, 0, end-offset)
+		for _, r := range results[offset:end] {
+			r := r
+			out = append(out, map[string]any{
+				"blueprint_type_id": r.BlueprintTypeID, "formula_name": r.FormulaName,
+				"reaction_category": r.ReactionCategory, "reaction_complexity": r.ReactionComplexity,
+				"product_type_id": r.ProductTypeID, "product_name": r.ProductName,
+				"product_icon_url": r.ProductIconURL, "portion_size": r.PortionSize,
+				"total_output": r.TotalOutput, "total_input_cost": r.TotalInputCost,
+				"total_output_value": r.TotalOutputValue, "job_fee": r.JobFee,
+				"facility_tax": r.FacilityTax, "total_job_cost": r.TotalJobCost,
+				"scc_fee": r.SCCFee, "profit": r.Profit, "profit_positive": r.ProfitPositive,
+				"profit_per_unit": r.ProfitPerUnit, "profit_margin": r.ProfitMargin,
+				"sell_score": map[string]any{
+					"score": r.SellScore.Score, "avg_daily_volume": r.SellScore.AvgDailyVolume,
+					"avg_order_count": r.SellScore.AvgOrderCount,
+					"active_days": r.SellScore.ActiveDays, "total_days": r.SellScore.TotalDays,
+				},
+			})
+		}
+		return Success(c, http.StatusOK, out, map[string]any{
+			"effective_rig_bonus": calc.Round2(rigBonus),
+			"freshness":           freshnessFor(c, d, priceRegion),
+			"pagination":          pagination,
+		})
+	}
 }
 
 // POST /calculators/manufacturing/queue-summary — mirrors

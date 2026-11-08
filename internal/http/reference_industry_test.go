@@ -61,6 +61,14 @@ func (s *stubIndustry) GroupCategories(ctx context.Context, ids []int) (map[int]
 func (s *stubIndustry) CategoryNames(ctx context.Context, ids []int) (map[int]string, error) {
 	return map[int]string{6: "Ships"}, nil
 }
+func (s *stubIndustry) AllReactionFormulas(ctx context.Context) ([]industry.ReactionFormula, error) {
+	return []industry.ReactionFormula{{
+		BlueprintTypeID: 999, FormulaName: "Test Formula",
+		Materials: []map[string]any{{"type_id": 34, "name": "Tritanium", "quantity": 50}},
+		Products:  []map[string]any{{"type_id": 587, "name": "Composite", "quantity": 5}},
+		Time: 600,
+	}}, nil
+}
 
 func industryTestDeps() Deps {
 	return Deps{Industry: &stubIndustry{

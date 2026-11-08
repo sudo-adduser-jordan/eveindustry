@@ -19,6 +19,59 @@ type BlueprintActivityRow struct {
 	Skills          sql.NullString `db:"skills"`
 }
 
+// ReactionFormula is one activity-11 row with its SDE formula name.
+type ReactionFormula struct {
+	BlueprintTypeID int
+	FormulaName     string
+	GroupID         *int
+	Materials       []map[string]any
+	Products        []map[string]any
+	Time            int
+}
+
+// AllReactionFormulas ports getAllReactions()' first half: every activity-11
+// row with products, joined to eve_types for the formula name/group.
+func (s *SQL) AllReactionFormulas(ctx context.Context) ([]ReactionFormula, error) {
+	var rows []struct {
+		BlueprintTypeID int            `db:"blueprint_type_id"`
+		Materials       sql.NullString `db:"materials"`
+		Products        sql.NullString `db:"products"`
+		Time            int            `db:"time"`
+		Name            sql.NullString `db:"name"`
+		GroupID         sql.NullInt64  `db:"group_id"`
+	}
+	err := s.db.SelectContext(ctx, &rows, `
+		SELECT b.blueprint_type_id, b.materials, b.products, b.time, t.name, t.group_id
+		FROM blueprint_activities b
+		LEFT JOIN eve_types t ON t.type_id = b.blueprint_type_id
+		WHERE b.activity_id = 11 AND b.products IS NOT NULL
+		ORDER BY t.name`)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ReactionFormula, 0, len(rows))
+	for _, r := range rows {
+		mats := DecodeJSONList(nullString(r.Materials))
+		prods := DecodeJSONList(nullString(r.Products))
+		if len(prods) == 0 {
+			continue
+		}
+		name := "Unknown Formula"
+		if r.Name.Valid && r.Name.String != "" {
+			name = r.Name.String
+		}
+		var gid *int
+		if r.GroupID.Valid {
+			v := int(r.GroupID.Int64)
+			gid = &v
+		}
+		out = append(out, ReactionFormula{
+			BlueprintTypeID: r.BlueprintTypeID, FormulaName: name, GroupID: gid,
+			Materials: mats, Products: prods, Time: r.Time,
+		})
+	}
+	return out, nil
+}
 // IndustryStore covers the blueprint/invention/category reference reads.
 type IndustryStore interface {
 	SearchBlueprintTypes(ctx context.Context, like string, limit int) ([]BlueprintTypeHit, error)
@@ -28,6 +81,7 @@ type IndustryStore interface {
 	ActivityProducingType(ctx context.Context, typeID, activityID int) (*BlueprintActivityRow, error)
 	HasActivity(ctx context.Context, blueprintTypeID, activityID int) (bool, error)
 	TypeNames(ctx context.Context, typeIDs []int) (map[int]string, error)
+	AllReactionFormulas(ctx context.Context) ([]ReactionFormula, error)
 	ProductTypeIDsExcludingInvented(ctx context.Context) ([]int, error)
 	ProductGroupCounts(ctx context.Context, typeIDs []int) (map[int]int, error)
 	GroupCategories(ctx context.Context, groupIDs []int) (map[int]int, error)

@@ -79,6 +79,9 @@ func (s *stubStore) GroupCategories(ctx context.Context, ids []int) (map[int]int
 func (s *stubStore) CategoryNames(ctx context.Context, ids []int) (map[int]string, error) {
 	return map[int]string{6: "Ships"}, nil
 }
+func (s *stubStore) AllReactionFormulas(ctx context.Context) ([]ReactionFormula, error) {
+	return nil, nil
+}
 
 func key(bp, act int) string { return string(rune(bp)) + string(rune(act)) }
 

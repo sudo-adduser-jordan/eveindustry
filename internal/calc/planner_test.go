@@ -59,6 +59,9 @@ func (s *chainStub) GroupCategories(ctx context.Context, ids []int) (map[int]int
 func (s *chainStub) CategoryNames(ctx context.Context, ids []int) (map[int]string, error) {
 	return nil, nil
 }
+func (s *chainStub) AllReactionFormulas(ctx context.Context) ([]industry.ReactionFormula, error) {
+	return nil, nil
+}
 
 func strPtr2(s string) *string { return &s }
 
@@ -118,5 +121,17 @@ func TestJobCostAndRigBonus(t *testing.T) {
 	}
 	if ResolveRigBonus("none", "lowsec") != 0 {
 		t.Fatal("none rig must be 0")
+	}
+}
+
+func TestCalculateSellScore(t *testing.T) {
+	s := CalculateSellScore(SellScoreInput{Volumes: []uint64{100, 200}, OrderCounts: []uint64{10, 20}}, 25)
+	// avg vol 150, ratio 6 -> min(6, 18) = 6; consistency 2; orders 15 -> 1; total 9
+	if s.Score != 9 || s.AvgDailyVolume != 150 || s.TotalDays != 2 || s.ActiveDays != 2 {
+		t.Fatalf("got %+v", s)
+	}
+	empty := CalculateSellScore(SellScoreInput{}, 10)
+	if empty.Score != 0 || empty.TotalDays != 0 {
+		t.Fatalf("empty: %+v", empty)
 	}
 }

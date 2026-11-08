@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
 func industryActivityRow(bp, act, tm int, mats, prods string) *industry.BlueprintActivityRow {
@@ -156,6 +157,34 @@ func TestReactionPlanner(t *testing.T) {
 	}
 	if code, _ := post(t, d, "/api/v1/calculators/reaction-planner", `{"entries": []}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("empty entries = %d", code)
+	}
+}
+
+func TestReactionBrowser(t *testing.T) {
+	d := calcTestDeps()
+	m := d.Market.(*stubMarket)
+	m.aggregates = map[int]float64{34: 10.5, 587: 100}
+	m.hasSnapshot = true
+	m.history = []store.MarketHistoryRow{{Volume: 100, OrderCount: 10}, {Volume: 200, OrderCount: 20}}
+	code, body := post(t, d, "/api/v1/calculators/reaction-browser", `{"runs": 5}`)
+	if code != http.StatusOK {
+		t.Fatalf("code = %d %v", code, body)
+	}
+	data := body["data"].([]any)
+	if len(data) != 1 {
+		t.Fatalf("rows = %v", data)
+	}
+	row := data[0].(map[string]any)
+	// input 250 x 10.5 = 2625; output 25 x 100 = 2500; scc 100; profit -225
+	if row["profit"].(float64) != -225 {
+		t.Fatalf("profit = %v", row)
+	}
+	if row["reaction_complexity"] != "intermediate" {
+		t.Fatalf("complexity = %v", row)
+	}
+	score := row["sell_score"].(map[string]any)
+	if score["total_days"].(float64) != 2 || score["score"].(float64) == 0 {
+		t.Fatalf("sell score = %v", score)
 	}
 }
 
