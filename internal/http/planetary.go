@@ -171,7 +171,7 @@ func handlePlanetaryShow(d Deps) echo.HandlerFunc {
 				"extractors": totalExt, "factories": totalFac,
 			},
 			"outputs": outputs, "alerts": alerts,
-			"capacity": pi.BuildCapacityAnalysis(planetsFlat),
+			"capacity":   pi.BuildCapacityAnalysis(planetsFlat),
 			"characters": charOut,
 		}, nil)
 	}
@@ -219,14 +219,14 @@ func planetaryAnalyze(ctx context.Context, d Deps, ch *auth.Character, colony, d
 	}
 	summary := map[string]any{
 		"extractor_count": analysis.Summary["extractor_count"],
-		"factory_count": analysis.Summary["factory_count"],
-		"storage_count": analysis.Summary["storage_count"],
+		"factory_count":   analysis.Summary["factory_count"],
+		"storage_count":   analysis.Summary["storage_count"],
 		"launchpad_count": analysis.Summary["launchpad_count"],
-		"route_count": len(analysis.Routes),
+		"route_count":     len(analysis.Routes),
 	}
 	return map[string]any{
 		"planet_id": pid, "planet_name": name,
-		"planet_type": strOrColony(colony["planet_type"], "unknown"),
+		"planet_type":   strOrColony(colony["planet_type"], "unknown"),
 		"upgrade_level": piInt(colony["upgrade_level"]), "num_pins": piInt(colony["num_pins"]),
 		"summary": summary, "alerts": stripPlanetAlertContext(analysis.Alerts),
 		"outputs": outs, "extractors": extractors, "factories": factories,

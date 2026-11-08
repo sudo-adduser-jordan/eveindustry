@@ -46,7 +46,7 @@ func TestStorageUsage(t *testing.T) {
 
 func TestAnalyzePlanet(t *testing.T) {
 	r := TypeResolver{
-		Names: map[int]string{3068: "Temperate ECU", 500: "Bacteria", 34: "Tritanium"},
+		Names:   map[int]string{3068: "Temperate ECU", 500: "Bacteria", 34: "Tritanium"},
 		Volumes: map[int]float64{34: 0.01},
 	}
 	now := time.Date(2026, 11, 8, 12, 0, 0, 0, time.UTC)
@@ -55,7 +55,7 @@ func TestAnalyzePlanet(t *testing.T) {
 			map[string]any{
 				"pin_id": 1, "type_id": 3068,
 				"extractor_details": map[string]any{"product_type_id": 500, "qty_per_cycle": 100, "cycle_time": 900},
-				"install_time": "2026-11-08T10:00:00Z", "expiry_time": "2026-11-09T10:00:00Z",
+				"install_time":      "2026-11-08T10:00:00Z", "expiry_time": "2026-11-09T10:00:00Z",
 			},
 			map[string]any{
 				"pin_id": 2, "type_id": 2256,

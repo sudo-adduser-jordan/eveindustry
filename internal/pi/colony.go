@@ -8,14 +8,14 @@ import (
 
 // Pin categories mirroring PlanetaryService.
 const (
-	PinExtractor      = "extractor"
-	PinBasicFactory   = "basic_factory"
+	PinExtractor       = "extractor"
+	PinBasicFactory    = "basic_factory"
 	PinAdvancedFactory = "advanced_factory"
 	PinHightechFactory = "hightech_factory"
-	PinStorage        = "storage"
-	PinLaunchpad      = "launchpad"
-	PinCommandCenter  = "command_center"
-	PinUnknown        = "unknown"
+	PinStorage         = "storage"
+	PinLaunchpad       = "launchpad"
+	PinCommandCenter   = "command_center"
+	PinUnknown         = "unknown"
 )
 
 // LaunchpadCapacity and StorageCapacity in m3.
@@ -158,12 +158,12 @@ type PinAnalysis struct {
 
 // PlanetAnalysis ports analyzePlanet.
 type PlanetAnalysis struct {
-	Summary   map[string]int
-	Pins      []any
-	Outputs   []any
-	Inputs    []any
-	Alerts    []any
-	Routes    []any
+	Summary map[string]int
+	Pins    []any
+	Outputs []any
+	Inputs  []any
+	Alerts  []any
+	Routes  []any
 }
 
 // AnalyzePlanet ports analyzePlanet: pin details, extractor/factory stats,
@@ -238,7 +238,7 @@ func AnalyzePlanet(details map[string]any, r TypeResolver, schematic func(id int
 					alerts = append(alerts, map[string]any{
 						"type": "extractor_expired", "severity": "warning",
 						"message": "Extractor for " + r.Name(prodID) + " has expired",
-						"pin_id": intOf(pin["pin_id"]),
+						"pin_id":  intOf(pin["pin_id"]),
 					})
 				}
 			}
@@ -290,8 +290,8 @@ func AnalyzeRoutes(routes []any, r TypeResolver) []any {
 		tid := intOf(route["content_type_id"])
 		out = append(out, map[string]any{
 			"content_type_id": tid, "content_name": r.Name(tid),
-			"quantity": route["quantity"],
-			"source_pin_id": route["source_pin_id"],
+			"quantity":           route["quantity"],
+			"source_pin_id":      route["source_pin_id"],
 			"destination_pin_id": route["destination_pin_id"],
 		})
 	}
@@ -329,9 +329,9 @@ func BuildCapacityAnalysis(planets []map[string]any) []any {
 			}
 		}
 		out = append(out, map[string]any{
-			"character_name": strOr(p["character_name"], ""),
-			"planet_name": strOr(p["planet_name"], ""),
-			"planet_type": strOr(p["planet_type"], ""),
+			"character_name":  strOr(p["character_name"], ""),
+			"planet_name":     strOr(p["planet_name"], ""),
+			"planet_type":     strOr(p["planet_type"], ""),
 			"extractor_count": ext, "factory_count": fac, "status": status,
 		})
 	}
