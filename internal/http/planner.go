@@ -22,12 +22,12 @@ func handleReactionPlanner(d Deps) echo.HandlerFunc {
 		RigBonus      *float64 `json:"rig_bonus"`
 	}
 	type input struct {
-		Entries            []entry  `json:"entries"`
-		RigTier            *string  `json:"rig_tier"`
-		SecuritySpace      *string  `json:"security_space"`
-		FacilityTax        *float64 `json:"facility_tax"`
-		SystemCostIndex    *float64 `json:"system_cost_index"`
-		PriceRegionID      *int     `json:"price_region_id"`
+		Entries         []entry  `json:"entries"`
+		RigTier         *string  `json:"rig_tier"`
+		SecuritySpace   *string  `json:"security_space"`
+		FacilityTax     *float64 `json:"facility_tax"`
+		SystemCostIndex *float64 `json:"system_cost_index"`
+		PriceRegionID   *int     `json:"price_region_id"`
 	}
 	oneOf := func(verrs validationErrors, field string, v *string, allowed ...string) (string, bool) {
 		if v == nil {
@@ -151,10 +151,10 @@ func handleReactionPlanner(d Deps) echo.HandlerFunc {
 
 		return Success(c, http.StatusOK, map[string]any{
 			"effective_rig_bonus": calc.Round2(globalRig),
-			"composite_outputs": compOut,
-			"composite_slots": chain.CompositeSlots,
-			"intermediate_slots": chain.IntermediateSlots,
-			"raw_materials": rawOut,
+			"composite_outputs":   compOut,
+			"composite_slots":     chain.CompositeSlots,
+			"intermediate_slots":  chain.IntermediateSlots,
+			"raw_materials":       rawOut,
 			"slots": map[string]any{
 				"composite": chain.TotalCompositeSlots, "intermediate": chain.TotalIntermediateSlots,
 				"total": chain.TotalSlots,
