@@ -11,9 +11,73 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/market"
 )
 
-// registerInvention mounts POST /calculators/invention and the decryptor
-// list. The skills endpoint needs an authenticated character, so it stays on
-// PHP until the auth phase.
+// registerCorporateExport mounts GET /calculators/corporate-export.
+func registerCorporateExport(v1 *echo.Group, d Deps) {
+	if d.Users == nil || d.Corp == nil {
+		return
+	}
+	v1.Group("/calculators").GET("/corporate-export", handleCorporateExport(d))
+}
+
+// GET /calculators/corporate-export — mirrors CorporateExportController@show:
+// whether the calculators may export to a corporate build program (active
+// corp config plus a Director/CEO/Factory_Manager character there).
+func handleCorporateExport(d Deps) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if _, ok := CurrentUser(c); !ok {
+			return Failure(c, http.StatusUnauthorized, "Unauthenticated.", nil)
+		}
+		uid := c.Get(string(ctxUIDKey)).(int64)
+		ctx := c.Request().Context()
+		chars, err := d.Users.CharactersForUser(ctx, uid)
+		if err != nil {
+			return dbError(c, err)
+		}
+		seen := map[int64]bool{}
+		available := false
+		var corpName *string
+		for _, ch := range chars {
+			if ch.CorporationID == nil || seen[*ch.CorporationID] {
+				continue
+			}
+			seen[*ch.CorporationID] = true
+			cfg, err := d.Corp.ActiveCorpConfig(ctx, *ch.CorporationID)
+			if err != nil {
+				return dbError(c, err)
+			}
+			if cfg == nil {
+				continue
+			}
+			members, err := d.Corp.UserCorpCharacters(ctx, uid, *ch.CorporationID)
+			if err != nil {
+				return dbError(c, err)
+			}
+			for _, m := range members {
+				if m.IsDirectorCEO || hasRole(m.Roles, "Factory_Manager") {
+					available = true
+					name := cfg.CorporationName
+					corpName = &name
+					break
+				}
+			}
+			if available {
+				break
+			}
+		}
+		return Success(c, http.StatusOK, map[string]any{
+			"available": available, "corporation_name": corpName,
+		}, nil)
+	}
+}
+
+func hasRole(roles []string, role string) bool {
+	for _, r := range roles {
+		if r == role {
+			return true
+		}
+	}
+	return false
+}
 func registerInvention(v1 *echo.Group, d Deps) {
 	if d.Market == nil || d.Industry == nil || d.Trading == nil {
 		return

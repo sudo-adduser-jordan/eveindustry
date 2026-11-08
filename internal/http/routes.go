@@ -33,6 +33,7 @@ type Deps struct {
 	Industry  industry.IndustryStore
 	Trading   store.TradingStore
 	Contracts store.ContractsStore
+	Corp      store.CorpStore
 
 	// Sessions and Users drive RequireAuth. Either nil means nobody can
 	// authenticate, so every authed route 401s (never silently open).
@@ -77,6 +78,7 @@ func New(d Deps) *echo.Echo {
 	registerContracts(authed, d)
 	registerBrowser(authed, d)
 	registerFactoryPlanner(authed, d)
+	registerCorporateExport(authed, d)
 
 	return e
 }

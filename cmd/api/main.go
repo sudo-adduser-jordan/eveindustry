@@ -68,6 +68,7 @@ func main() {
 		deps.Market = queries
 		deps.Trading = queries
 		deps.Contracts = queries
+		deps.Corp = queries
 		deps.Users = queries
 		deps.Industry = industry.NewSQL(sqlxDB)
 	}
