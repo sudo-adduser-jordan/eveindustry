@@ -98,6 +98,7 @@ func main() {
 		deps.IndustryDeps.Characters = esiChars
 		deps.IndustryDeps.Universe = esiUniverse
 		deps.Planning = queries
+		deps.Wholemap = queries
 	}
 	if rdb != nil {
 		deps.CachePing = func(ctx context.Context) bool {
