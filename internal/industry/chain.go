@@ -26,24 +26,24 @@ type Activity struct {
 // InventionPlannerService::resolveInventionChain(). Nil means "no invention
 // chain for this item" (the PHP 404 case).
 type Chain struct {
-	T2ItemTypeID      int       `json:"t2_item_type_id"`
-	T2BlueprintTypeID int       `json:"t2_blueprint_type_id"`
-	T2Manufacturing   Activity  `json:"t2_manufacturing"`
-	T1ItemTypeID      int       `json:"t1_item_type_id"`
-	T1ItemName        *string   `json:"t1_item_name"`
-	T1BlueprintTypeID int       `json:"t1_blueprint_type_id"`
-	T1Manufacturing   *Activity `json:"t1_manufacturing"`
-	Datacores         []Datacore `json:"datacores"`
-	InventionTime     int       `json:"invention_time"`
-	BaseProbability   float64   `json:"base_probability"`
-	BaseRuns          int       `json:"base_runs"`
-	ScienceSkillIDs   []int     `json:"science_skill_ids"`
-	EncryptionSkillID   *int    `json:"encryption_skill_id"`
-	EncryptionSkillName *string `json:"encryption_skill_name"`
-	Science1SkillID     *int    `json:"science1_skill_id"`
-	Science1SkillName   *string `json:"science1_skill_name"`
-	Science2SkillID     *int    `json:"science2_skill_id"`
-	Science2SkillName   *string `json:"science2_skill_name"`
+	T2ItemTypeID        int        `json:"t2_item_type_id"`
+	T2BlueprintTypeID   int        `json:"t2_blueprint_type_id"`
+	T2Manufacturing     Activity   `json:"t2_manufacturing"`
+	T1ItemTypeID        int        `json:"t1_item_type_id"`
+	T1ItemName          *string    `json:"t1_item_name"`
+	T1BlueprintTypeID   int        `json:"t1_blueprint_type_id"`
+	T1Manufacturing     *Activity  `json:"t1_manufacturing"`
+	Datacores           []Datacore `json:"datacores"`
+	InventionTime       int        `json:"invention_time"`
+	BaseProbability     float64    `json:"base_probability"`
+	BaseRuns            int        `json:"base_runs"`
+	ScienceSkillIDs     []int      `json:"science_skill_ids"`
+	EncryptionSkillID   *int       `json:"encryption_skill_id"`
+	EncryptionSkillName *string    `json:"encryption_skill_name"`
+	Science1SkillID     *int       `json:"science1_skill_id"`
+	Science1SkillName   *string    `json:"science1_skill_name"`
+	Science2SkillID     *int       `json:"science2_skill_id"`
+	Science2SkillName   *string    `json:"science2_skill_name"`
 }
 
 func strPtr(s string) *string { v := s; return &v }

@@ -64,7 +64,7 @@ func (s *stubIndustry) CategoryNames(ctx context.Context, ids []int) (map[int]st
 
 func industryTestDeps() Deps {
 	return Deps{Industry: &stubIndustry{
-		hits: []industry.BlueprintTypeHit{{TypeID: 786, Name: "Rifter Blueprint"}},
+		hits:    []industry.BlueprintTypeHit{{TypeID: 786, Name: "Rifter Blueprint"}},
 		t2cands: []industry.BlueprintTypeHit{{TypeID: 587, Name: "Rifter"}},
 		activities: map[[2]int]*industry.BlueprintActivityRow{
 			{786, industry.ActivityManufacturing}: {BlueprintTypeID: 786, ActivityID: 1, Time: 100,

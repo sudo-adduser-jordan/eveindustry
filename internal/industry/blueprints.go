@@ -37,9 +37,9 @@ const (
 
 // Search limits mirror the reference controllers.
 const (
-	BlueprintSearchLimit  = 20
-	ReactionSearchLimit   = 20
-	InventionSearchLimit  = 20
+	BlueprintSearchLimit   = 20
+	ReactionSearchLimit    = 20
+	InventionSearchLimit   = 20
 	CorporationSearchLimit = 10
 )
 
@@ -84,9 +84,9 @@ func EscapeLike(q string) string {
 
 // Item is one material/product entry: {type_id, name, quantity}.
 type Item struct {
-	TypeID   int    `json:"type_id"`
+	TypeID   int     `json:"type_id"`
 	Name     *string `json:"name"`
-	Quantity int    `json:"quantity"`
+	Quantity int     `json:"quantity"`
 }
 
 // NormalizeItems ports ActivityResource::items(): type_id/typeid/typeID
