@@ -20,6 +20,12 @@ func (s *stubIndustryJobs) GetIndustryJobs(ctx context.Context, id int64, inc bo
 func (s *stubIndustryJobs) GetCorporationIndustryJobs(ctx context.Context, charID, corpID int64, inc bool) ([]map[string]any, error) {
 	return s.corpJobs[charID], nil
 }
+func (s *stubIndustryJobs) GetSkills(ctx context.Context, id int64) (map[int]int, error) {
+	return map[int]int{}, nil
+}
+func (s *stubIndustryJobs) GetAssets(ctx context.Context, id int64) ([]map[string]any, error) {
+	return nil, nil
+}
 
 // stubUniverse implements UniverseReader.
 type stubUniverse struct{}

@@ -1,0 +1,805 @@
+package http
+
+import (
+	"context"
+	"math"
+	"net/http"
+	"sort"
+	"time"
+
+	"github.com/labstack/echo/v4"
+
+	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
+)
+
+// registerAvailability mounts the heavy industry reads: slot availability
+// and reprocessing opportunities. Both compute live from ESI (skills, jobs,
+// assets) plus market prices; per-character ESI failures skip that
+// character, mirroring the jobs overview.
+func registerAvailability(v1 *echo.Group, d Deps) {
+	if d.IndustryDeps.Characters == nil || d.IndustryDeps.Universe == nil ||
+		d.Users == nil || d.Market == nil || d.Industry == nil || d.Corp == nil {
+		return
+	}
+	v1.GET("/industry/availability", handleAvailability(d))
+	v1.GET("/industry/reprocessing", handleReprocessing(d))
+}
+
+const (
+	skillMassProduction      = 3387
+	skillAdvMassProduction   = 24625
+	skillLaboratoryOperation = 3406
+	skillAdvLaboratory       = 24624
+	skillMassReactions       = 45748
+	skillAdvMassReactions    = 45749
+	skillReprocessing        = 3385
+	skillReprocessingEff     = 3389
+	skillScrapmetalProc      = 12196
+
+	activityManufacturing = 1
+	activityResearchTE    = 3
+	activityResearchME    = 4
+	activityCopying       = 5
+	activityInvention     = 8
+	activityReactions     = 9
+)
+
+var researchActivities = []int{activityResearchTE, activityResearchME, activityCopying, activityInvention}
+
+var heavyActivityNames = map[int]string{
+	activityManufacturing: "Manufacturing",
+	activityResearchTE:    "Time Efficiency Research",
+	activityResearchME:    "Material Efficiency Research",
+	activityCopying:       "Copying",
+	activityInvention:     "Invention",
+	activityReactions:     "Reactions",
+}
+
+// GET /industry/availability — slots per character + totals + jobs ready
+// within a minute. meta.cached_until is now + 20 minutes.
+func handleAvailability(d Deps) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		uid := c.Get(string(ctxUIDKey)).(int64)
+		ctx := c.Request().Context()
+		now := time.Now().UTC()
+		chars, err := d.Users.CharactersForUser(ctx, uid)
+		if err != nil {
+			return dbError(c, err)
+		}
+		charRows := []any{}
+		totals := map[string]map[string]int{
+			"manufacturing": {"total": 0, "active": 0, "available": 0},
+			"research":      {"total": 0, "active": 0, "available": 0},
+			"reactions":     {"total": 0, "active": 0, "available": 0},
+		}
+		var ready []any
+		for _, ch := range chars {
+			if !ch.IsEsiActive {
+				continue
+			}
+			skills, err := d.IndustryDeps.Characters.GetSkills(ctx, ch.CharacterID)
+			if err != nil {
+				continue
+			}
+			if skills == nil {
+				skills = map[int]int{}
+			}
+			jobs, err := d.IndustryDeps.Characters.GetIndustryJobs(ctx, ch.CharacterID, false)
+			if err != nil {
+				continue
+			}
+			for _, cj := range corpJobsFor(ctx, d, uid, ch) {
+				jobs = append(jobs, cj)
+			}
+			active := activeJobs(jobs)
+			mfgTotal := 1 + skills[skillMassProduction] + skills[skillAdvMassProduction]
+			resTotal := 1 + skills[skillLaboratoryOperation] + skills[skillAdvLaboratory]
+			reaTotal := 1 + skills[skillMassReactions] + skills[skillAdvMassReactions]
+			mfgJobs := detailedJobs(ctx, d, active, []int{activityManufacturing}, now)
+			resJobs := detailedJobs(ctx, d, active, researchActivities, now)
+			reaJobs := detailedJobs(ctx, d, active, []int{activityReactions}, now)
+			mfgActive := len(mfgJobs)
+			resActive := len(resJobs)
+			reaActive := len(reaJobs)
+			charRows = append(charRows, map[string]any{
+				"character_id": ch.CharacterID, "character_name": ch.Name,
+				"portrait_url": ch.PortraitURL(), "corporation_name": corpNameOf(ch),
+				"manufacturing":   slotGroup(mfgTotal, mfgActive, mfgJobs),
+				"research":        slotGroup(resTotal, resActive, resJobs),
+				"reactions":       slotGroup(reaTotal, reaActive, reaJobs),
+				"completing_soon": completingSoon(active, now),
+				"skills": map[string]any{
+					"mass_production": skills[skillMassProduction], "adv_mass_production": skills[skillAdvMassProduction],
+					"laboratory_operation": skills[skillLaboratoryOperation], "adv_laboratory_operation": skills[skillAdvLaboratory],
+					"mass_reactions": skills[skillMassReactions], "adv_mass_reactions": skills[skillAdvMassReactions],
+				},
+			})
+			totals["manufacturing"]["total"] += mfgTotal
+			totals["manufacturing"]["active"] += mfgActive
+			totals["manufacturing"]["available"] += max(0, mfgTotal-mfgActive)
+			totals["research"]["total"] += resTotal
+			totals["research"]["active"] += resActive
+			totals["research"]["available"] += max(0, resTotal-resActive)
+			totals["reactions"]["total"] += reaTotal
+			totals["reactions"]["active"] += reaActive
+			totals["reactions"]["available"] += max(0, reaTotal-reaActive)
+			ready = append(ready, readyJobs(ctx, d, ch, active, now)...)
+		}
+		sort.Slice(ready, func(i, j int) bool {
+			return ready[i].(map[string]any)["end_date"].(string) < ready[j].(map[string]any)["end_date"].(string)
+		})
+		data := map[string]any{
+			"characters": charRows,
+			"totals": map[string]any{
+				"manufacturing": totals["manufacturing"],
+				"research":      totals["research"],
+				"reactions":     totals["reactions"],
+			},
+			"ready_for_collection": ready,
+		}
+		return Success(c, http.StatusOK, data, map[string]any{
+			"cached_until": now.Add(20 * time.Minute).Format(time.RFC3339),
+		})
+	}
+}
+
+func corpNameOf(ch auth.Character) any {
+	if ch.CorporationName != nil {
+		return *ch.CorporationName
+	}
+	return nil
+}
+
+func slotGroup(total, active int, jobs []any) map[string]any {
+	return map[string]any{
+		"total": total, "active": active,
+		"available": max(0, total-active), "jobs": jobs,
+	}
+}
+
+func activeJobs(jobs []map[string]any) []map[string]any {
+	out := []map[string]any{}
+	seen := map[int64]bool{}
+	for _, j := range jobs {
+		if strOfJob(j["status"]) != "active" {
+			continue
+		}
+		id, _ := int64OfJob(j["job_id"])
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		out = append(out, j)
+	}
+	return out
+}
+
+func jobActivity(j map[string]any) int {
+	n, _ := int64OfJob(j["activity_id"])
+	return int(n)
+}
+
+func inActivities(a int, list []int) bool {
+	for _, v := range list {
+		if v == a {
+			return true
+		}
+	}
+	return false
+}
+
+// detailedJobs ports getDetailedJobsByActivity: full job cards sorted by
+// end date soonest first.
+func detailedJobs(ctx context.Context, d Deps, jobs []map[string]any, activities []int, now time.Time) []any {
+	out := []any{}
+	for _, j := range jobs {
+		if !inActivities(jobActivity(j), activities) {
+			continue
+		}
+		start, ok1 := parseJobTime(strOfJob(j["start_date"]))
+		end, ok2 := parseJobTime(strOfJob(j["end_date"]))
+		if !ok1 || !ok2 {
+			continue
+		}
+		total := end.Sub(start).Seconds()
+		elapsed := now.Sub(start).Seconds()
+		remaining := int64(math.Max(0, end.Sub(now).Seconds()))
+		progress := 100.0
+		if total > 0 {
+			progress = math.Min(100, math.Round(elapsed/total*100))
+		}
+		days := remaining / 86400
+		hours := (remaining % 86400) / 3600
+		minutes := (remaining % 3600) / 60
+		parts := []string{}
+		if days > 0 {
+			parts = append(parts, itoaJob(int(days))+"d")
+		}
+		if hours > 0 || days > 0 {
+			parts = append(parts, itoaJob(int(hours))+"h")
+		}
+		parts = append(parts, itoaJob(int(minutes))+"m")
+		timeRemaining := joinParts(parts)
+		productID, _ := int64OfJob(firstNonZeroJob(j, "product_type_id", "blueprint_type_id"))
+		bpID, _ := int64OfJob(j["blueprint_type_id"])
+		itemName := "Unknown Item"
+		var imageURL any
+		if productID != 0 {
+			if info, err := d.IndustryDeps.Universe.GetTypeInfo(ctx, int(productID)); err == nil && info != nil {
+				if n, ok := info["name"].(string); ok && n != "" {
+					itemName = n
+				}
+			}
+			if u := d.IndustryDeps.Universe.GetBestTypeImageUrl(ctx, int(productID), false); u != "" {
+				imageURL = u
+			}
+		}
+		var probPct any
+		var probLabel any
+		if p := inventionProbability(j); p != nil {
+			probPct = *p
+			probLabel = formatJobPct(*p) + "%"
+		}
+		runs, _ := int64OfJob(j["runs"])
+		if runs == 0 {
+			runs = 1
+		}
+		var licensed any
+		if v, ok := j["licensed_runs"]; ok && v != nil {
+			if n, ok := int64OfJob(v); ok {
+				licensed = int(n)
+			}
+		}
+		var bp, prod any
+		if bpID != 0 {
+			bp = int(bpID)
+		}
+		if productID != 0 {
+			prod = int(productID)
+		}
+		out = append(out, map[string]any{
+			"job_id": int(mustJobID(j)), "activity_id": jobActivity(j),
+			"activity_name":     heavyActivityNames[jobActivity(j)],
+			"blueprint_type_id": bp, "product_type_id": prod,
+			"item_name": itemName, "item_image_url": imageURL,
+			"runs": int(runs), "licensed_runs": licensed,
+			"start_date": start.Format(time.RFC3339), "end_date": end.Format(time.RFC3339),
+			"progress_pct": int(progress), "time_remaining": timeRemaining,
+			"seconds_remaining": int(remaining), "ready_for_delivery": remaining <= 60,
+			"status":          strOfJobDefault(j["status"], "active"),
+			"probability_pct": probPct, "probability_label": probLabel,
+		})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].(map[string]any)["seconds_remaining"].(int) < out[j].(map[string]any)["seconds_remaining"].(int)
+	})
+	return out
+}
+
+// completingSoon ports getJobsCompletingSoon: jobs ending within the hour.
+func completingSoon(jobs []map[string]any, now time.Time) []any {
+	out := []any{}
+	limit := now.Add(time.Hour)
+	for _, j := range jobs {
+		end, ok := parseJobTime(strOfJob(j["end_date"]))
+		if !ok || end.After(limit) || end.Before(now) {
+			continue
+		}
+		id, _ := int64OfJob(j["job_id"])
+		out = append(out, map[string]any{
+			"job_id": int(id), "activity_id": jobActivity(j),
+			"end_date":          end.Format(time.RFC3339),
+			"minutes_remaining": int(now.Sub(end).Minutes() * -1),
+		})
+	}
+	return out
+}
+
+// readyJobs ports getReadyForCollectionJobsForUser: active jobs ending
+// within 60 seconds, soonest... (PHP filters end <= now+60s; end in the past
+// counts since the job still awaits delivery).
+func readyJobs(ctx context.Context, d Deps, ch auth.Character, jobs []map[string]any, now time.Time) []any {
+	out := []any{}
+	cutoff := now.Add(60 * time.Second)
+	actNames := map[int]string{
+		activityManufacturing: "Manufacturing",
+		activityResearchTE:    "Research (TE)",
+		activityResearchME:    "Research (ME)",
+		activityCopying:       "Copying",
+		activityInvention:     "Invention",
+		activityReactions:     "Reactions",
+	}
+	for _, j := range jobs {
+		end, ok := parseJobTime(strOfJob(j["end_date"]))
+		if !ok || end.After(cutoff) {
+			continue
+		}
+		productID, _ := int64OfJob(firstNonZeroJob(j, "product_type_id", "blueprint_type_id"))
+		itemName := "Unknown Item"
+		var imageURL any
+		if productID != 0 {
+			if info, err := d.IndustryDeps.Universe.GetTypeInfo(ctx, int(productID)); err == nil && info != nil {
+				if n, ok := info["name"].(string); ok && n != "" {
+					itemName = n
+				}
+			}
+			if u := d.IndustryDeps.Universe.GetBestTypeImageUrl(ctx, int(productID), false); u != "" {
+				imageURL = u
+			}
+		}
+		location := "Unknown Location"
+		if sid, ok := int64OfJob(j["station_id"]); ok && sid != 0 {
+			if st, err := d.IndustryDeps.Universe.GetStation(ctx, uint64(sid)); err == nil && st != nil {
+				if n, ok := st["name"].(string); ok && n != "" {
+					location = n
+				}
+			} else if sys, ok := int64OfJob(j["solar_system_id"]); ok && sys != 0 {
+				if s, err := d.IndustryDeps.Universe.GetSystem(ctx, int(sys)); err == nil && s != nil {
+					if n, ok := s["name"].(string); ok && n != "" {
+						location = n
+					}
+				}
+			}
+		} else if sys, ok := int64OfJob(j["solar_system_id"]); ok && sys != 0 {
+			if s, err := d.IndustryDeps.Universe.GetSystem(ctx, int(sys)); err == nil && s != nil {
+				if n, ok := s["name"].(string); ok && n != "" {
+					location = n
+				}
+			}
+		}
+		var probPct any
+		var probLabel any
+		if p := inventionProbability(j); p != nil {
+			probPct = *p
+			probLabel = formatJobPct(*p) + "% Chance"
+		}
+		runs, _ := int64OfJob(j["runs"])
+		if runs == 0 {
+			runs = 1
+		}
+		id, _ := int64OfJob(j["job_id"])
+		act := jobActivity(j)
+		out = append(out, map[string]any{
+			"character_id": ch.CharacterID, "character_name": ch.Name,
+			"job_id": int(id), "activity_id": act,
+			"activity_name": firstNonEmpty(actNames[act], "Unknown"),
+			"item_name":     itemName, "item_image_url": imageURL,
+			"end_date": end.Format(time.RFC3339), "location": location,
+			"runs": int(runs), "probability_pct": probPct, "probability_label": probLabel,
+		})
+	}
+	return out
+}
+
+func inventionProbability(j map[string]any) *float64 {
+	if jobActivity(j) != activityInvention {
+		return nil
+	}
+	p, ok := numFloatJob(j["probability"])
+	if !ok {
+		return nil
+	}
+	v := math.Round(p*100*100) / 100
+	return &v
+}
+
+func formatJobPct(v float64) string {
+	if v == math.Trunc(v) {
+		return itoaJob(int(v))
+	}
+	return trimFloat(v)
+}
+
+// --- reprocessing ---
+
+// GET /industry/reprocessing — items worth more reprocessed than sold, per
+// character and location. Prices are global market_prices (The Forge),
+// so meta.freshness is the Forge freshness block.
+func handleReprocessing(d Deps) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		uid := c.Get(string(ctxUIDKey)).(int64)
+		ctx := c.Request().Context()
+		chars, err := d.Users.CharactersForUser(ctx, uid)
+		if err != nil {
+			return dbError(c, err)
+		}
+		charRows := []any{}
+		var totalProfit float64
+		totalItems := 0
+		for _, ch := range chars {
+			row, n := reprocessingForCharacter(ctx, d, ch)
+			if row == nil {
+				continue
+			}
+			charRows = append(charRows, row)
+			totalProfit += row["total_profit"].(float64)
+			totalItems += n
+		}
+		data := map[string]any{
+			"characters": charRows,
+			"totals": map[string]any{
+				"profit": totalProfit, "characters": len(charRows), "items": totalItems,
+			},
+		}
+		return Success(c, http.StatusOK, data, map[string]any{
+			"freshness": freshnessFor(c, d, 10000002),
+		})
+	}
+}
+
+// reprocessingForCharacter ports analyzeCharacterAssets: nil when the
+// character's assets cannot be read. Returns the row and its item count.
+func reprocessingForCharacter(ctx context.Context, d Deps, ch auth.Character) (map[string]any, int) {
+	skills, err := d.IndustryDeps.Characters.GetSkills(ctx, ch.CharacterID)
+	if err != nil {
+		return nil, 0
+	}
+	if skills == nil {
+		skills = map[int]int{}
+	}
+	yield := 0.50 * (1 + float64(skills[skillReprocessing])*0.03) *
+		(1 + float64(skills[skillReprocessingEff])*0.02) *
+		(1 + float64(skills[skillScrapmetalProc])*0.02)
+	assets, err := d.IndustryDeps.Characters.GetAssets(ctx, ch.CharacterID)
+	if err != nil {
+		return nil, 0
+	}
+	groups := map[int64][]map[string]any{}
+	typeIDs := map[int]bool{}
+	for _, a := range assets {
+		loc, _ := int64OfJob(a["location_id"])
+		if loc == 0 {
+			continue
+		}
+		tid, _ := int64OfJob(a["type_id"])
+		if tid == 0 || isSingletonJob(a) {
+			continue
+		}
+		groups[loc] = append(groups[loc], a)
+		typeIDs[int(tid)] = true
+	}
+	if len(typeIDs) == 0 {
+		return charReprocessRow(ch, yield, skills, []any{}), 0
+	}
+	ids := make([]int, 0, len(typeIDs))
+	for id := range typeIDs {
+		ids = append(ids, id)
+	}
+	mats, err := d.Industry.TypeMaterials(ctx, ids)
+	if err != nil {
+		return nil, 0
+	}
+	if len(mats) == 0 {
+		return charReprocessRow(ch, yield, skills, []any{}), 0
+	}
+	matIDs := map[int]bool{}
+	for _, list := range mats {
+		for _, m := range list {
+			matIDs[m.MaterialTypeID] = true
+		}
+	}
+	priceIDs := append(append([]int{}, ids...), keysOf(matIDs)...)
+	prices := priceMap(ctx, d, priceIDs)
+	names, _ := d.Industry.TypeNames(ctx, priceIDs)
+	portions, _ := d.Industry.TypePortions(ctx, ids)
+	_ = names
+	locations := []any{}
+	nItems := 0
+	for loc, items := range groups {
+		profitable := profitableReprocessing(ctx, d, items, yield, mats, prices, names, portions)
+		if len(profitable) == 0 {
+			continue
+		}
+		var rv, mv float64
+		for _, p := range profitable {
+			pm := p.(map[string]any)
+			rv += pm["reprocess_value"].(float64)
+			mv += pm["market_value"].(float64)
+		}
+		locations = append(locations, map[string]any{
+			"location_id": int(loc), "location_name": reprocessLocationName(ctx, d, ch, loc),
+			"items":              profitable,
+			"total_market_value": mv, "total_reprocess_value": rv, "total_profit": rv - mv,
+		})
+		nItems += len(profitable)
+	}
+	sort.Slice(locations, func(i, j int) bool {
+		return locations[i].(map[string]any)["total_profit"].(float64) > locations[j].(map[string]any)["total_profit"].(float64)
+	})
+	var total float64
+	for _, l := range locations {
+		total += l.(map[string]any)["total_profit"].(float64)
+	}
+	row := charReprocessRow(ch, yield, skills, locations)
+	row["total_profit"] = total
+	return row, nItems
+}
+
+func charReprocessRow(ch auth.Character, yield float64, skills map[int]int, locations []any) map[string]any {
+	return map[string]any{
+		"character_id": ch.CharacterID, "character_name": ch.Name,
+		"portrait_url": ch.PortraitURL(), "corporation_name": corpNameOf(ch),
+		"yield_pct": math.Round(yield*100*10) / 10,
+		"skills": map[string]any{
+			"reprocessing":            skills[skillReprocessing],
+			"reprocessing_efficiency": skills[skillReprocessingEff],
+			"scrapmetal_processing":   skills[skillScrapmetalProc],
+		},
+		"locations": locations, "total_profit": 0.0,
+	}
+}
+
+// profitableReprocessing ports findProfitableReprocessing: aggregate per
+// type, batch by portion, keep items whose reprocess value exceeds market.
+func profitableReprocessing(ctx context.Context, d Deps, items []map[string]any, yield float64, mats map[int][]industry.ReprocessMaterial, prices map[int]float64, names map[int]string, portions map[int]int) []any {
+	qtys := map[int]int64{}
+	for _, a := range items {
+		tid, _ := int64OfJob(a["type_id"])
+		if tid == 0 || isSingletonJob(a) {
+			continue
+		}
+		q, _ := int64OfJob(a["quantity"])
+		if q <= 0 {
+			q = 1
+		}
+		qtys[int(tid)] += q
+	}
+	type itemOut struct {
+		profit float64
+		row    map[string]any
+	}
+	out := []itemOut{}
+	for tid, qty := range qtys {
+		list := mats[tid]
+		if len(list) == 0 {
+			continue
+		}
+		portion := portions[tid]
+		if portion < 1 {
+			portion = 1
+		}
+		batches := int(qty) / portion
+		if batches < 1 {
+			continue
+		}
+		unit := prices[tid]
+		if unit <= 0 {
+			continue
+		}
+		marketValue := unit * float64(qty)
+		var reprocessValue float64
+		matRows := []any{}
+		for _, m := range list {
+			matQty := int(math.Floor(float64(m.Quantity)*yield)) * batches
+			matUnit := prices[m.MaterialTypeID]
+			matValue := matUnit * float64(matQty)
+			reprocessValue += matValue
+			mname := names[m.MaterialTypeID]
+			if mname == "" {
+				mname = "Unknown"
+			}
+			matRows = append(matRows, map[string]any{
+				"type_id": m.MaterialTypeID, "name": mname, "quantity": matQty,
+				"unit_price": matUnit, "total_value": matValue,
+			})
+		}
+		profit := reprocessValue - marketValue
+		if profit <= 0 || reprocessValue <= 0 {
+			continue
+		}
+		tname := names[tid]
+		if tname == "" {
+			if info, err := d.IndustryDeps.Universe.GetTypeInfo(ctx, tid); err == nil && info != nil {
+				tname, _ = info["name"].(string)
+			}
+			if tname == "" {
+				tname = "Unknown"
+			}
+		}
+		out = append(out, itemOut{profit: profit, row: map[string]any{
+			"type_id": tid, "name": tname, "quantity": int(qty),
+			"market_value": marketValue, "reprocess_value": reprocessValue, "profit": profit,
+			"profit_pct":        math.Round(profit/marketValue*100*10) / 10,
+			"unit_market_price": unit, "materials": matRows,
+			"icon_url": "https://images.evetech.net/types/" + itoaJob(tid) + "/icon?size=32",
+		}})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].profit > out[j].profit })
+	rows := make([]any, 0, len(out))
+	for _, o := range out {
+		rows = append(rows, o.row)
+	}
+	return rows
+}
+
+// priceMap ports MarketService::getPrices unit pricing: lowest sell, else
+// average, else 0 — from global market_prices in The Forge.
+func priceMap(ctx context.Context, d Deps, ids []int) map[int]float64 {
+	out := map[int]float64{}
+	rows, err := d.Market.MarketPriceRows(ctx, ids, 10000002)
+	if err != nil {
+		return out
+	}
+	for _, r := range rows {
+		if r.SellMin.Valid && r.SellMin.Float64 > 0 {
+			out[r.TypeID] = r.SellMin.Float64
+		} else if r.Average.Valid {
+			out[r.TypeID] = r.Average.Float64
+		} else {
+			out[r.TypeID] = 0
+		}
+	}
+	return out
+}
+
+// reprocessLocationName ports resolveLocationName: station, structure (a
+// scoped character), or bare system.
+func reprocessLocationName(ctx context.Context, d Deps, ch auth.Character, loc int64) string {
+	uv := d.IndustryDeps.Universe
+	if loc >= 60000000 && loc < 64000000 {
+		if st, err := uv.GetStation(ctx, uint64(loc)); err == nil && st != nil {
+			if n, ok := st["name"].(string); ok && n != "" {
+				return n
+			}
+		}
+	} else if loc > 2000000000000 {
+		if st, err := uv.GetStructure(ctx, uint64(loc), ch.CharacterID); err == nil && st != nil {
+			if n, ok := st["name"].(string); ok && n != "" {
+				return n
+			}
+		}
+	} else if loc >= 30000000 && loc < 33000000 {
+		if s, err := uv.GetSystem(ctx, int(loc)); err == nil && s != nil {
+			if n, ok := s["name"].(string); ok && n != "" {
+				return n
+			}
+		}
+	}
+	return "Location #" + itoaJob(int(loc))
+}
+
+func keysOf(m map[int]bool) []int {
+	out := make([]int, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
+}
+
+// --- job field coercions ---
+
+func strOfJob(v any) string {
+	s, _ := v.(string)
+	return s
+}
+
+func strOfJobDefault(v any, def string) string {
+	if s, ok := v.(string); ok && s != "" {
+		return s
+	}
+	return def
+}
+
+func int64OfJob(v any) (int64, bool) {
+	switch n := v.(type) {
+	case int:
+		return int64(n), true
+	case int64:
+		return n, true
+	case float64:
+		return int64(n), true
+	}
+	return 0, false
+}
+
+func numFloatJob(v any) (float64, bool) {
+	switch n := v.(type) {
+	case int:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	case float64:
+		return n, true
+	}
+	return 0, false
+}
+
+func firstNonZeroJob(j map[string]any, keys ...string) any {
+	for _, k := range keys {
+		if n, ok := int64OfJob(j[k]); ok && n != 0 {
+			return n
+		}
+	}
+	return 0
+}
+
+func mustJobID(j map[string]any) int64 {
+	n, _ := int64OfJob(j["job_id"])
+	return n
+}
+
+func isSingletonJob(a map[string]any) bool {
+	b, _ := a["is_singleton"].(bool)
+	return b
+}
+
+func parseJobTime(s string) (time.Time, bool) {
+	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04:05Z", time.RFC3339Nano} {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t.UTC(), true
+		}
+	}
+	return time.Time{}, false
+}
+
+func itoaJob(i int) string {
+	if i == 0 {
+		return "0"
+	}
+	neg := i < 0
+	if neg {
+		i = -i
+	}
+	var b [20]byte
+	p := len(b)
+	for i > 0 {
+		p--
+		b[p] = byte('0' + i%10)
+		i /= 10
+	}
+	if neg {
+		p--
+		b[p] = '-'
+	}
+	return string(b[p:])
+}
+
+func joinParts(parts []string) string {
+	out := ""
+	for i, p := range parts {
+		if i > 0 {
+			out += " "
+		}
+		out += p
+	}
+	return out
+}
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+func trimFloat(v float64) string {
+	s := ""
+	neg := v < 0
+	if neg {
+		v = -v
+	}
+	iv := int(v)
+	s = itoaJob(iv)
+	frac := v - float64(iv)
+	if frac > 0 {
+		// two decimals, trimmed
+		f := int(math.Round(frac * 100))
+		if f > 0 {
+			fs := itoaJob(f)
+			if len(fs) == 1 {
+				fs = "0" + fs
+			}
+			for len(fs) > 0 && fs[len(fs)-1] == '0' {
+				fs = fs[:len(fs)-1]
+			}
+			s += "." + fs
+		}
+	}
+	if neg {
+		s = "-" + s
+	}
+	return s
+}

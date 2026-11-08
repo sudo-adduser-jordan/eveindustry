@@ -112,6 +112,7 @@ func New(d Deps) *echo.Echo {
 	registerIndustryRefresh(authed, d)
 	registerPrograms(authed, d)
 	registerProgress(authed, d)
+	registerAvailability(authed, d)
 
 	return e
 }

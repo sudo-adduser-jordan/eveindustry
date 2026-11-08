@@ -267,6 +267,8 @@ type IndustryStore interface {
 	HasActivity(ctx context.Context, blueprintTypeID, activityID int) (bool, error)
 	TypeNames(ctx context.Context, typeIDs []int) (map[int]string, error)
 	TypeVolumes(ctx context.Context, typeIDs []int) (map[int]float64, error)
+	TypePortions(ctx context.Context, typeIDs []int) (map[int]int, error)
+	TypeMaterials(ctx context.Context, typeIDs []int) (map[int][]ReprocessMaterial, error)
 	AllReactionFormulas(ctx context.Context) ([]ReactionFormula, error)
 	AllManufacturingActivities(ctx context.Context) ([]MfgActivity, error)
 	InventedBlueprintIDs(ctx context.Context) (map[int]bool, error)
@@ -558,6 +560,61 @@ func (s *SQL) CategoryNames(ctx context.Context, categoryIDs []int) (map[int]str
 	}
 	for _, r := range rows {
 		out[r.CategoryID] = r.Name
+	}
+	return out, nil
+}
+
+// ReprocessMaterial is one type_materials row: quantity of material per
+// portion of the reprocessed type.
+type ReprocessMaterial struct {
+	TypeID         int `db:"type_id"`
+	MaterialTypeID int `db:"material_type_id"`
+	Quantity       int `db:"quantity"`
+}
+
+// TypePortions batch-loads portion_size per type (callers default missing to 1).
+func (s *SQL) TypePortions(ctx context.Context, typeIDs []int) (map[int]int, error) {
+	out := map[int]int{}
+	if len(typeIDs) == 0 {
+		return out, nil
+	}
+	q, args, err := sqlx.In(`SELECT type_id, portion_size FROM eve_types WHERE type_id IN (?)`, typeIDs)
+	if err != nil {
+		return nil, err
+	}
+	var rows []struct {
+		TypeID  int           `db:"type_id"`
+		Portion sql.NullInt64 `db:"portion_size"`
+	}
+	if err := s.db.SelectContext(ctx, &rows, s.db.Rebind(q), args...); err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		if r.Portion.Valid && r.Portion.Int64 > 0 {
+			out[r.TypeID] = int(r.Portion.Int64)
+		}
+	}
+	return out, nil
+}
+
+// TypeMaterials batch-loads type_materials rows grouped by type. Types absent
+// from the table (or Fuzzwork-only) yield no entry; the Go port skips the
+// Fuzzwork fallback by design (see plan.md conventions).
+func (s *SQL) TypeMaterials(ctx context.Context, typeIDs []int) (map[int][]ReprocessMaterial, error) {
+	out := map[int][]ReprocessMaterial{}
+	if len(typeIDs) == 0 {
+		return out, nil
+	}
+	q, args, err := sqlx.In(`SELECT type_id, material_type_id, quantity FROM type_materials WHERE type_id IN (?)`, typeIDs)
+	if err != nil {
+		return nil, err
+	}
+	var rows []ReprocessMaterial
+	if err := s.db.SelectContext(ctx, &rows, s.db.Rebind(q), args...); err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		out[r.TypeID] = append(out[r.TypeID], r)
 	}
 	return out, nil
 }

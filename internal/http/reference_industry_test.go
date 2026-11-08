@@ -20,6 +20,8 @@ type stubIndustry struct {
 	precomputedTotal int
 	names            map[int]string
 	groups           map[int]int
+	mats             map[int][]industry.ReprocessMaterial
+	portions         map[int]int
 }
 
 func (s *stubIndustry) SearchBlueprintTypes(ctx context.Context, like string, limit int) ([]industry.BlueprintTypeHit, error) {
@@ -68,6 +70,18 @@ func (s *stubIndustry) ProductTypeIDsExcludingInvented(ctx context.Context) ([]i
 }
 func (s *stubIndustry) ProductGroupCounts(ctx context.Context, ids []int) (map[int]int, error) {
 	return map[int]int{25: 2}, nil
+}
+func (s *stubIndustry) TypePortions(ctx context.Context, ids []int) (map[int]int, error) {
+	if s.portions == nil {
+		return map[int]int{}, nil
+	}
+	return s.portions, nil
+}
+func (s *stubIndustry) TypeMaterials(ctx context.Context, ids []int) (map[int][]industry.ReprocessMaterial, error) {
+	if s.mats == nil {
+		return map[int][]industry.ReprocessMaterial{}, nil
+	}
+	return s.mats, nil
 }
 func (s *stubIndustry) TypeVolumes(ctx context.Context, ids []int) (map[int]float64, error) {
 	out := map[int]float64{}

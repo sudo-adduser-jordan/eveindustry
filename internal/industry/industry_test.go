@@ -67,6 +67,12 @@ func (s *stubStore) HasActivity(ctx context.Context, bp, act int) (bool, error) 
 func (s *stubStore) TypeNames(ctx context.Context, ids []int) (map[int]string, error) {
 	return map[int]string{}, nil
 }
+func (s *stubStore) TypePortions(ctx context.Context, ids []int) (map[int]int, error) {
+	return map[int]int{}, nil
+}
+func (s *stubStore) TypeMaterials(ctx context.Context, ids []int) (map[int][]ReprocessMaterial, error) {
+	return map[int][]ReprocessMaterial{}, nil
+}
 func (s *stubStore) TypeVolumes(ctx context.Context, ids []int) (map[int]float64, error) {
 	return map[int]float64{}, nil
 }

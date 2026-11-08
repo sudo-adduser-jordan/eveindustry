@@ -44,6 +44,12 @@ func (s *chainStub) HasActivity(ctx context.Context, bp, act int) (bool, error) 
 	_, ok := s.byBP[[2]int{bp, act}]
 	return ok, nil
 }
+func (s *chainStub) TypePortions(ctx context.Context, ids []int) (map[int]int, error) {
+	return map[int]int{}, nil
+}
+func (s *chainStub) TypeMaterials(ctx context.Context, ids []int) (map[int][]industry.ReprocessMaterial, error) {
+	return map[int][]industry.ReprocessMaterial{}, nil
+}
 func (s *chainStub) TypeVolumes(ctx context.Context, ids []int) (map[int]float64, error) {
 	return map[int]float64{}, nil
 }

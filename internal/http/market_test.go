@@ -22,6 +22,7 @@ type stubMarket struct {
 	costsAt      *time.Time
 	globalAt     *time.Time
 	existingType map[int]bool
+	prices       []store.MarketPriceRowFull
 }
 
 func (s *stubMarket) AggregateSellPrices(ctx context.Context, typeIDs []int, regionID int) (map[int]float64, bool, error) {
@@ -59,6 +60,9 @@ func (s *stubMarket) FreshnessTimestamps(ctx context.Context, regionID int) (*ti
 	return s.ordersAt, s.costsAt, s.globalAt, nil
 }
 func (s *stubMarket) MarketPriceRows(ctx context.Context, typeIDs []int, regionID int) ([]store.MarketPriceRowFull, error) {
+	if s.prices != nil {
+		return s.prices, nil
+	}
 	return nil, nil
 }
 

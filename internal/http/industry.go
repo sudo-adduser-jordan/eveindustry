@@ -18,6 +18,8 @@ import (
 type IndustryJobReader interface {
 	GetIndustryJobs(ctx context.Context, characterID int64, includeCompleted bool) ([]map[string]any, error)
 	GetCorporationIndustryJobs(ctx context.Context, characterID, corporationID int64, includeCompleted bool) ([]map[string]any, error)
+	GetSkills(ctx context.Context, characterID int64) (map[int]int, error)
+	GetAssets(ctx context.Context, characterID int64) ([]map[string]any, error)
 }
 
 // UniverseReader is the ESI/store surface the jobs overview needs.
