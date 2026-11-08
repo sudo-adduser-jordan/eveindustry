@@ -111,6 +111,7 @@ func main() {
 		deps.Ess = queries
 		deps.Windows = queries
 		deps.Projects = esiChars
+		deps.AdminUsers = queries
 		deps.CorpPrograms = queries
 		deps.StockItems = queries
 		deps.Plans = queries

@@ -55,6 +55,7 @@ type Deps struct {
 	Ess                store.EssStore
 	Windows            store.WindowStore
 	Projects           ProjectESI
+	AdminUsers         store.AdminUserStore
 
 	// Sessions and Users drive RequireAuth. Either nil means nobody can
 	// authenticate, so every authed route 401s (never silently open).
@@ -129,6 +130,7 @@ func New(d Deps) *echo.Echo {
 	registerEss(authed, d)
 	registerWindows(authed, d)
 	registerProjects(authed, d)
+	registerAdmin(authed, d)
 
 	return e
 }
