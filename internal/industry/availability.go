@@ -197,9 +197,9 @@ func AvailabilityData(ctx context.Context, d AvailDeps, chars []auth.Character, 
 		out.Characters = append(out.Characters, map[string]any{
 			"character_id": ch.CharacterID, "character_name": ch.Name,
 			"portrait_url": ch.PortraitURL(), "corporation_name": corpName,
-			"manufacturing": slotGroup(mfgTotal, mfgActive, mfgJobs),
-			"research":      slotGroup(resTotal, resActive, resJobs),
-			"reactions":     slotGroup(reaTotal, reaActive, reaJobs),
+			"manufacturing":   slotGroup(mfgTotal, mfgActive, mfgJobs),
+			"research":        slotGroup(resTotal, resActive, resJobs),
+			"reactions":       slotGroup(reaTotal, reaActive, reaJobs),
 			"completing_soon": completingSoon(active, now),
 			"skills": map[string]any{
 				"mass_production": skills[SkillMassProduction], "adv_mass_production": skills[SkillAdvMassProduction],
@@ -329,14 +329,14 @@ func DetailedJobs(ctx context.Context, d AvailDeps, ch auth.Character, jobs []ma
 		}
 		out = append(out, map[string]any{
 			"job_id": int(mustID(j)), "activity_id": act,
-			"activity_name": DetailedActivityNames[act],
+			"activity_name":     DetailedActivityNames[act],
 			"blueprint_type_id": bp, "product_type_id": prod,
 			"item_name": itemName, "item_image_url": imageURL,
 			"runs": int(runs), "licensed_runs": licensed,
 			"start_date": start.Format(time.RFC3339), "end_date": end.Format(time.RFC3339),
 			"progress_pct": int(progress), "time_remaining": timeRemaining,
 			"seconds_remaining": int(remaining), "ready_for_delivery": remaining <= 60,
-			"status": strOr(j["status"], "active"),
+			"status":          strOr(j["status"], "active"),
 			"probability_pct": probPct, "probability_label": probLabel,
 		})
 	}
@@ -385,7 +385,7 @@ func ReadyJobs(ctx context.Context, d AvailDeps, ch auth.Character, jobs []map[s
 			"character_id": ch.CharacterID, "character_name": ch.Name,
 			"job_id": int(id), "activity_id": act,
 			"activity_name": firstNonEmpty(ReadyActivityNames[act], "Unknown"),
-			"item_name": itemName, "item_image_url": imageURL,
+			"item_name":     itemName, "item_image_url": imageURL,
 			"end_date": end.Format(time.RFC3339), "location": location,
 			"runs": int(runs), "probability_pct": probPct, "probability_label": probLabel,
 		})
@@ -440,7 +440,7 @@ func completingSoon(jobs []map[string]any, now time.Time) []any {
 		id, _ := int64Of(j["job_id"])
 		out = append(out, map[string]any{
 			"job_id": int(id), "activity_id": intOf(j["activity_id"]),
-			"end_date": end.Format(time.RFC3339),
+			"end_date":          end.Format(time.RFC3339),
 			"minutes_remaining": int(now.Sub(end).Minutes() * -1),
 		})
 	}

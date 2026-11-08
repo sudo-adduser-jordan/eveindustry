@@ -35,7 +35,7 @@ func (d HandlerDeps) logger() *slog.Logger {
 }
 
 // assetCacheKeys mirrors the PHP asset cache keys.
-func assetCacheKey(uid int64) string   { return "assets.user." + itoa(uid) }
+func assetCacheKey(uid int64) string    { return "assets.user." + itoa(uid) }
 func assetCachedAtKey(uid int64) string { return "assets.user." + itoa(uid) + ".cached_at" }
 
 // RefreshCharacterProfile ports RefreshCharacterProfile: refresh one
@@ -175,7 +175,7 @@ func RefreshAssetData(ctx context.Context, d HandlerDeps, userID int64, force bo
 	}
 	ad := assets.Deps{
 		Characters: d.ESIChars, Universe: d.ESIUniverse,
-		Reference:  assetRefAdapter{db: d.DB}, Industry: d.Industry,
+		Reference: assetRefAdapter{db: d.DB}, Industry: d.Industry,
 	}
 	all := assets.FetchUserAssets(ctx, ad, chars, true)
 	if d.Cache != nil {
@@ -301,7 +301,7 @@ func RefreshDashboardStats(ctx context.Context, d HandlerDeps, userID int64) err
 				"character_name": c.Char.Name, "planet_name": c.Name,
 				"planet_type": c.Type, "summary": map[string]any{
 					"extractor_count": c.Analysis.Summary["extractor_count"],
-					"factory_count":  c.Analysis.Summary["factory_count"],
+					"factory_count":   c.Analysis.Summary["factory_count"],
 				},
 			})
 		}
@@ -361,4 +361,3 @@ func itoa(i int64) string {
 	}
 	return string(b[p:])
 }
-

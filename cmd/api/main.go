@@ -16,8 +16,8 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
-	"github.com/sudo-adduser-jordan/eveindustry/internal/config"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/cache"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/config"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 	gohttp "github.com/sudo-adduser-jordan/eveindustry/internal/http"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"

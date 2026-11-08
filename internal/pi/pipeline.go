@@ -114,7 +114,7 @@ func AnalyzeColonies(ctx context.Context, d ColonyDeps, chars []auth.Character, 
 		}, now)
 		out = append(out, Colony{
 			Char: *r.ch, PlanetID: pid, Name: name,
-			Type: StrOf(r.colony["planet_type"], "unknown"),
+			Type:    StrOf(r.colony["planet_type"], "unknown"),
 			Upgrade: IntOf(r.colony["upgrade_level"]), NumPins: IntOf(r.colony["num_pins"]),
 			Analysis: analysis,
 		})

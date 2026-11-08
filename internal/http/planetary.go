@@ -157,7 +157,7 @@ func assemblePlanetary(charOut []any) map[string]any {
 			"extractors": totalExt, "factories": totalFac,
 		},
 		"outputs": outputs, "alerts": alerts,
-		"capacity": pi.BuildCapacityAnalysis(planetsFlat),
+		"capacity":   pi.BuildCapacityAnalysis(planetsFlat),
 		"characters": charOut,
 	}
 }
@@ -173,7 +173,6 @@ func numAny(v any) float64 {
 	}
 	return 0
 }
-
 
 // planetaryChar is one dashboard character with analyzed planets.
 type planetaryChar struct {
@@ -244,7 +243,7 @@ func shapeColony(c pi.Colony) any {
 			"launchpad_count": c.Analysis.Summary["launchpad_count"],
 			"route_count":     len(c.Analysis.Routes),
 		},
-		"alerts": stripPlanetAlertContext(c.Analysis.Alerts),
+		"alerts":  stripPlanetAlertContext(c.Analysis.Alerts),
 		"outputs": outs, "extractors": extractors, "factories": factories,
 		"pins": c.Analysis.Pins, "routes": c.Analysis.Routes,
 	}
@@ -291,4 +290,3 @@ func stripPlanetAlertContext(alerts []any) []any {
 	}
 	return out
 }
-

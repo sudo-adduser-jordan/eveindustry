@@ -69,7 +69,7 @@ func handleAbyssal(d Deps) echo.HandlerFunc {
 				typeIDs[a.TypeID] = true
 			}
 		}
-				ids := make([]int, 0, len(typeIDs))
+		ids := make([]int, 0, len(typeIDs))
 		for id := range typeIDs {
 			ids = append(ids, id)
 		}

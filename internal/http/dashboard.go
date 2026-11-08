@@ -88,7 +88,7 @@ func handleDashboardShow(d Deps) echo.HandlerFunc {
 			if d.Cache.GetJSON(ctx, "dashboard.pi_stats."+itoaProg(int(uid)), &piStats) {
 				planetary = map[string]any{
 					"expired_extractors": int(numAny(piStats["expired_extractors"])),
-					"full_storage": int(numAny(piStats["full_storage"])),
+					"full_storage":       int(numAny(piStats["full_storage"])),
 				}
 			}
 		} else if d.Planetary.Characters != nil && d.Planetary.Universe != nil {
