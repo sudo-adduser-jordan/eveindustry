@@ -112,6 +112,9 @@ func main() {
 		deps.Windows = queries
 		deps.Projects = esiChars
 		deps.AdminUsers = queries
+		deps.Sponsors = queries
+		deps.AdminStats = queries
+		deps.SponsorImages = gohttp.DiskSponsorStorage{Dir: sponsorDir()}
 		deps.CorpPrograms = queries
 		deps.StockItems = queries
 		deps.Plans = queries
@@ -156,4 +159,11 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Error("graceful shutdown failed", "error", err)
 	}
+}
+
+func sponsorDir() string {
+	if v := os.Getenv("SPONSOR_DIR"); v != "" {
+		return v
+	}
+	return "storage/sponsors"
 }

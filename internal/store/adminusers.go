@@ -33,6 +33,12 @@ type AdminUserStore interface {
 	AdminUserEmailTaken(ctx context.Context, email string, exceptID int64) (bool, error)
 	UpdateAdminAccount(ctx context.Context, id int64, email string, passwordHash *string) (*AdminUser, error)
 }
+// AdminStatsStore covers the admin dashboard counters + series.
+type AdminStatsStore interface {
+	AdminStats(ctx context.Context) (*AdminStats, error)
+	AdminRegistrationSeries(ctx context.Context) ([]AdminSeriesPoint, error)
+	AdminLoginSeries(ctx context.Context) ([]AdminSeriesPoint, error)
+}
 
 var adminSorts = map[string]bool{
 	"name": true, "email": true, "is_admin": true,

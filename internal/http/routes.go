@@ -56,6 +56,9 @@ type Deps struct {
 	Windows            store.WindowStore
 	Projects           ProjectESI
 	AdminUsers         store.AdminUserStore
+	Sponsors           store.SponsorStore
+	AdminStats         store.AdminStatsStore
+	SponsorImages      SponsorStorage
 
 	// Sessions and Users drive RequireAuth. Either nil means nobody can
 	// authenticate, so every authed route 401s (never silently open).
@@ -131,6 +134,7 @@ func New(d Deps) *echo.Echo {
 	registerWindows(authed, d)
 	registerProjects(authed, d)
 	registerAdmin(authed, d)
+	registerSponsors(authed, d)
 
 	return e
 }
