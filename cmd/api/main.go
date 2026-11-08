@@ -104,6 +104,7 @@ func main() {
 		deps.CorpPrograms = queries
 		deps.StockItems = queries
 		deps.Plans = queries
+		deps.MoonScans = queries
 		deps.Wholemap = queries
 		deps.Programs = queries
 	}

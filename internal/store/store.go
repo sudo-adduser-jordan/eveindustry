@@ -114,6 +114,8 @@ type ReferenceStore interface {
 	ManufacturableGroupIDs(ctx context.Context) (map[int]bool, error)
 	SearchTypes(ctx context.Context, query string, limit int, excludeMeta []int) ([]EveType, error)
 	TypeExists(ctx context.Context, typeID int) (bool, error)
+	TypesByIDs(ctx context.Context, typeIDs []int) ([]EveType, error)
+	TypesByNames(ctx context.Context, names []string) ([]EveType, error)
 	FindType(ctx context.Context, typeID int) (*EveType, error)
 	FindSystem(ctx context.Context, systemID int) (*SolarSystem, error)
 	SearchSystems(ctx context.Context, query string, limit int) ([]SolarSystem, error)
@@ -606,4 +608,39 @@ func (s *SQL) FreshnessTimestamps(ctx context.Context, regionID int) (orders, co
 		global = &g.Time
 	}
 	return orders, costs, global, nil
+}
+
+const eveTypeCols = `type_id, name, description, group_id, market_group_id, volume, mass,
+	portion_size, published, meta_group_id`
+
+// TypesByIDs batch-loads eve_types rows for the given ids.
+func (s *SQL) TypesByIDs(ctx context.Context, typeIDs []int) ([]EveType, error) {
+	if len(typeIDs) == 0 {
+		return nil, nil
+	}
+	q, args, err := sqlx.In(`SELECT `+eveTypeCols+` FROM eve_types WHERE type_id IN (?)`, typeIDs)
+	if err != nil {
+		return nil, err
+	}
+	var out []EveType
+	if err := s.db.SelectContext(ctx, &out, s.db.Rebind(q), args...); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TypesByNames batch-loads eve_types rows for exact names (compressed-ore lookup).
+func (s *SQL) TypesByNames(ctx context.Context, names []string) ([]EveType, error) {
+	if len(names) == 0 {
+		return nil, nil
+	}
+	q, args, err := sqlx.In(`SELECT `+eveTypeCols+` FROM eve_types WHERE name IN (?)`, names)
+	if err != nil {
+		return nil, err
+	}
+	var out []EveType
+	if err := s.db.SelectContext(ctx, &out, s.db.Rebind(q), args...); err != nil {
+		return nil, err
+	}
+	return out, nil
 }

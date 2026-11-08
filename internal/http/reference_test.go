@@ -89,6 +89,12 @@ func (s *stubReference) SearchTypes(ctx context.Context, query string, limit int
 	return out, nil
 }
 
+func (s *stubReference) TypesByIDs(ctx context.Context, ids []int) ([]store.EveType, error) {
+	return nil, nil
+}
+func (s *stubReference) TypesByNames(ctx context.Context, names []string) ([]store.EveType, error) {
+	return nil, nil
+}
 func (s *stubReference) TypeExists(ctx context.Context, typeID int) (bool, error) {
 	for _, t := range s.types {
 		if t.TypeID == typeID {

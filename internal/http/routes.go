@@ -47,6 +47,7 @@ type Deps struct {
 	Programs     store.ProgramStore
 	IndustryDeps IndustryDeps
 	Progress     ProgressDeps
+	MoonScans    store.MoonScanStore
 
 	// Sessions and Users drive RequireAuth. Either nil means nobody can
 	// authenticate, so every authed route 401s (never silently open).
@@ -113,6 +114,7 @@ func New(d Deps) *echo.Echo {
 	registerPrograms(authed, d)
 	registerProgress(authed, d)
 	registerAvailability(authed, d)
+	registerMoonScans(authed, d)
 
 	return e
 }
