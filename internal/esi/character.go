@@ -277,6 +277,56 @@ func (c *CharacterClient) GetIndustryJobs(ctx context.Context, characterID int64
 	return all, nil
 }
 
+// GetCharacterRoles ports getCharacterRoles(): the roles object, 1h memo.
+func (c *CharacterClient) GetCharacterRoles(ctx context.Context, characterID int64) (map[string]any, error) {
+	key := fmt.Sprintf("esi.roles.%d", characterID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.(map[string]any), nil
+	}
+	data, err := c.authed(ctx, http.MethodGet, fmt.Sprintf("/characters/%d/roles/", characterID), characterID, nil)
+	if err != nil {
+		return nil, err
+	}
+	out, _ := data.(map[string]any)
+	c.memo.Set(key, out, time.Hour)
+	return out, nil
+}
+
+// GetCorporationBlueprints ports getCorporationBlueprints(): full snapshot,
+// 1h memo.
+func (c *CharacterClient) GetCorporationBlueprints(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error) {
+	key := fmt.Sprintf("esi.corp_blueprints.%d", corporationID)
+	if v, ok := c.memo.Get(key); ok {
+		return v.([]map[string]any), nil
+	}
+	all, err := c.Paginated(ctx, fmt.Sprintf("/corporations/%d/blueprints/", corporationID), nil, characterID)
+	if err != nil {
+		return nil, err
+	}
+	c.memo.Set(key, all, time.Hour)
+	return all, nil
+}
+
+// GetCorporationAssets ports getCorporationAssets(): full snapshot, 1h memo;
+// empty results are never cached.
+func (c *CharacterClient) GetCorporationAssets(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error) {
+	key := fmt.Sprintf("esi.corp_assets.%d", corporationID)
+	if v, ok := c.memo.Get(key); ok {
+		return v.([]map[string]any), nil
+	}
+	all, err := c.Paginated(ctx, fmt.Sprintf("/corporations/%d/assets/", corporationID), nil, characterID)
+	if err != nil {
+		return nil, err
+	}
+	if len(all) > 0 {
+		c.memo.Set(key, all, time.Hour)
+	}
+	return all, nil
+}
+
 // GetCorporationIndustryJobs ports getCorporationIndustryJobs(): corp jobs
 // started by the corp, 5 minute cache. Eligibility gating is the caller's job.
 func (c *CharacterClient) GetCorporationIndustryJobs(ctx context.Context, characterID int64, corporationID int64, includeCompleted bool) ([]map[string]any, error) {

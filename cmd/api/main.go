@@ -90,6 +90,7 @@ func main() {
 		esiUniverse := esi.NewUniverseClient(esiClient, queries, nil, queries)
 		deps.Skills.Characters = esiChars
 		deps.Stock.Characters = esiChars
+		deps.Production.Characters = esiChars
 		deps.IndustryDeps.Characters = esiChars
 		deps.IndustryDeps.Universe = esiUniverse
 	}
