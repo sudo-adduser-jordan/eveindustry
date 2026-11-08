@@ -87,8 +87,11 @@ func main() {
 			appKey = key[:32]
 		}
 		esiChars := esi.NewCharacterClient(esiClient, refresher, queries, nil, appKey)
+		esiUniverse := esi.NewUniverseClient(esiClient, queries, nil, queries)
 		deps.Skills.Characters = esiChars
 		deps.Stock.Characters = esiChars
+		deps.IndustryDeps.Characters = esiChars
+		deps.IndustryDeps.Universe = esiUniverse
 	}
 	if rdb != nil {
 		deps.CachePing = func(ctx context.Context) bool {

@@ -54,19 +54,24 @@ type authCharacterRow struct {
 	AllianceName    sql.NullString `db:"alliance_name"`
 	IsMain          bool           `db:"is_main"`
 	IsEsiActive     bool           `db:"is_esi_active"`
+	IsDirectorCEO   bool           `db:"is_director_ceo"`
 	CachedLocation  sql.NullString `db:"cached_location"`
 	CachedTraining  sql.NullString `db:"cached_training"`
 	Scopes          sql.NullString `db:"scopes"`
+	Roles           sql.NullString `db:"roles"`
 }
 
 func (s *SQL) CharactersForUser(ctx context.Context, userID int64) ([]auth.Character, error) {
-	var rows []authCharacterRow
-	err := s.db.SelectContext(ctx, &rows, `
-		SELECT character_id, name, corporation_id, corporation_name,
-		       alliance_id, alliance_name, is_main, is_esi_active,
-		       cached_location, cached_training, scopes
-		FROM characters WHERE user_id = ?
-		ORDER BY is_main DESC, name`, userID)
+	rows, err := func() ([]authCharacterRow, error) {
+		var rows []authCharacterRow
+		err := s.db.SelectContext(ctx, &rows, `
+			SELECT character_id, name, corporation_id, corporation_name,
+			       alliance_id, alliance_name, is_main, is_esi_active, is_director_ceo,
+			       cached_location, cached_training, scopes, roles
+			FROM characters WHERE user_id = ?
+			ORDER BY is_main DESC, name`, userID)
+		return rows, err
+	}()
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +80,7 @@ func (s *SQL) CharactersForUser(ctx context.Context, userID int64) ([]auth.Chara
 		ch := auth.Character{
 			CharacterID: r.CharacterID, Name: r.Name,
 			CorporationID: &r.CorporationID, IsMain: r.IsMain,
-			IsEsiActive: r.IsEsiActive,
+			IsEsiActive: r.IsEsiActive, IsDirectorCEO: r.IsDirectorCEO,
 		}
 		if r.CorporationName.Valid {
 			v := r.CorporationName.String
@@ -101,6 +106,12 @@ func (s *SQL) CharactersForUser(ctx context.Context, userID int64) ([]auth.Chara
 			var scopes []string
 			if err := json.Unmarshal([]byte(r.Scopes.String), &scopes); err == nil {
 				ch.Scopes = scopes
+			}
+		}
+		if r.Roles.Valid && r.Roles.String != "" {
+			var roles []string
+			if err := json.Unmarshal([]byte(r.Roles.String), &roles); err == nil {
+				ch.Roles = roles
 			}
 		}
 		out = append(out, ch)

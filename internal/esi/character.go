@@ -277,6 +277,26 @@ func (c *CharacterClient) GetIndustryJobs(ctx context.Context, characterID int64
 	return all, nil
 }
 
+// GetCorporationIndustryJobs ports getCorporationIndustryJobs(): corp jobs
+// started by the corp, 5 minute cache. Eligibility gating is the caller's job.
+func (c *CharacterClient) GetCorporationIndustryJobs(ctx context.Context, characterID int64, corporationID int64, includeCompleted bool) ([]map[string]any, error) {
+	key := fmt.Sprintf("esi.corp_industry_jobs.%d.active", corporationID)
+	query := map[string]string{}
+	if includeCompleted {
+		key = fmt.Sprintf("esi.corp_industry_jobs.%d.with_completed", corporationID)
+		query["include_completed"] = "true"
+	}
+	if v, ok := c.memo.Get(key); ok {
+		return v.([]map[string]any), nil
+	}
+	all, err := c.Paginated(ctx, fmt.Sprintf("/corporations/%d/industry/jobs/", corporationID), query, characterID)
+	if err != nil {
+		return nil, err
+	}
+	c.memo.Set(key, all, 5*time.Minute)
+	return all, nil
+}
+
 // GetAssetNames ports getCharacterAssetNames(): POST chunks of 1000,
 // skipping blank/'None' names.
 func (c *CharacterClient) GetAssetNames(ctx context.Context, characterID int64, itemIDs []int64) (map[int64]string, error) {

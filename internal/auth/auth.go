@@ -52,9 +52,11 @@ type Character struct {
 	AllianceName    *string
 	IsMain          bool
 	IsEsiActive     bool
+	IsDirectorCEO   bool
 	CachedLocation  *string
 	CachedTraining  *string
 	Scopes          []string
+	Roles           []string
 }
 
 // PortraitURL mirrors the Character::portrait_url accessor.

@@ -22,6 +22,9 @@ type CorpConfig struct {
 
 // CorpCharacter is one user character in a corporation with corp standing.
 type CorpCharacter struct {
+	CharacterID   int64
+	IsEsiActive   bool
+	Scopes        []string
 	IsDirectorCEO bool
 	Roles         []string
 }
@@ -44,18 +47,27 @@ func (s *SQL) ActiveCorpConfig(ctx context.Context, corporationID int64) (*CorpC
 
 func (s *SQL) UserCorpCharacters(ctx context.Context, userID, corporationID int64) ([]CorpCharacter, error) {
 	var rows []struct {
+		CharacterID   int64          `db:"character_id"`
+		IsEsiActive   bool           `db:"is_esi_active"`
+		Scopes        sql.NullString `db:"scopes"`
 		IsDirectorCEO bool           `db:"is_director_ceo"`
 		Roles         sql.NullString `db:"roles"`
 	}
 	err := s.db.SelectContext(ctx, &rows, `
-		SELECT is_director_ceo, roles FROM characters
+		SELECT character_id, is_esi_active, scopes, is_director_ceo, roles FROM characters
 		WHERE user_id = ? AND corporation_id = ?`, userID, corporationID)
 	if err != nil {
 		return nil, err
 	}
 	out := make([]CorpCharacter, 0, len(rows))
 	for _, r := range rows {
-		cc := CorpCharacter{IsDirectorCEO: r.IsDirectorCEO}
+		cc := CorpCharacter{CharacterID: r.CharacterID, IsEsiActive: r.IsEsiActive, IsDirectorCEO: r.IsDirectorCEO}
+		if r.Scopes.Valid && r.Scopes.String != "" {
+			var scopes []string
+			if err := json.Unmarshal([]byte(r.Scopes.String), &scopes); err == nil {
+				cc.Scopes = scopes
+			}
+		}
 		if r.Roles.Valid && r.Roles.String != "" {
 			var roles []string
 			if err := json.Unmarshal([]byte(r.Roles.String), &roles); err == nil {
