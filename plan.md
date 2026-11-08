@@ -18,6 +18,8 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
 - Phase 3a (`51ac980`): session auth — signed cookies, RequireAuth +
   demo-guard on `/api/v1`, real `/me`, `/logout`, account delete.
 - Phase 3b (`532e568`): corporate-export availability.
+- Phase 4a (`a2eb801`): ESI transport core (outcomes, circuit, rate
+  limiter, token refresher, HTTP client).
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
@@ -66,8 +68,10 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
 - [ ] Auth phase (part 1 done `51ac980`: sessions, RequireAuth,
       demo-guard, /me, /logout, account delete): EVE SSO, character-scoped
       skills/stock, admin/stock-manager gates.
-- [ ] ESI phase: `internal/esi` (rate limiter, token refresh, HTTP cache,
-      diagnostics), live fallbacks, adjusted prices, cost indices.
+- [ ] ESI phase (core done `a2eb801`; still needed: diagnostics,
+      HTTP cache, demo responses, 8 resource sub-clients, character token
+      store, route-group table): live fallbacks, adjusted prices, cost
+      indices, skills/stock endpoints.
 - [ ] Jobs phase: `cmd/worker` queue (17 jobs), `cmd/scheduler` tick loop,
       Horizon replacement decision (riverqueue/asynq).
 - [ ] Migrations phase: 74 Laravel migrations -> `migrations/*.up/down.sql`,
