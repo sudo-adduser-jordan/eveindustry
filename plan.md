@@ -50,6 +50,7 @@ per the existing rule.
 - Phase 6b: asset materials, ships, stock-manager type search.
 - Phase 6c: corporate donations (status, enable/disable, index).
 - Phase 6d: ESS tracker + structure vulnerability windows.
+- Phase 6e: corporation projects (index, leaderboard, refresh).
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
