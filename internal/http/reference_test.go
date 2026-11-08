@@ -178,17 +178,20 @@ func get(t *testing.T, d Deps, path string) (int, map[string]any) {
 	return rec.Code, body
 }
 
-func TestTypeSearchShortQueryReturnsEmpty(t *testing.T) {
+func TestTypeSearchShortQueryIs422(t *testing.T) {
 	d, _, _ := testDeps()
+	// PHP's SearchRequest requires q (min 2): short/missing q is a 422.
 	code, body := get(t, d, "/api/v1/types?q=x")
+	if code != http.StatusUnprocessableEntity || body["code"] != "validation_failed" {
+		t.Fatalf("short q: %d %v", code, body)
+	}
+	code, _ = get(t, d, "/api/v1/types")
+	if code != http.StatusUnprocessableEntity {
+		t.Fatalf("missing q: %d", code)
+	}
+	code, body = get(t, d, "/api/v1/types?q=Trit")
 	if code != http.StatusOK {
-		t.Fatalf("code = %d", code)
-	}
-	if body["meta"].(map[string]any)["limit"].(float64) != 50 {
-		t.Fatalf("meta.limit missing: %v", body["meta"])
-	}
-	if len(body["data"].([]any)) != 0 {
-		t.Fatalf("short query must return []: %v", body["data"])
+		t.Fatalf("valid q: %d %v", code, body)
 	}
 }
 

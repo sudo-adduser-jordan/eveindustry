@@ -16,6 +16,7 @@ import (
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/config"
 	gohttp "github.com/sudo-adduser-jordan/eveindustry/internal/http"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
@@ -55,6 +56,7 @@ func main() {
 		queries := store.NewSQL(sqlxDB)
 		deps.Reference = queries
 		deps.Market = queries
+		deps.Industry = industry.NewSQL(sqlxDB)
 	}
 	if rdb != nil {
 		deps.CachePing = func(ctx context.Context) bool {

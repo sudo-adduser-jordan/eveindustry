@@ -60,10 +60,17 @@ func nullableFloat64(nf sql.NullFloat64) any {
 }
 
 func nullableTime(nt sql.NullTime) any {
-	if nt.Valid {
-		return nt.Time.UTC().Format("2006-01-02T15:04:05Z")
+	if !nt.Valid {
+		return nil
 	}
-	return nil
+	return nt.Time.UTC().Format("2006-01-02T15:04:05Z")
+}
+
+func nullStrPtr(ns sql.NullString) *string {
+	if !ns.Valid {
+		return nil
+	}
+	return &ns.String
 }
 
 // GET /types?q=&exclude_meta_groups[] — mirrors TypeController@index via
@@ -74,11 +81,12 @@ func handleTypeSearch(d Deps) echo.HandlerFunc {
 		if !ok {
 			return Failure(c, http.StatusServiceUnavailable, "Database not configured.", nil)
 		}
-		q := c.QueryParam("q")
-		exclude := parseIntList(c, "exclude_meta_groups[]", "exclude_meta_groups")
-		if len(q) < market.MinQueryLength {
-			return Success(c, http.StatusOK, []any{}, map[string]any{"limit": market.TypeSearchLimit})
+		verrs := validationErrors{}
+		q, ok := parseSearchTerm(c, verrs)
+		if !ok {
+			return verrs.invalid(c)
 		}
+		exclude := parseIntList(c, "exclude_meta_groups[]", "exclude_meta_groups")
 		types, err := rs.SearchTypes(c.Request().Context(), q, market.TypeSearchLimit, exclude)
 		if err != nil {
 			return dbError(c, err)
@@ -299,9 +307,10 @@ func handleSystemSearch(d Deps) echo.HandlerFunc {
 		if !ok {
 			return Failure(c, http.StatusServiceUnavailable, "Database not configured.", nil)
 		}
-		q := c.QueryParam("q")
-		if len(q) < market.MinQueryLength {
-			return Success(c, http.StatusOK, []any{}, map[string]any{"limit": market.SystemSearchLimit})
+		verrs := validationErrors{}
+		q, ok := parseSearchTerm(c, verrs)
+		if !ok {
+			return verrs.invalid(c)
 		}
 		systems, err := rs.SearchSystems(c.Request().Context(), q, market.SystemSearchLimit)
 		if err != nil {
@@ -373,19 +382,19 @@ func handleStationSearch(d Deps) echo.HandlerFunc {
 		if !ok {
 			return Failure(c, http.StatusServiceUnavailable, "Database not configured.", nil)
 		}
+		verrs := validationErrors{}
+		q, qok := parseSearchTerm(c, verrs)
 		var systemID *int
 		if raw := c.QueryParam("solar_system_id"); raw != "" {
 			id, err := strconv.Atoi(raw)
 			if err != nil || id < 1 {
-				verrs := validationErrors{}
 				verrs.add("solar_system_id", "The solar system id field must be an integer greater than 0.")
-				return verrs.invalid(c)
+			} else {
+				systemID = &id
 			}
-			systemID = &id
 		}
-		q := c.QueryParam("q")
-		if systemID == nil && len(q) < market.MinQueryLength {
-			return Success(c, http.StatusOK, []any{}, map[string]any{"limit": market.StationSearchLimit})
+		if !qok || len(verrs) > 0 {
+			return verrs.invalid(c)
 		}
 		stations, err := rs.SearchStations(c.Request().Context(), q, systemID, market.StationSearchLimit)
 		if err != nil {

@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/health"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/setup"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
@@ -28,6 +29,7 @@ type Deps struct {
 	// routes answer 503 while /up and /health keep their contracts.
 	Reference store.ReferenceStore
 	Market    store.MarketStore
+	Industry  industry.IndustryStore
 }
 
 // New builds the Echo router for the Go API. Routes mirror routes/api.php
@@ -57,6 +59,7 @@ func New(d Deps) *echo.Echo {
 
 	registerReference(v1, d)
 	registerMarket(v1, d)
+	registerIndustryReference(v1, d)
 
 	return e
 }

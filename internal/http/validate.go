@@ -46,6 +46,25 @@ func parseRegionID(c echo.Context, verrs validationErrors) int {
 	return id
 }
 
+// parseSearchTerm validates ?q= per SearchRequest rules: required, 2 to 100
+// characters. Mirrors the 422s the PHP search endpoints return.
+func parseSearchTerm(c echo.Context, verrs validationErrors) (string, bool) {
+	q := c.QueryParam("q")
+	if q == "" {
+		verrs.add("q", "The q field is required.")
+		return "", false
+	}
+	if len([]rune(q)) < 2 {
+		verrs.add("q", "The q field must be at least 2 characters.")
+		return "", false
+	}
+	if len([]rune(q)) > 100 {
+		verrs.add("q", "The q field must not be greater than 100 characters.")
+		return "", false
+	}
+	return q, true
+}
+
 // parsePagination mirrors ApiRequest::page()/perPage(): page >= 1,
 // 1 <= per_page <= 200.
 func parsePagination(c echo.Context, verrs validationErrors) (page, perPage int) {
