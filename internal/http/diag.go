@@ -155,9 +155,9 @@ func diagSummaryShape(from, to time.Time, s *store.DiagSummary) map[string]any {
 		"other_errors": s.OtherErrors, "connection_failures": s.ConnectionFailures,
 		"local_deferrals": s.LocalDeferrals, "cache_hits": s.CacheHits,
 		"cache_misses": s.CacheMisses, "cache_revalidations": s.CacheRevalidations,
-		"protection_episodes": s.ProtectionEpisodes,
+		"protection_episodes":    s.ProtectionEpisodes,
 		"observed_pause_seconds": s.ObservedPauseSeconds,
-		"min_legacy_remaining": s.MinLegacyRemaining, "releases": rels,
+		"min_legacy_remaining":   s.MinLegacyRemaining, "releases": rels,
 	}
 }
 
@@ -243,7 +243,7 @@ func handleDiagEndpoints(d Deps) echo.HandlerFunc {
 			reasons = append(reasons, map[string]any{
 				"operation": x.Operation, "http_status": x.HTTPStatus, "reason": x.Reason,
 				"dataset": x.Dataset, "errors": x.Errors,
-				"share_of_errors": x.ShareOfErrors,
+				"share_of_errors":          x.ShareOfErrors,
 				"errors_per_1000_requests": x.ErrorsPer1000Requests,
 			})
 		}

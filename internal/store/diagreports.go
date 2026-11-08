@@ -58,22 +58,22 @@ type DiagRelease struct {
 
 // DiagTrendBucket is one time bucket.
 type DiagTrendBucket struct {
-	At            time.Time
-	Requests      int
-	Errors        int
-	Status401     int
-	Status403     int
-	Status404     int
-	Throttled420  int
-	Throttled429  int
+	At             time.Time
+	Requests       int
+	Errors         int
+	Status401      int
+	Status403      int
+	Status404      int
+	Throttled420   int
+	Throttled429   int
 	LocalDeferrals int
-	CacheHits     int
+	CacheHits      int
 }
 
 // DiagLegacyPoint is one legacy-budget point.
 type DiagLegacyPoint struct {
-	At                time.Time
-	RemainingMin      *int
+	At                 time.Time
+	RemainingMin       *int
 	ProtectionEpisodes int
 }
 
@@ -108,12 +108,12 @@ type DiagOperation struct {
 
 // DiagReason is one top reason row.
 type DiagReason struct {
-	Operation            string
-	HTTPStatus           *int
-	Reason               string
-	Dataset              *string
-	Errors               int
-	ShareOfErrors        *float64
+	Operation             string
+	HTTPStatus            *int
+	Reason                string
+	Dataset               *string
+	Errors                int
+	ShareOfErrors         *float64
 	ErrorsPer1000Requests *float64
 }
 
@@ -127,27 +127,27 @@ type DiagEndpoints struct {
 
 // DiagEvent is one failure-detail row.
 type DiagEvent struct {
-	ID                 int64
-	OccurredAt         time.Time
-	Kind               string
-	Operation          *string
-	HTTPStatus         *int
-	Reason             string
-	Dataset            *string
-	JobClass           *string
-	CorrelationID      *string
-	CharacterID        *int64
-	CorporationID      *int64
-	ResourceID         *int64
-	Page               *int
-	BatchSize          *int
-	DurationMs         *int
-	LimiterGroup       *string
-	LegacyRemaining    *int
-	RetryAfterSeconds  *int
-	UpstreamRequestID  *string
-	BatchFingerprint   *string
-	Release            *string
+	ID                int64
+	OccurredAt        time.Time
+	Kind              string
+	Operation         *string
+	HTTPStatus        *int
+	Reason            string
+	Dataset           *string
+	JobClass          *string
+	CorrelationID     *string
+	CharacterID       *int64
+	CorporationID     *int64
+	ResourceID        *int64
+	Page              *int
+	BatchSize         *int
+	DurationMs        *int
+	LimiterGroup      *string
+	LegacyRemaining   *int
+	RetryAfterSeconds *int
+	UpstreamRequestID *string
+	BatchFingerprint  *string
+	Release           *string
 }
 
 // DiagBatch is one repeated-fingerprint row.
@@ -326,14 +326,14 @@ func (s *SQL) DiagTrends(ctx context.Context, from, to time.Time, f DiagFilters)
 	full := append([]any{hourDiag(from), fmtDiag(to)}, args...)
 	up := ` AND event_kind IN ('http_attempt','connection_failure')`
 	type bucketRow struct {
-		At     time.Time `db:"bucket_at"`
-		Req    int64     `db:"requests"`
-		Err    int64     `db:"errors"`
-		S401   int64     `db:"s401"`
-		S403   int64     `db:"s403"`
-		S404   int64     `db:"s404"`
-		S420   int64     `db:"s420"`
-		S429   int64     `db:"s429"`
+		At   time.Time `db:"bucket_at"`
+		Req  int64     `db:"requests"`
+		Err  int64     `db:"errors"`
+		S401 int64     `db:"s401"`
+		S403 int64     `db:"s403"`
+		S404 int64     `db:"s404"`
+		S420 int64     `db:"s420"`
+		S429 int64     `db:"s429"`
 	}
 	var buckets []bucketRow
 	if err := s.db.SelectContext(ctx, &buckets, `SELECT bucket_at,
@@ -391,9 +391,9 @@ func (s *SQL) DiagTrends(ctx context.Context, from, to time.Time, f DiagFilters)
 		bargs = append(bargs, *f.Group)
 	}
 	type legRow struct {
-		At      time.Time `db:"bucket_at"`
-		MinRem  *int64    `db:"remaining_min"`
-		Opened  *int64    `db:"opened"`
+		At     time.Time `db:"bucket_at"`
+		MinRem *int64    `db:"remaining_min"`
+		Opened *int64    `db:"opened"`
 	}
 	var legs []legRow
 	if err := s.db.SelectContext(ctx, &legs, `SELECT bucket_at, MIN(remaining_min) AS remaining_min, SUM(circuit_opened_count) AS opened `+budgetBase+` AND mechanism = 'legacy' GROUP BY bucket_at ORDER BY bucket_at`, bargs...); err != nil {
@@ -411,10 +411,10 @@ func (s *SQL) DiagTrends(ctx context.Context, from, to time.Time, f DiagFilters)
 		out.Legacy = append(out.Legacy, p)
 	}
 	type tokRow struct {
-		At       time.Time `db:"bucket_at"`
-		Group    string    `db:"limiter_group"`
-		MinRem   *int64    `db:"remaining_min"`
-		UsedSum  *int64    `db:"used_sum"`
+		At      time.Time `db:"bucket_at"`
+		Group   string    `db:"limiter_group"`
+		MinRem  *int64    `db:"remaining_min"`
+		UsedSum *int64    `db:"used_sum"`
 	}
 	var toks []tokRow
 	if err := s.db.SelectContext(ctx, &toks, `SELECT bucket_at, limiter_group, remaining_min, used_sum `+budgetBase+` AND mechanism = 'token' ORDER BY bucket_at`, bargs...); err != nil {
@@ -463,9 +463,9 @@ func (s *SQL) DiagEndpoints(ctx context.Context, from, to time.Time, f DiagFilte
 		out.TotalErrors = int(*tot.Err)
 	}
 	type opRow struct {
-		Op   string `db:"operation_key"`
-		Req  int64  `db:"requests"`
-		Err  int64  `db:"errors"`
+		Op  string `db:"operation_key"`
+		Req int64  `db:"requests"`
+		Err int64  `db:"errors"`
 	}
 	var ops []opRow
 	if err := s.db.SelectContext(ctx, &ops, `SELECT operation_key, SUM(request_count) AS requests, SUM(error_count) AS errors
@@ -483,11 +483,11 @@ func (s *SQL) DiagEndpoints(ctx context.Context, from, to time.Time, f DiagFilte
 		out.Operations = append(out.Operations, op)
 	}
 	type reasonRow struct {
-		Op      string  `db:"operation_key"`
-		Status  int     `db:"http_status"`
-		Reason  string  `db:"reason"`
-		Dataset string  `db:"dataset"`
-		Errs    int64   `db:"errors"`
+		Op      string `db:"operation_key"`
+		Status  int    `db:"http_status"`
+		Reason  string `db:"reason"`
+		Dataset string `db:"dataset"`
+		Errs    int64  `db:"errors"`
 	}
 	var reasons []reasonRow
 	if err := s.db.SelectContext(ctx, &reasons, `SELECT operation_key, http_status, reason, dataset, SUM(request_count) AS errors
@@ -705,16 +705,16 @@ func (s *SQL) DiagBatches(ctx context.Context, from, to time.Time, f DiagFilters
 	q += ` GROUP BY batch_fingerprint, operation_key, dataset, reason HAVING COUNT(*) > 1 ORDER BY occurrences DESC LIMIT ?`
 	args = append(args, limit)
 	type row struct {
-		FP        string         `db:"batch_fingerprint"`
-		Op        string         `db:"operation_key"`
-		Dataset   string         `db:"dataset"`
-		Reason    string         `db:"reason"`
-		Occ       int64          `db:"occurrences"`
-		Chars     int64          `db:"characters"`
-		BatchSize sql.NullInt64  `db:"batch_size"`
-		First     time.Time      `db:"first_seen"`
-		Last      time.Time      `db:"last_seen"`
-		CharID    sql.NullInt64  `db:"character_id"`
+		FP        string        `db:"batch_fingerprint"`
+		Op        string        `db:"operation_key"`
+		Dataset   string        `db:"dataset"`
+		Reason    string        `db:"reason"`
+		Occ       int64         `db:"occurrences"`
+		Chars     int64         `db:"characters"`
+		BatchSize sql.NullInt64 `db:"batch_size"`
+		First     time.Time     `db:"first_seen"`
+		Last      time.Time     `db:"last_seen"`
+		CharID    sql.NullInt64 `db:"character_id"`
 	}
 	var rows []row
 	if err := s.db.SelectContext(ctx, &rows, q, args...); err != nil {
