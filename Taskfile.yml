@@ -82,9 +82,14 @@ tasks:
           if [ -f .run/$svc.pid ] && kill -0 "$(cat .run/$svc.pid)" 2>/dev/null; then
             echo "$svc already running (pid $(cat .run/$svc.pid))"
           else
-            nohup ./.run/bin/$svc >.run/log/$svc.log 2>&1 < /dev/null &
-            echo $! > .run/$svc.pid
-            echo "$svc started (pid $!)"
+            rm -f .run/$svc.pid
+            nohup sh -c 'echo $$ > .run/$0.pid; exec ./.run/bin/$0' "$svc" >.run/log/$svc.log 2>&1 < /dev/null &
+            sleep 0.5
+            if [ -f .run/$svc.pid ]; then
+              echo "$svc started (pid $(cat .run/$svc.pid))"
+            else
+              echo "$svc failed to start (see .run/log/$svc.log)"
+            fi
           fi
         done
         port="${PORT:-8080}"

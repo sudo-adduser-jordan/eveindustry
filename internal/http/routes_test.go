@@ -17,6 +17,25 @@ func TestUp(t *testing.T) {
 	}
 }
 
+func TestRootIndex(t *testing.T) {
+	e := New(Deps{})
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET / = %d, want 200", rec.Code)
+	}
+	var body struct {
+		Data map[string]string `json:"data"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.Data["api"] != "/api/v1" || body.Data["health"] != "/api/v1/health" {
+		t.Fatalf("GET / data = %v, want api + health pointers", body.Data)
+	}
+}
+
 func TestHealthReportsFailedWithoutDeps(t *testing.T) {
 	e := New(Deps{})
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/health", nil)

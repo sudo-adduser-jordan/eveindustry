@@ -121,6 +121,7 @@ func main() {
 			continue
 		}
 		if !ok {
+			time.Sleep(time.Second)
 			continue
 		}
 		if err := r.RunOne(ctx, env); err != nil {

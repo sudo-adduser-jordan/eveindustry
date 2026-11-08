@@ -98,6 +98,15 @@ func New(d Deps) *echo.Echo {
 		return c.String(http.StatusOK, "ok")
 	})
 
+	e.GET("/", func(c echo.Context) error {
+		return Success(c, http.StatusOK, map[string]any{
+			"name":   "eveindustry",
+			"api":    "/api/v1",
+			"health": "/api/v1/health",
+			"app":    "/app/",
+		}, nil)
+	})
+
 	v1 := e.Group("/api/v1")
 	v1.GET("/health", handleHealth(d))
 
