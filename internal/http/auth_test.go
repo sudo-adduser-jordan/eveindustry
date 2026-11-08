@@ -26,7 +26,7 @@ func testAuth() *stubAuth {
 	}
 }
 
-func (s *stubAuth) UserID(r *http.Request) (int64, bool) { return s.uid, s.uid > 0 }
+func (s *stubAuth) UserID(r *http.Request) (int64, bool)           { return s.uid, s.uid > 0 }
 func (s *stubAuth) Issue(w http.ResponseWriter, userID int64)      {}
 func (s *stubAuth) Destroy(w http.ResponseWriter, r *http.Request) {}
 func (s *stubAuth) UserByID(ctx context.Context, userID int64) (*auth.User, error) {

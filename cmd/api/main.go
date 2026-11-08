@@ -14,9 +14,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/config"
 	gohttp "github.com/sudo-adduser-jordan/eveindustry/internal/http"
-	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )

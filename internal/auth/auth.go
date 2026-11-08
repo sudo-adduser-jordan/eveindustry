@@ -30,13 +30,13 @@ func PortraitURL(characterID int64) string {
 
 // User mirrors the App\Models\User fields the API exposes.
 type User struct {
-	ID                 int64
-	Name               string
-	IsAdmin            bool
-	IsSuperAdmin       bool
-	IsActive           bool
-	IsStockManager     bool
-	IsDemo             bool
+	ID             int64
+	Name           string
+	IsAdmin        bool
+	IsSuperAdmin   bool
+	IsActive       bool
+	IsStockManager bool
+	IsDemo         bool
 }
 
 // Admin mirrors User::isAdmin().
@@ -92,7 +92,7 @@ func MePayload(u *User, characters []Character, sourceURL, discordURL string, di
 		"id": u.ID, "name": u.Name, "display_name": display, "avatar_url": avatar,
 		"admin": u.Admin(), "stock_manager": u.IsStockManager, "demo": u.IsDemo,
 		"source_url": sourceURL, "discord_url": discord,
-		"features": map[string]any{"discord_bot": discordBot},
+		"features":   map[string]any{"discord_bot": discordBot},
 		"characters": chars,
 	}
 }

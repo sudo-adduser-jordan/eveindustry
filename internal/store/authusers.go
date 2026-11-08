@@ -17,13 +17,13 @@ type AuthStore interface {
 }
 
 type authUserRow struct {
-	ID                   int64          `db:"id"`
-	Name                 string         `db:"name"`
-	IsAdmin              bool           `db:"is_admin"`
-	IsSuperAdmin         bool           `db:"is_super_admin"`
-	IsActive             bool           `db:"is_active"`
-	IsStockManager       bool           `db:"is_stock_manager_enabled"`
-	IsDemo               bool           `db:"is_demo"`
+	ID             int64  `db:"id"`
+	Name           string `db:"name"`
+	IsAdmin        bool   `db:"is_admin"`
+	IsSuperAdmin   bool   `db:"is_super_admin"`
+	IsActive       bool   `db:"is_active"`
+	IsStockManager bool   `db:"is_stock_manager_enabled"`
+	IsDemo         bool   `db:"is_demo"`
 }
 
 func (s *SQL) UserByID(ctx context.Context, userID int64) (*auth.User, error) {
