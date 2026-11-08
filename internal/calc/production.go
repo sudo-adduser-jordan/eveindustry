@@ -7,33 +7,33 @@ import (
 
 // ProductionBlueprint is one ESI blueprint entry for can-produce math.
 type ProductionBlueprint struct {
-	TypeID            int
+	TypeID             int
 	MaterialEfficiency int
-	TimeEfficiency    int
-	Runs              int // -1 = BPO (unlimited)
+	TimeEfficiency     int
+	Runs               int // -1 = BPO (unlimited)
 }
 
 // ProductionMaterial is one material line with availability math.
 type ProductionMaterial struct {
-	TypeID        int    `json:"type_id"`
-	Name          string `json:"name"`
-	RequiredPerRun int   `json:"required_per_run"`
-	Available     int    `json:"available"`
-	RunsPossible  int    `json:"runs_possible"`
+	TypeID         int    `json:"type_id"`
+	Name           string `json:"name"`
+	RequiredPerRun int    `json:"required_per_run"`
+	Available      int    `json:"available"`
+	RunsPossible   int    `json:"runs_possible"`
 }
 
 // BuildableItem mirrors one calculateBuildableItems() row (pre-grouping).
 type BuildableItem struct {
-	BlueprintTypeID int                 `json:"blueprint_type_id"`
-	ProductTypeID   int                 `json:"product_type_id"`
-	ProductName     string              `json:"product_name"`
-	ProductQtyPerRun int                `json:"product_qty_per_run"`
-	ME              int                 `json:"me"`
-	TE              int                 `json:"te"`
-	MaxRuns         int                 `json:"max_runs"`
-	BuildableRuns   int                 `json:"buildable_runs"`
-	TotalOutput     int                 `json:"total_output"`
-	Materials       []ProductionMaterial `json:"materials"`
+	BlueprintTypeID  int                  `json:"blueprint_type_id"`
+	ProductTypeID    int                  `json:"product_type_id"`
+	ProductName      string               `json:"product_name"`
+	ProductQtyPerRun int                  `json:"product_qty_per_run"`
+	ME               int                  `json:"me"`
+	TE               int                  `json:"te"`
+	MaxRuns          int                  `json:"max_runs"`
+	BuildableRuns    int                  `json:"buildable_runs"`
+	TotalOutput      int                  `json:"total_output"`
+	Materials        []ProductionMaterial `json:"materials"`
 }
 
 // AggregateAssetMaterials ports aggregateMaterials(): type_id → quantity.

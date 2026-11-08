@@ -56,17 +56,17 @@ func productionTestDeps() Deps {
 	d.Sessions = stub
 	d.Production.Characters = &stubProduction{
 		blueprints: map[int64][]map[string]any{
-			11: {{ "type_id": 786, "material_efficiency": 10, "runs": -1}},
+			11: {{"type_id": 786, "material_efficiency": 10, "runs": -1}},
 		},
 		assets: map[int64][]map[string]any{
-			11: {{ "type_id": 34, "quantity": 950}},
+			11: {{"type_id": 34, "quantity": 950}},
 		},
 		roles: map[int64][]string{22: {"Director"}},
 		corpBlueprints: map[int64][]map[string]any{
-			988: {{ "type_id": 786, "material_efficiency": 0, "runs": 2}},
+			988: {{"type_id": 786, "material_efficiency": 0, "runs": 2}},
 		},
 		corpAssets: map[int64][]map[string]any{
-			988: {{ "type_id": 34, "quantity": 1000}},
+			988: {{"type_id": 34, "quantity": 1000}},
 		},
 	}
 	ind := d.Industry.(*stubIndustry)
@@ -96,7 +96,7 @@ func TestCanProduce(t *testing.T) {
 	if len(buildable) != 1 || buildable[0].(map[string]any)["buildable_runs"].(float64) != 10 {
 		t.Fatalf("buildable = %v", buildable)
 	}
-	corp := rows[1].(map[string]any)
+	corp := rows[2].(map[string]any)
 	if corp["type"] != "corporation" || corp["corporation_logo"] == nil {
 		t.Fatalf("corp = %v", corp)
 	}

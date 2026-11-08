@@ -174,10 +174,10 @@ func produceSourceData(ctx context.Context, d Deps, bps, assets []map[string]any
 	outBPs := make([]calc.ProductionBlueprint, 0, len(bps))
 	for _, bp := range bps {
 		outBPs = append(outBPs, calc.ProductionBlueprint{
-			TypeID: intVal(bp["type_id"], 0),
+			TypeID:             intVal(bp["type_id"], 0),
 			MaterialEfficiency: intVal(bp["material_efficiency"], 0),
-			TimeEfficiency: intVal(bp["time_efficiency"], 0),
-			Runs: intVal(bp["runs"], -1),
+			TimeEfficiency:     intVal(bp["time_efficiency"], 0),
+			Runs:               intVal(bp["runs"], -1),
 		})
 	}
 	acts := map[int]calc.SDEActivity{}
