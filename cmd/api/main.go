@@ -56,6 +56,7 @@ func main() {
 		queries := store.NewSQL(sqlxDB)
 		deps.Reference = queries
 		deps.Market = queries
+		deps.Trading = queries
 		deps.Industry = industry.NewSQL(sqlxDB)
 	}
 	if rdb != nil {

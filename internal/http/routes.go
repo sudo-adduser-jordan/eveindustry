@@ -30,6 +30,7 @@ type Deps struct {
 	Reference store.ReferenceStore
 	Market    store.MarketStore
 	Industry  industry.IndustryStore
+	Trading   store.TradingStore
 }
 
 // New builds the Echo router for the Go API. Routes mirror routes/api.php
@@ -60,6 +61,7 @@ func New(d Deps) *echo.Echo {
 	registerReference(v1, d)
 	registerMarket(v1, d)
 	registerIndustryReference(v1, d)
+	registerTrading(v1, d)
 
 	return e
 }

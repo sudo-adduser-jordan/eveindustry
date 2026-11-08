@@ -17,8 +17,11 @@ var Regions = map[int]string{
 	10000030: "Metropolis (Hek)",
 }
 
-// DefaultRegion mirrors MarketService::DEFAULT_REGION_ID.
+// DefaultRegion mirrors MarketService::DEFAULT_REGION_ID (buy side default).
 const DefaultRegion = 10000002
+
+// DefaultSellRegion mirrors the RegionArbitrageRequest sell default (Amarr).
+const DefaultSellRegion = 10000043
 
 // Price sources. Mirror MarketService::PRICE_SOURCE_*.
 const (
