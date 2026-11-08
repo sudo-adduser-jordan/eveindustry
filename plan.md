@@ -28,6 +28,7 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
   structures) + GET /industry/jobs overview.
 - Phase 4e (`41ce284`): corp blueprints/assets ESI + GET /industry/can-produce.
 - Phase 4f (`8a23c53`): blueprint + reaction-formula research pages.
+- Phase 4g (`a9c87cd`): industry stock report (gate, live shortfalls).
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
@@ -70,8 +71,9 @@ PHP stays authoritative until cutover parity; then Blade views, legacy
 
 - [ ] Calculators: corporate-export (done `532e568`), skills (done
       `cc17a74`), stock (done `070a5ec`).
-- [ ] Industry group: jobs overview (done `86a7336`), can-produce
-      (done `41ce284`), research (done `8a23c53`), dashboard, stock report.
+- [ ] Industry group: jobs overview, can-produce, research, stock
+      report (all done: `86a7336`, `41ce284`, `8a23c53`, `a9c87cd`);
+      dashboard is jobs-phase territory (warmed caches).
 - [ ] Auth phase (part 1 done `51ac980`: sessions, RequireAuth,
       demo-guard, /me, /logout, account delete): EVE SSO, character-scoped
       skills/stock, admin/stock-manager gates.
