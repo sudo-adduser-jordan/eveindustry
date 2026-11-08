@@ -66,7 +66,7 @@ func (s *stubIndustry) AllReactionFormulas(ctx context.Context) ([]industry.Reac
 		BlueprintTypeID: 999, FormulaName: "Test Formula",
 		Materials: []map[string]any{{"type_id": 34, "name": "Tritanium", "quantity": 50}},
 		Products:  []map[string]any{{"type_id": 587, "name": "Composite", "quantity": 5}},
-		Time: 600,
+		Time:      600,
 	}}, nil
 }
 

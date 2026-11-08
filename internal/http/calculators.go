@@ -676,7 +676,7 @@ func handleReactionBrowser(d Deps) echo.HandlerFunc {
 				"sell_score": map[string]any{
 					"score": r.SellScore.Score, "avg_daily_volume": r.SellScore.AvgDailyVolume,
 					"avg_order_count": r.SellScore.AvgOrderCount,
-					"active_days": r.SellScore.ActiveDays, "total_days": r.SellScore.TotalDays,
+					"active_days":     r.SellScore.ActiveDays, "total_days": r.SellScore.TotalDays,
 				},
 			})
 		}

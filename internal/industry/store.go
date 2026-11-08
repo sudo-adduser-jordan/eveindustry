@@ -72,6 +72,7 @@ func (s *SQL) AllReactionFormulas(ctx context.Context) ([]ReactionFormula, error
 	}
 	return out, nil
 }
+
 // IndustryStore covers the blueprint/invention/category reference reads.
 type IndustryStore interface {
 	SearchBlueprintTypes(ctx context.Context, like string, limit int) ([]BlueprintTypeHit, error)

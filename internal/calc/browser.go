@@ -45,7 +45,7 @@ func ReactionComplexity(materials []industry.Item, productIDs map[int]bool) stri
 
 // SellScoreInput is one product's 30-day history, newest first.
 type SellScoreInput struct {
-	Volumes    []uint64
+	Volumes     []uint64
 	OrderCounts []uint64
 }
 
@@ -94,7 +94,7 @@ func CalculateSellScore(in SellScoreInput, totalOutput int) SellScore {
 		orderScore = 1
 	}
 	return SellScore{
-		Score: int(math.Min(10, volumeScore+consistencyScore+orderScore)),
+		Score:          int(math.Min(10, volumeScore+consistencyScore+orderScore)),
 		AvgDailyVolume: avgVol, AvgOrderCount: avgOrd,
 		ActiveDays: active, TotalDays: totalDays,
 	}
@@ -103,26 +103,26 @@ func CalculateSellScore(in SellScoreInput, totalOutput int) SellScore {
 // ReactionBrowserItem is one priced reaction row (formatted display strings
 // omitted, as v1's clean() does).
 type ReactionBrowserItem struct {
-	BlueprintTypeID   int     `json:"blueprint_type_id"`
-	FormulaName       string  `json:"formula_name"`
-	ReactionCategory  string  `json:"reaction_category"`
-	ReactionComplexity string `json:"reaction_complexity"`
-	ProductTypeID     int     `json:"product_type_id"`
-	ProductName       string  `json:"product_name"`
-	ProductIconURL    string  `json:"product_icon_url"`
-	PortionSize       int     `json:"portion_size"`
-	TotalOutput       int     `json:"total_output"`
-	TotalInputCost    float64 `json:"total_input_cost"`
-	TotalOutputValue  float64 `json:"total_output_value"`
-	JobFee            float64 `json:"job_fee"`
-	FacilityTax       float64 `json:"facility_tax"`
-	TotalJobCost      float64 `json:"total_job_cost"`
-	SCCFee            float64 `json:"scc_fee"`
-	Profit            float64 `json:"profit"`
-	ProfitPositive    bool    `json:"profit_positive"`
-	ProfitPerUnit     float64 `json:"profit_per_unit"`
-	ProfitMargin      float64 `json:"profit_margin"`
-	SellScore         SellScore `json:"sell_score"`
+	BlueprintTypeID    int       `json:"blueprint_type_id"`
+	FormulaName        string    `json:"formula_name"`
+	ReactionCategory   string    `json:"reaction_category"`
+	ReactionComplexity string    `json:"reaction_complexity"`
+	ProductTypeID      int       `json:"product_type_id"`
+	ProductName        string    `json:"product_name"`
+	ProductIconURL     string    `json:"product_icon_url"`
+	PortionSize        int       `json:"portion_size"`
+	TotalOutput        int       `json:"total_output"`
+	TotalInputCost     float64   `json:"total_input_cost"`
+	TotalOutputValue   float64   `json:"total_output_value"`
+	JobFee             float64   `json:"job_fee"`
+	FacilityTax        float64   `json:"facility_tax"`
+	TotalJobCost       float64   `json:"total_job_cost"`
+	SCCFee             float64   `json:"scc_fee"`
+	Profit             float64   `json:"profit"`
+	ProfitPositive     bool      `json:"profit_positive"`
+	ProfitPerUnit      float64   `json:"profit_per_unit"`
+	ProfitMargin       float64   `json:"profit_margin"`
+	SellScore          SellScore `json:"sell_score"`
 }
 
 // BrowserReactionInput carries everything CalculateReactionBrowser needs.
@@ -195,11 +195,11 @@ func CalculateReactionBrowser(in BrowserReactionInput) []ReactionBrowserItem {
 		}
 		out = append(out, ReactionBrowserItem{
 			BlueprintTypeID: f.BlueprintTypeID, FormulaName: f.FormulaName,
-			ReactionCategory: ReactionCategory(f.GroupID),
+			ReactionCategory:   ReactionCategory(f.GroupID),
 			ReactionComplexity: ReactionComplexity(itemMats, productIDs),
-			ProductTypeID: pid, ProductName: pname,
+			ProductTypeID:      pid, ProductName: pname,
 			ProductIconURL: market.TypeImageURL(pid),
-			PortionSize: portion, TotalOutput: totalOutput,
+			PortionSize:    portion, TotalOutput: totalOutput,
 			TotalInputCost: inputCost, TotalOutputValue: outputValue,
 			JobFee: jobFee, FacilityTax: facilityTax, TotalJobCost: totalJobCost,
 			SCCFee: scc, Profit: profit, ProfitPositive: profit >= 0,
