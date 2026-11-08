@@ -174,8 +174,8 @@ type ArbitrageOpportunity struct {
 
 // TypeVolume is the local SDE name + volume for one type.
 type TypeVolume struct {
-	Name          string
-	VolumeM3      float64
+	Name     string
+	VolumeM3 float64
 }
 
 // ArbitrageScanInput mirrors scanRegionArbitrage() arguments.

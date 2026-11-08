@@ -112,8 +112,8 @@ func handleStationTrading(d Deps) echo.HandlerFunc {
 			out = append(out, r)
 		}
 		return Success(c, http.StatusOK, out, map[string]any{
-			"region":    map[string]any{"region_id": regionID, "region_name": market.RegionName(regionID)},
-			"freshness": freshnessFor(c, d, regionID),
+			"region":     map[string]any{"region_id": regionID, "region_name": market.RegionName(regionID)},
+			"freshness":  freshnessFor(c, d, regionID),
 			"pagination": pagination,
 		})
 	}
