@@ -19,6 +19,11 @@ type Config struct {
 	RedisAddr     string
 	RedisPassword string
 	RedisDB       int
+
+	SessionKey    string
+	SessionSecure bool
+	SessionDomain string
+	DiscordBot    bool
 }
 
 func getenv(key, fallback string) string {
@@ -49,6 +54,11 @@ func Load() Config {
 		RedisAddr:     getenv("REDIS_HOST", "") + ":" + getenv("REDIS_PORT", "6379"),
 		RedisPassword: getenv("REDIS_PASSWORD", ""),
 		RedisDB:       redisDB,
+
+		SessionKey:    os.Getenv("SESSION_KEY"),
+		SessionSecure: getenv("SESSION_SECURE_COOKIE", "") == "true",
+		SessionDomain: os.Getenv("SESSION_DOMAIN"),
+		DiscordBot:    getenv("DISCORD_BOT", "") == "true",
 	}
 }
 

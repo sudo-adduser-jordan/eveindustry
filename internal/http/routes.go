@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
+	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/health"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/setup"
@@ -32,6 +33,14 @@ type Deps struct {
 	Industry  industry.IndustryStore
 	Trading   store.TradingStore
 	Contracts store.ContractsStore
+
+	// Sessions and Users drive RequireAuth. Either nil means nobody can
+	// authenticate, so every authed route 401s (never silently open).
+	Sessions auth.Sessions
+	Users    store.AuthStore
+
+	// App carries the public metadata /me exposes.
+	App AppConfig
 }
 
 // New builds the Echo router for the Go API. Routes mirror routes/api.php
@@ -51,23 +60,23 @@ func New(d Deps) *echo.Echo {
 	v1 := e.Group("/api/v1")
 	v1.GET("/health", handleHealth(d))
 
-	// Phase 2 ports auth (Sanctum cookies / EVE SSO); until then every
-	// caller is unauthenticated, so data routes below are unreachable
-	// without a session the same way PHP's auth:sanctum group is.
-	// The 401 stub keeps the smoke test (GET /api/v1/me -> 401) green.
-	v1.GET("/me", func(c echo.Context) error {
-		return Failure(c, http.StatusUnauthorized, "Unauthenticated.", nil)
-	})
+	// Everything else needs a session, like the PHP auth:sanctum group.
+	// Demo accounts are read-mostly, like the PHP demo-guard group.
+	authed := v1.Group("", RequireAuth(d), BlockDemo)
+	authed.GET("/me", handleMe(d))
+	authed.POST("/logout", handleLogout(d))
+	authed.DELETE("/account", handleAccountDelete(d))
+	authed.GET("/market/freshness", handleFreshness(d))
 
-	registerReference(v1, d)
-	registerMarket(v1, d)
-	registerIndustryReference(v1, d)
-	registerTrading(v1, d)
-	registerCalculators(v1, d)
-	registerInvention(v1, d)
-	registerContracts(v1, d)
-	registerBrowser(v1, d)
-	registerFactoryPlanner(v1, d)
+	registerReference(authed, d)
+	registerMarket(authed, d)
+	registerIndustryReference(authed, d)
+	registerTrading(authed, d)
+	registerCalculators(authed, d)
+	registerInvention(authed, d)
+	registerContracts(authed, d)
+	registerBrowser(authed, d)
+	registerFactoryPlanner(authed, d)
 
 	return e
 }

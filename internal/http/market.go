@@ -21,7 +21,6 @@ func registerMarket(v1 *echo.Group, d Deps) {
 	v1.GET("/market/prices", handlePrices(d))
 	v1.GET("/market/history/:typeId", handleHistory(d))
 	v1.GET("/market/orders", handleOrders(d))
-	v1.GET("/market/freshness", handleFreshness(d))
 }
 
 // GET /market/prices?type_ids[]=&region_id= — mirrors MarketDataController@prices:

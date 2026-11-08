@@ -162,7 +162,8 @@ func testDeps() (Deps, *stubReference, *stubMarket) {
 		keep: map[int]bool{1: true, 2: true},
 	}
 	mkt := &stubMarket{}
-	return Deps{Reference: ref, Market: mkt}, ref, mkt
+	authStub := testAuth()
+	return Deps{Reference: ref, Market: mkt, Sessions: authStub, Users: authStub}, ref, mkt
 }
 
 func get(t *testing.T, d Deps, path string) (int, map[string]any) {

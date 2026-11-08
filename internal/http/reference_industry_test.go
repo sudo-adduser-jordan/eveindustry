@@ -95,6 +95,7 @@ func (s *stubIndustry) PrecomputedCosts(ctx context.Context, productIDs []int, r
 }
 
 func industryTestDeps() Deps {
+	authStub := testAuth()
 	return Deps{Industry: &stubIndustry{
 		hits:    []industry.BlueprintTypeHit{{TypeID: 786, Name: "Rifter Blueprint"}},
 		t2cands: []industry.BlueprintTypeHit{{TypeID: 587, Name: "Rifter"}},
@@ -109,7 +110,7 @@ func industryTestDeps() Deps {
 				Materials: sql.NullString{String: `[{"type_id":20171,"name":"Datacore","quantity":2}]`, Valid: true},
 				Products:  sql.NullString{String: `[{"type_id":786,"probability":0.3,"quantity":4}]`, Valid: true}},
 		},
-	}}
+	}, Sessions: authStub, Users: authStub}
 }
 
 func TestBlueprintSearchAndShow(t *testing.T) {

@@ -66,21 +66,24 @@ func TestMeIsUnauthenticatedStub(t *testing.T) {
 }
 
 func TestUnknownV1RouteIsJSONNotFound(t *testing.T) {
+	// Unknown paths under /api/v1 run the group middleware: anonymous
+	// callers get 401 (unlike PHP, which 404s before auth runs), while
+	// authenticated callers get the JSON 404.
 	e := New(Deps{})
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/nope", nil)
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("anon GET /api/v1/nope = %d, want 401", rec.Code)
+	}
 
-	if rec.Code != http.StatusNotFound {
-		t.Fatalf("GET /api/v1/nope = %d, want 404", rec.Code)
+	stub := testAuth()
+	d := Deps{Sessions: stub, Users: stub}
+	code, body := get(t, d, "/api/v1/nope")
+	if code != http.StatusNotFound {
+		t.Fatalf("GET /api/v1/nope = %d, want 404", code)
 	}
-	var body struct {
-		Code string `json:"code"`
-	}
-	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
-		t.Fatalf("404 body is not JSON: %v", err)
-	}
-	if body.Code != "not_found" {
-		t.Fatalf("code = %q, want not_found", body.Code)
+	if body["code"] != "not_found" {
+		t.Fatalf("code = %v, want not_found", body)
 	}
 }

@@ -65,6 +65,7 @@ func (s *stubMarket) MarketPriceRows(ctx context.Context, typeIDs []int, regionI
 func marketTestDeps() Deps {
 	now := time.Now()
 	fresh := now.Add(-30 * time.Minute)
+	authStub := testAuth()
 	return Deps{Market: &stubMarket{
 		aggregates:   map[int]float64{34: 10.5},
 		hasSnapshot:  true,
@@ -72,7 +73,7 @@ func marketTestDeps() Deps {
 		ordersAt:     &fresh,
 		costsAt:      &fresh,
 		globalAt:     &fresh,
-	}}
+	}, Sessions: authStub, Users: authStub}
 }
 
 func TestPricesFromAggregates(t *testing.T) {

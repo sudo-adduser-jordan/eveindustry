@@ -56,6 +56,7 @@ func (s *stubContracts) ContractsFreshnessTime(ctx context.Context, gen uint64) 
 func contractsTestDeps() Deps {
 	gen := uint64(7)
 	now := time.Now()
+	authStub := testAuth()
 	return Deps{Contracts: &stubContracts{
 		generation: &gen,
 		types:      map[string]store.TypedName{"Tritanium": {TypeID: 34, Name: "Tritanium"}},
@@ -70,7 +71,7 @@ func contractsTestDeps() Deps {
 			Price: 100, Volume: 1, ItemsCount: 1},
 		items:   []store.SnapshotItem{{TypeID: 34, Quantity: 10, IsIncluded: true}},
 		freshAt: &now,
-	}}
+	}, Sessions: authStub, Users: authStub}
 }
 
 func TestAppraisal(t *testing.T) {

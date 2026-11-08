@@ -16,6 +16,7 @@ import (
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/config"
 	gohttp "github.com/sudo-adduser-jordan/eveindustry/internal/http"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
@@ -50,7 +51,16 @@ func main() {
 		defer func() { _ = rdb.Close() }()
 	}
 
-	deps := gohttp.Deps{}
+	deps := gohttp.Deps{
+		App: gohttp.AppConfig{
+			SourceURL: cfg.SourceURL, DiscordURL: cfg.DiscordURL, DiscordBot: cfg.DiscordBot,
+		},
+	}
+	key, ephemeral := auth.SessionKeyFromEnv(cfg.SessionKey, os.Getenv("APP_KEY"))
+	if ephemeral {
+		log.Warn("no SESSION_KEY or APP_KEY: using an ephemeral session key; logins die on restart")
+	}
+	deps.Sessions = auth.NewCookieSessions(key, 0, cfg.SessionSecure, cfg.SessionDomain)
 	if sqlxDB != nil {
 		deps.DBPing = gohttp.PingDB(sqlxDB.DB)
 		queries := store.NewSQL(sqlxDB)
@@ -58,6 +68,7 @@ func main() {
 		deps.Market = queries
 		deps.Trading = queries
 		deps.Contracts = queries
+		deps.Users = queries
 		deps.Industry = industry.NewSQL(sqlxDB)
 	}
 	if rdb != nil {
