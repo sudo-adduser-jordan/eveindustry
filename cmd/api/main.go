@@ -103,6 +103,9 @@ func main() {
 		deps.Progress.Reference = queries
 		deps.WholemapReads.Characters = esiChars
 		deps.WholemapReads.Reference = queries
+		deps.AssetBrowser.Characters = esiChars
+		deps.AssetBrowser.Universe = esiUniverse
+		deps.AssetBrowser.Reference = queries
 		deps.CorpPrograms = queries
 		deps.StockItems = queries
 		deps.Plans = queries

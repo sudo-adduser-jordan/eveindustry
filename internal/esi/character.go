@@ -362,6 +362,37 @@ func (c *CharacterClient) GetCorporationIndustryJobs(ctx context.Context, charac
 	return all, nil
 }
 
+// GetCorporationAssetNames ports getCorporationAssetNames(): POST chunks of
+// 1000 against the corporation endpoint, skipping blank/'None' names.
+func (c *CharacterClient) GetCorporationAssetNames(ctx context.Context, characterID, corporationID int64, itemIDs []int64) (map[int64]string, error) {
+	out := map[int64]string{}
+	for i := 0; i < len(itemIDs); i += 1000 {
+		end := i + 1000
+		if end > len(itemIDs) {
+			end = len(itemIDs)
+		}
+		data, err := c.authed(ctx, http.MethodPost, fmt.Sprintf("/corporations/%d/assets/names/", corporationID), characterID, itemIDs[i:end])
+		if err != nil {
+			return nil, err
+		}
+		if list, ok := data.([]any); ok {
+			for _, item := range list {
+				m, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				id, ok := m["item_id"].(float64)
+				name, _ := m["name"].(string)
+				if !ok || name == "" || name == "None" {
+					continue
+				}
+				out[int64(id)] = name
+			}
+		}
+	}
+	return out, nil
+}
+
 // GetAssetNames ports getCharacterAssetNames(): POST chunks of 1000,
 // skipping blank/'None' names.
 func (c *CharacterClient) GetAssetNames(ctx context.Context, characterID int64, itemIDs []int64) (map[int64]string, error) {
