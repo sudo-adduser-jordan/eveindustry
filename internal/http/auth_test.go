@@ -177,3 +177,7 @@ func TestDemoWriteBlocked(t *testing.T) {
 		t.Fatal("prefix-sibling must not match")
 	}
 }
+
+func (s *stubAuth) UpdateCharacterLocation(ctx context.Context, userID, characterID int64, location string) error {
+	return nil
+}

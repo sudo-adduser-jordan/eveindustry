@@ -273,3 +273,48 @@ func TestNotes(t *testing.T) {
 		t.Fatalf("missing = %d", code)
 	}
 }
+
+func (s *stubWholemap) RecentSignatures(ctx context.Context, uid int64, since time.Time, sys *int) ([]store.WholemapSignature, error) {
+	var out []store.WholemapSignature
+	for _, g := range s.sigs {
+		if g.UserID != uid {
+			continue
+		}
+		if sys != nil && g.SystemID != *sys {
+			continue
+		}
+		out = append(out, g)
+	}
+	return out, nil
+}
+func (s *stubWholemap) RecentConnections(ctx context.Context, uid int64, since time.Time) ([]store.WormholeConnection, error) {
+	var out []store.WormholeConnection
+	for _, c := range s.conns {
+		if c.UserID == uid {
+			out = append(out, c)
+		}
+	}
+	return out, nil
+}
+func (s *stubWholemap) RecentNotes(ctx context.Context, uid int64, since time.Time, sys *int) ([]store.WholemapNote, error) {
+	var out []store.WholemapNote
+	for _, n := range s.notes {
+		if n.UserID != uid {
+			continue
+		}
+		if sys != nil && n.SystemID != *sys {
+			continue
+		}
+		out = append(out, n)
+	}
+	return out, nil
+}
+func (s *stubWholemap) JumpLogs(ctx context.Context, connID int64) ([]store.WormholeJumpLog, error) {
+	var out []store.WormholeJumpLog
+	for _, j := range s.jumps {
+		if j.ConnectionID == connID {
+			out = append(out, j)
+		}
+	}
+	return out, nil
+}

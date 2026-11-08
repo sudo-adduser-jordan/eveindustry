@@ -243,6 +243,21 @@ func (c *CharacterClient) GetAssets(ctx context.Context, characterID int64) ([]m
 	return all, nil
 }
 
+// GetLocation ports fetchPilotCurrentPosition(): the character's current
+// solar system, never cached (the caller stores the name). A nil map with
+// nil error means ESI has no position (docked?) — the caller 502s.
+func (c *CharacterClient) GetLocation(ctx context.Context, characterID int64) (map[string]any, error) {
+	raw, err := c.authed(ctx, http.MethodGet, fmt.Sprintf("/characters/%d/location/", characterID), characterID, nil)
+	if err != nil {
+		return nil, err
+	}
+	m, ok := raw.(map[string]any)
+	if !ok || len(m) == 0 {
+		return nil, nil
+	}
+	return m, nil
+}
+
 // GetBlueprints ports getCharacterBlueprints(): full snapshot, 1h cache.
 func (c *CharacterClient) GetBlueprints(ctx context.Context, characterID int64) ([]map[string]any, error) {
 	key := fmt.Sprintf("esi.blueprints.%d", characterID)

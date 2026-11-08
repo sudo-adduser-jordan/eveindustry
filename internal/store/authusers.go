@@ -14,6 +14,7 @@ type AuthStore interface {
 	UserByID(ctx context.Context, userID int64) (*auth.User, error)
 	CharactersForUser(ctx context.Context, userID int64) ([]auth.Character, error)
 	DeleteUser(ctx context.Context, userID int64) error
+	UpdateCharacterLocation(ctx context.Context, userID, characterID int64, location string) error
 }
 
 type authUserRow struct {
@@ -122,5 +123,12 @@ func (s *SQL) CharactersForUser(ctx context.Context, userID int64) ([]auth.Chara
 func (s *SQL) DeleteUser(ctx context.Context, userID int64) error {
 	// characters cascade via FK; sessions are stateless cookies.
 	_, err := s.db.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, userID)
+	return err
+}
+
+// UpdateCharacterLocation stores the ESI-resolved system name on the character.
+func (s *SQL) UpdateCharacterLocation(ctx context.Context, userID, characterID int64, location string) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE characters SET cached_location = ?, updated_at = NOW()
+		WHERE user_id = ? AND character_id = ?`, location, userID, characterID)
 	return err
 }

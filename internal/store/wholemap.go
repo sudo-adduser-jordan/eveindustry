@@ -80,6 +80,10 @@ type WholemapStore interface {
 	DeleteConnection(ctx context.Context, id int64) error
 	ConnectionForSignature(ctx context.Context, signatureID int64) (*WormholeConnection, error)
 	CreateJumpLog(ctx context.Context, j WormholeJumpLog) (*WormholeJumpLog, error)
+	RecentSignatures(ctx context.Context, userID int64, since time.Time, systemID *int) ([]WholemapSignature, error)
+	RecentConnections(ctx context.Context, userID int64, since time.Time) ([]WormholeConnection, error)
+	RecentNotes(ctx context.Context, userID int64, since time.Time, systemID *int) ([]WholemapNote, error)
+	JumpLogs(ctx context.Context, connectionID int64) ([]WormholeJumpLog, error)
 	NoteByID(ctx context.Context, id int64) (*WholemapNote, error)
 	UpsertNote(ctx context.Context, n WholemapNote) (*WholemapNote, bool, error)
 	DeleteNote(ctx context.Context, id int64) error
@@ -269,4 +273,64 @@ func (s *SQL) UpsertNote(ctx context.Context, n WholemapNote) (*WholemapNote, bo
 func (s *SQL) DeleteNote(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM wholemap_system_notes WHERE id = ?`, id)
 	return err
+}
+
+// RecentSignatures ports the map query: the user's signatures since cutoff,
+// optionally one system, newest change first.
+func (s *SQL) RecentSignatures(ctx context.Context, userID int64, since time.Time, systemID *int) ([]WholemapSignature, error) {
+	q := `SELECT ` + wholemapSignatureCols + ` FROM wholemap_signatures WHERE user_id = ? AND created_at >= ?`
+	args := []any{userID, since}
+	if systemID != nil {
+		q += ` AND system_id = ?`
+		args = append(args, *systemID)
+	}
+	q += ` ORDER BY updated_at DESC`
+	var out []WholemapSignature
+	if err := s.db.SelectContext(ctx, &out, q, args...); err != nil {
+		return nil, err
+	}
+	if out == nil {
+		out = []WholemapSignature{}
+	}
+	return out, nil
+}
+
+// RecentConnections ports the map query: always the whole chain.
+func (s *SQL) RecentConnections(ctx context.Context, userID int64, since time.Time) ([]WormholeConnection, error) {
+	var out []WormholeConnection
+	err := s.db.SelectContext(ctx, &out, `SELECT `+wormholeConnectionCols+`
+		FROM wormhole_connections WHERE user_id = ? AND created_at >= ? ORDER BY updated_at DESC`, userID, since)
+	if out == nil {
+		out = []WormholeConnection{}
+	}
+	return out, err
+}
+
+// RecentNotes ports the map query: the user's system notes since cutoff.
+func (s *SQL) RecentNotes(ctx context.Context, userID int64, since time.Time, systemID *int) ([]WholemapNote, error) {
+	q := `SELECT ` + wholemapNoteCols + ` FROM wholemap_system_notes WHERE user_id = ? AND created_at >= ?`
+	args := []any{userID, since}
+	if systemID != nil {
+		q += ` AND system_id = ?`
+		args = append(args, *systemID)
+	}
+	var out []WholemapNote
+	if err := s.db.SelectContext(ctx, &out, q, args...); err != nil {
+		return nil, err
+	}
+	if out == nil {
+		out = []WholemapNote{}
+	}
+	return out, nil
+}
+
+// JumpLogs loads a connection's jumps newest first.
+func (s *SQL) JumpLogs(ctx context.Context, connectionID int64) ([]WormholeJumpLog, error) {
+	var out []WormholeJumpLog
+	err := s.db.SelectContext(ctx, &out, `SELECT `+jumpLogCols+`
+		FROM wormhole_jump_logs WHERE connection_id = ? ORDER BY jumped_at DESC`, connectionID)
+	if out == nil {
+		out = []WormholeJumpLog{}
+	}
+	return out, err
 }
