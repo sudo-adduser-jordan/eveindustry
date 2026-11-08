@@ -39,3 +39,15 @@ func TestRefreshRegistration(t *testing.T) {
 		t.Fatalf("entries = %d", len(entries))
 	}
 }
+
+func TestPrecomputeRegistration(t *testing.T) {
+	r := NewRunner(Deps{})
+	RegisterPrecomputeJobs(r, HandlerDeps{})
+	if _, ok := r.Jobs["manufacturing-precompute-costs"]; !ok {
+		t.Fatal("missing precompute job")
+	}
+	entries := PrecomputeSchedule(HandlerDeps{})
+	if len(entries) != 1 || entries[0].Every.String() != (4*time.Hour).String() {
+		t.Fatalf("schedule = %+v", entries)
+	}
+}

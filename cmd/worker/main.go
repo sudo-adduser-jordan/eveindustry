@@ -80,6 +80,8 @@ func main() {
 	jobs.RegisterRefreshJobs(r, hd)
 	jobs.RegisterSweepJobs(r, hd)
 	jobs.RegisterImportJobs(r, hd)
+	jobs.RegisterPrecomputeJobs(r, hd)
+	jobs.RegisterImportJobs(r, hd)
 	for _, e := range jobs.RefreshSchedule(hd) {
 		_ = e
 	}

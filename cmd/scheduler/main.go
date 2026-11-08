@@ -75,6 +75,9 @@ func main() {
 	for _, e := range jobs.ImportSchedule(hd, 10000002) {
 		sched.Entries = append(sched.Entries, e)
 	}
+	for _, e := range jobs.PrecomputeSchedule(hd) {
+		sched.Entries = append(sched.Entries, e)
+	}
 
 	log.Info("scheduler started", "entries", len(sched.Entries))
 	last := map[string]time.Time{}
