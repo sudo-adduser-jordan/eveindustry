@@ -11,9 +11,9 @@ const SCCFeeRate = 0.04
 // Skill type IDs mirror ManufacturingCalculatorService::SKILL_* and
 // ReactionsCalculatorService::SKILL_REACTIONS.
 const (
-	SkillIndustry          = 3380
-	SkillAdvancedIndustry  = 3388
-	SkillReactions         = 45746
+	SkillIndustry         = 3380
+	SkillAdvancedIndustry = 3388
+	SkillReactions        = 45746
 )
 
 // Summary ports IndustryProfitCalculator::summary(): profit after the SCC

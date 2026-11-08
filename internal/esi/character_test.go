@@ -11,9 +11,9 @@ import (
 
 // stubCreds implements CredentialStore in memory.
 type stubCreds struct {
-	cred       Credential
-	ok         bool
-	saved      *TokenPair
+	cred        Credential
+	ok          bool
+	saved       *TokenPair
 	deactivated bool
 }
 
