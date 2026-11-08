@@ -66,6 +66,9 @@ per the existing rule.
 - Phase 9f: diagnostics pipeline (stream sink, flush, prune).
 - Phase 9g: demo reset + snapshot pruning jobs.
 - Phase 9h: SDE + type + blueprint + market-group imports.
+- Migrations phase: 74 Laravel migrations ported to migrations/*.up/down.sql
+  pairs with data backfills preserved; cmd/migrate (up/down/status) with
+  chain-consistency test.
 - Phase 8a: ESI market client, route-group table, HTTP cache, demo
   responses, revoke, diagnostics recorder facade.
 
