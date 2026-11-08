@@ -64,6 +64,7 @@ per the existing rule.
 - Phase 9d: manufacturing cost precompute.
 - Phase 9e: notification dispatch (detectors, webpush sender, dedupe log).
 - Phase 9f: diagnostics pipeline (stream sink, flush, prune).
+- Phase 9g: demo reset + snapshot pruning jobs.
 - Phase 8a: ESI market client, route-group table, HTTP cache, demo
   responses, revoke, diagnostics recorder facade.
 
