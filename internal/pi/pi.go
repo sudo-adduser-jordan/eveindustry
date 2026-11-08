@@ -15,7 +15,7 @@ const (
 	CycleP3ToP4 = 18000
 	CycleP0ToP1 = 1800
 
-	FactorySlots = 18
+	FactorySlots  = 18
 	SecondsPerDay = 86400
 )
 
@@ -186,53 +186,53 @@ func ResolveInputName(typeID int) string {
 
 // PriceRow is one market_prices row for factory pricing.
 type PriceRow struct {
-	BuyMax   *float64
-	SellMin  *float64
-	Average  *float64
+	BuyMax  *float64
+	SellMin *float64
+	Average *float64
 }
 
 // SchematicInput is one priced input line.
 type SchematicInput struct {
-	TypeID      int      `json:"type_id"`
-	Name        string   `json:"name"`
-	Qty         int      `json:"qty"`
-	UnitCost    float64  `json:"unit_cost"`
-	TotalCost   float64  `json:"total_cost"`
-	HasPrice    bool     `json:"has_price"`
-	PriceSource *string  `json:"price_source"`
+	TypeID      int     `json:"type_id"`
+	Name        string  `json:"name"`
+	Qty         int     `json:"qty"`
+	UnitCost    float64 `json:"unit_cost"`
+	TotalCost   float64 `json:"total_cost"`
+	HasPrice    bool    `json:"has_price"`
+	PriceSource *string `json:"price_source"`
 }
 
 // SchematicResult mirrors calculateSchematicProfit().
 type SchematicResult struct {
-	OutputTypeID            int              `json:"output_type_id"`
-	OutputName              string           `json:"output_name"`
-	OutputQty               int              `json:"output_qty"`
-	CycleTime               int              `json:"cycle_time"`
-	Inputs                  []SchematicInput `json:"inputs"`
-	TotalInputCost          float64          `json:"total_input_cost"`
-	OutputSellMin           *float64         `json:"output_sell_min"`
-	OutputBuyMax            *float64         `json:"output_buy_max"`
-	OutputPriceSource       *string          `json:"output_price_source"`
-	OutputSellValue         float64          `json:"output_sell_value"`
-	OutputBuyValue          float64          `json:"output_buy_value"`
-	ProfitPerCycleSell      float64          `json:"profit_per_cycle_sell"`
-	ProfitPerCycleBuy       float64          `json:"profit_per_cycle_buy"`
-	MarginPercentSell       *float64         `json:"margin_percent_sell"`
-	MarginPercentBuy        *float64         `json:"margin_percent_buy"`
-	CyclesPerDay            float64          `json:"cycles_per_day"`
-	DailyProfitPerFactory   float64          `json:"daily_profit_per_factory"`
-	DailyProfitBuyPerFactory float64         `json:"daily_profit_buy_per_factory"`
-	FactorySlots            int              `json:"factory_slots"`
-	DailyInputCostPlanet    float64          `json:"daily_input_cost_planet"`
-	DailyOutputSellPlanet   float64          `json:"daily_output_sell_planet"`
-	DailyOutputBuyPlanet    float64          `json:"daily_output_buy_planet"`
-	DailyProfitSellPlanet   float64          `json:"daily_profit_sell_planet"`
-	DailyProfitBuyPlanet    float64          `json:"daily_profit_buy_planet"`
-	PricesAvailable         bool             `json:"prices_available"`
-	DailyImportTax          float64          `json:"daily_import_tax"`
-	DailyExportTax          float64          `json:"daily_export_tax"`
-	DailyTaxTotal           float64          `json:"daily_tax_total"`
-	DailyProfitAfterTax     float64          `json:"daily_profit_after_tax"`
+	OutputTypeID             int              `json:"output_type_id"`
+	OutputName               string           `json:"output_name"`
+	OutputQty                int              `json:"output_qty"`
+	CycleTime                int              `json:"cycle_time"`
+	Inputs                   []SchematicInput `json:"inputs"`
+	TotalInputCost           float64          `json:"total_input_cost"`
+	OutputSellMin            *float64         `json:"output_sell_min"`
+	OutputBuyMax             *float64         `json:"output_buy_max"`
+	OutputPriceSource        *string          `json:"output_price_source"`
+	OutputSellValue          float64          `json:"output_sell_value"`
+	OutputBuyValue           float64          `json:"output_buy_value"`
+	ProfitPerCycleSell       float64          `json:"profit_per_cycle_sell"`
+	ProfitPerCycleBuy        float64          `json:"profit_per_cycle_buy"`
+	MarginPercentSell        *float64         `json:"margin_percent_sell"`
+	MarginPercentBuy         *float64         `json:"margin_percent_buy"`
+	CyclesPerDay             float64          `json:"cycles_per_day"`
+	DailyProfitPerFactory    float64          `json:"daily_profit_per_factory"`
+	DailyProfitBuyPerFactory float64          `json:"daily_profit_buy_per_factory"`
+	FactorySlots             int              `json:"factory_slots"`
+	DailyInputCostPlanet     float64          `json:"daily_input_cost_planet"`
+	DailyOutputSellPlanet    float64          `json:"daily_output_sell_planet"`
+	DailyOutputBuyPlanet     float64          `json:"daily_output_buy_planet"`
+	DailyProfitSellPlanet    float64          `json:"daily_profit_sell_planet"`
+	DailyProfitBuyPlanet     float64          `json:"daily_profit_buy_planet"`
+	PricesAvailable          bool             `json:"prices_available"`
+	DailyImportTax           float64          `json:"daily_import_tax"`
+	DailyExportTax           float64          `json:"daily_export_tax"`
+	DailyTaxTotal            float64          `json:"daily_tax_total"`
+	DailyProfitAfterTax      float64          `json:"daily_profit_after_tax"`
 }
 
 func fptr(v float64) *float64 { v2 := v; return &v2 }

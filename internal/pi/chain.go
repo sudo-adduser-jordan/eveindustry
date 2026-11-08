@@ -7,43 +7,43 @@ import (
 
 // Factory counts mirror the P1_TO_P3_* and P0_TO_P3_* constants.
 const (
-	P1ToP3P3Factories    = 6
-	P1ToP3P2A            = 6
-	P1ToP3P2B            = 6
-	P1ToP33InP3          = 3
-	P1ToP33InP2          = 5
-	P0ToP3P3Factories    = 1
-	P0ToP3P2A            = 3
-	P0ToP3P2B            = 3
-	P0ToP33InP2          = 2
-	P0ToP3BifTotal       = 11
+	P1ToP3P3Factories = 6
+	P1ToP3P2A         = 6
+	P1ToP3P2B         = 6
+	P1ToP33InP3       = 3
+	P1ToP33InP2       = 5
+	P0ToP3P3Factories = 1
+	P0ToP3P2A         = 3
+	P0ToP3P2B         = 3
+	P0ToP33InP2       = 2
+	P0ToP3BifTotal    = 11
 )
 
 // P1ToP3Result mirrors calculateP1toP3Plan().
 type P1ToP3Result struct {
-	OutputTypeID      int          `json:"output_type_id"`
-	OutputName        string       `json:"output_name"`
-	OutputQtyPerDay   float64      `json:"output_qty_per_day"`
-	FactorySlots      int          `json:"factory_slots"`
-	FactorySplit      map[string]any `json:"factory_split"`
-	P2Inputs          []P2Input    `json:"p2_inputs"`
-	P1Inputs          []DailyInput `json:"p1_inputs"`
-	TotalDailyP1Cost  float64      `json:"total_daily_p1_cost"`
-	P3SellMin         *float64     `json:"p3_sell_min"`
-	P3BuyMax          *float64     `json:"p3_buy_max"`
-	P3PriceSource     *string      `json:"p3_price_source"`
-	DailyP3SellValue  float64      `json:"daily_p3_sell_value"`
-	DailyP3BuyValue   float64      `json:"daily_p3_buy_value"`
-	DailyProfitSell   float64      `json:"daily_profit_sell"`
-	DailyProfitBuy    float64      `json:"daily_profit_buy"`
-	MarginPercentSell *float64     `json:"margin_percent_sell"`
-	DailyImportValue  float64      `json:"daily_import_value"`
-	DailyExportValue  float64      `json:"daily_export_value"`
-	DailyImportTax    float64      `json:"daily_import_tax"`
-	DailyExportTax    float64      `json:"daily_export_tax"`
-	DailyTaxTotal     float64      `json:"daily_tax_total"`
-	DailyProfitAfterTax float64    `json:"daily_profit_after_tax"`
-	PricesAvailable   bool         `json:"prices_available"`
+	OutputTypeID        int            `json:"output_type_id"`
+	OutputName          string         `json:"output_name"`
+	OutputQtyPerDay     float64        `json:"output_qty_per_day"`
+	FactorySlots        int            `json:"factory_slots"`
+	FactorySplit        map[string]any `json:"factory_split"`
+	P2Inputs            []P2Input      `json:"p2_inputs"`
+	P1Inputs            []DailyInput   `json:"p1_inputs"`
+	TotalDailyP1Cost    float64        `json:"total_daily_p1_cost"`
+	P3SellMin           *float64       `json:"p3_sell_min"`
+	P3BuyMax            *float64       `json:"p3_buy_max"`
+	P3PriceSource       *string        `json:"p3_price_source"`
+	DailyP3SellValue    float64        `json:"daily_p3_sell_value"`
+	DailyP3BuyValue     float64        `json:"daily_p3_buy_value"`
+	DailyProfitSell     float64        `json:"daily_profit_sell"`
+	DailyProfitBuy      float64        `json:"daily_profit_buy"`
+	MarginPercentSell   *float64       `json:"margin_percent_sell"`
+	DailyImportValue    float64        `json:"daily_import_value"`
+	DailyExportValue    float64        `json:"daily_export_value"`
+	DailyImportTax      float64        `json:"daily_import_tax"`
+	DailyExportTax      float64        `json:"daily_export_tax"`
+	DailyTaxTotal       float64        `json:"daily_tax_total"`
+	DailyProfitAfterTax float64        `json:"daily_profit_after_tax"`
+	PricesAvailable     bool           `json:"prices_available"`
 }
 
 // P2Input is one intermediate P2 line.
@@ -57,13 +57,13 @@ type P2Input struct {
 
 // DailyInput is one priced daily input line (P1 or P0).
 type DailyInput struct {
-	TypeID      int      `json:"type_id"`
-	Name        string   `json:"name"`
-	DailyQty    float64  `json:"daily_qty"`
-	UnitCost    float64  `json:"unit_cost"`
-	DailyCost   float64  `json:"daily_cost"`
-	HasPrice    bool     `json:"has_price"`
-	PriceSource *string  `json:"price_source"`
+	TypeID      int     `json:"type_id"`
+	Name        string  `json:"name"`
+	DailyQty    float64 `json:"daily_qty"`
+	UnitCost    float64 `json:"unit_cost"`
+	DailyCost   float64 `json:"daily_cost"`
+	HasPrice    bool    `json:"has_price"`
+	PriceSource *string `json:"price_source"`
 }
 
 func priceInput(prices map[int]PriceRow, typeID int) (unit float64, source *string, ok bool) {
@@ -174,7 +174,7 @@ func P1ToP3Plan(p3 Schematic, prices map[int]PriceRow) *P1ToP3Result {
 	r := &P1ToP3Result{
 		OutputTypeID: p3.OutputTypeID, OutputName: p3.Name,
 		OutputQtyPerDay: effOutput, FactorySlots: FactorySlots,
-		FactorySplit: map[string]any{"p3_factories": p3Factories, "total": FactorySlots},
+		FactorySplit:    map[string]any{"p3_factories": p3Factories, "total": FactorySlots},
 		PricesAvailable: true,
 	}
 	for _, id := range p1Order {
@@ -222,30 +222,30 @@ func P1ToP3Plan(p3 Schematic, prices map[int]PriceRow) *P1ToP3Result {
 
 // P0ToP3Result mirrors calculateP0toP3Plan().
 type P0ToP3Result struct {
-	OutputTypeID      int            `json:"output_type_id"`
-	OutputName        string         `json:"output_name"`
-	OutputQtyPerDay   float64        `json:"output_qty_per_day"`
-	FactorySlots      int            `json:"factory_slots"`
-	FactorySplit      map[string]any `json:"factory_split"`
-	P2Inputs          []P2Input      `json:"p2_inputs"`
-	P1Intermediates   []P1Intermediate `json:"p1_intermediates"`
-	P0Inputs          []DailyInput   `json:"p0_inputs"`
-	TotalDailyP0Cost  float64        `json:"total_daily_p0_cost"`
-	P3SellMin         *float64       `json:"p3_sell_min"`
-	P3BuyMax          *float64       `json:"p3_buy_max"`
-	P3PriceSource     *string        `json:"p3_price_source"`
-	DailyP3SellValue  float64        `json:"daily_p3_sell_value"`
-	DailyP3BuyValue   float64        `json:"daily_p3_buy_value"`
-	DailyProfitSell   float64        `json:"daily_profit_sell"`
-	DailyProfitBuy    float64        `json:"daily_profit_buy"`
-	MarginPercentSell *float64       `json:"margin_percent_sell"`
-	DailyImportValue  float64        `json:"daily_import_value"`
-	DailyExportValue  float64        `json:"daily_export_value"`
-	DailyImportTax    float64        `json:"daily_import_tax"`
-	DailyExportTax    float64        `json:"daily_export_tax"`
-	DailyTaxTotal     float64        `json:"daily_tax_total"`
-	DailyProfitAfterTax float64      `json:"daily_profit_after_tax"`
-	PricesAvailable   bool           `json:"prices_available"`
+	OutputTypeID        int              `json:"output_type_id"`
+	OutputName          string           `json:"output_name"`
+	OutputQtyPerDay     float64          `json:"output_qty_per_day"`
+	FactorySlots        int              `json:"factory_slots"`
+	FactorySplit        map[string]any   `json:"factory_split"`
+	P2Inputs            []P2Input        `json:"p2_inputs"`
+	P1Intermediates     []P1Intermediate `json:"p1_intermediates"`
+	P0Inputs            []DailyInput     `json:"p0_inputs"`
+	TotalDailyP0Cost    float64          `json:"total_daily_p0_cost"`
+	P3SellMin           *float64         `json:"p3_sell_min"`
+	P3BuyMax            *float64         `json:"p3_buy_max"`
+	P3PriceSource       *string          `json:"p3_price_source"`
+	DailyP3SellValue    float64          `json:"daily_p3_sell_value"`
+	DailyP3BuyValue     float64          `json:"daily_p3_buy_value"`
+	DailyProfitSell     float64          `json:"daily_profit_sell"`
+	DailyProfitBuy      float64          `json:"daily_profit_buy"`
+	MarginPercentSell   *float64         `json:"margin_percent_sell"`
+	DailyImportValue    float64          `json:"daily_import_value"`
+	DailyExportValue    float64          `json:"daily_export_value"`
+	DailyImportTax      float64          `json:"daily_import_tax"`
+	DailyExportTax      float64          `json:"daily_export_tax"`
+	DailyTaxTotal       float64          `json:"daily_tax_total"`
+	DailyProfitAfterTax float64          `json:"daily_profit_after_tax"`
+	PricesAvailable     bool             `json:"prices_available"`
 }
 
 // P1Intermediate is one P1 line with its BIF count.
@@ -284,7 +284,7 @@ func P0ToP3Plan(p3 Schematic, prices map[int]PriceRow) *P0ToP3Result {
 		p2Schematics[i] = s
 	}
 
-	const bifPerDay = 20 * SecondsPerDay / CycleP0ToP1 // 960
+	const bifPerDay = 20 * SecondsPerDay / CycleP0ToP1   // 960
 	const p1PerAifDay = 40 * SecondsPerDay / CycleP1ToP2 // 960 per input type
 	const p2PerCycle = 5
 	p2CyclesDay := float64(SecondsPerDay) / CycleP1ToP2
