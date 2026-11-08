@@ -80,14 +80,14 @@ func ResetDemoAccount(ctx context.Context, h HandlerDeps) error {
 	}{allianceID, pick(demoAlliance) + " Compact"}
 	used := map[string]bool{}
 	type charSpec struct {
-		charID     int64
-		name       string
-		corpID     int64
-		corpName   string
-		allyID     *int64
-		allyName   *string
-		main       bool
-		director   bool
+		charID   int64
+		name     string
+		corpID   int64
+		corpName string
+		allyID   *int64
+		allyName *string
+		main     bool
+		director bool
 	}
 	var specs []charSpec
 	for i := 0; i < 3; i++ {
