@@ -24,7 +24,6 @@ type StockReportESI interface {
 	GetCorporationAssets(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error)
 }
 
-
 // registerStockReport mounts GET /industry/stock behind the stock-manager
 // gate (403 like the PHP stock-manager middleware).
 func registerStockReport(v1 *echo.Group, d Deps) {
@@ -137,7 +136,7 @@ func handleStockReport(d Deps) echo.HandlerFunc {
 			out = append(out, map[string]any{
 				"id": it.ID, "type_id": it.TypeID, "type_name": it.TypeName,
 				"desired_quantity": desired,
-				"on_hand": hand, "shortfall": short,
+				"on_hand":          hand, "shortfall": short,
 				"icon_url": market.TypeImageURL(it.TypeID),
 			})
 		}
