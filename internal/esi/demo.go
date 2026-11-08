@@ -83,14 +83,14 @@ var DemoPlanetTypes = map[string]demoPlanetType{
 
 // DemoCharacter is the minimal character record the responder needs.
 type DemoCharacter struct {
-	ID             int64
-	Name           string
-	CorporationID  int64
-	CorpName       string
-	AllianceID     int64
-	AllianceName   string
-	Roles          []string
-	CreatedAt      time.Time
+	ID            int64
+	Name          string
+	CorporationID int64
+	CorpName      string
+	AllianceID    int64
+	AllianceName  string
+	Roles         []string
+	CreatedAt     time.Time
 }
 
 // DemoResponder stands in for ESI for demo characters. Payloads have ESI's
@@ -513,7 +513,7 @@ func (r *DemoResponder) demoJobs(c DemoCharacter, includeCompleted bool) []any {
 			continue
 		}
 		job := map[string]any{
-			"job_id": 800000000 + (c.ID%1000000)*10 + int64(i),
+			"job_id":       800000000 + (c.ID%1000000)*10 + int64(i),
 			"installer_id": c.ID, "facility_id": home, "station_id": home,
 			"activity_id": activity, "blueprint_id": base + 500 + int64(i),
 			"blueprint_type_id": pair[0], "blueprint_location_id": home, "output_location_id": home,
@@ -600,8 +600,8 @@ func (r *DemoResponder) demoColonyDetails(c DemoCharacter, planetID int64) map[s
 		pins = append(pins, map[string]any{
 			"pin_id": pinBase + 2 + int64(k), "type_id": cfg.ECU,
 			"latitude": 0.4 + float64(k)/10, "longitude": 1.0 + float64(k)/10,
-			"install_time": now.Add(-48 * time.Hour).UTC().Format(time.RFC3339),
-			"expiry_time": now.Add(time.Duration(20+planetID%40+int64(k)*30) * time.Hour).UTC().Format(time.RFC3339),
+			"install_time":     now.Add(-48 * time.Hour).UTC().Format(time.RFC3339),
+			"expiry_time":      now.Add(time.Duration(20+planetID%40+int64(k)*30) * time.Hour).UTC().Format(time.RFC3339),
 			"last_cycle_start": now.Add(-30 * time.Minute).UTC().Format(time.RFC3339),
 			"extractor_details": map[string]any{"product_type_id": product, "cycle_time": 1800,
 				"qty_per_cycle": 4200 + k*800, "head_radius": 0.05, "heads": []any{}},
@@ -610,7 +610,7 @@ func (r *DemoResponder) demoColonyDetails(c DemoCharacter, planetID int64) map[s
 			"pin_id": pinBase + 4 + int64(k), "type_id": cfg.Basic,
 			"latitude": 0.5, "longitude": 1.1 + float64(k)/10,
 			"last_cycle_start": now.Add(-10 * time.Minute).UTC().Format(time.RFC3339),
-			"schematic_id": 65 + k,
+			"schematic_id":     65 + k,
 		})
 		routes = append(routes, map[string]any{
 			"route_id": planetID*10 + int64(k), "source_pin_id": pinBase + 2 + int64(k),

@@ -197,14 +197,14 @@ func (s *SQL) DeleteCharacter(ctx context.Context, userID, characterID int64) er
 
 // DemoCharacterRow is the minimal character record the demo responder needs.
 type DemoCharacterRow struct {
-	CharacterID    int64          `db:"character_id"`
-	Name           string         `db:"name"`
-	CorporationID  sql.NullInt64  `db:"corporation_id"`
+	CharacterID     int64          `db:"character_id"`
+	Name            string         `db:"name"`
+	CorporationID   sql.NullInt64  `db:"corporation_id"`
 	CorporationName sql.NullString `db:"corporation_name"`
-	AllianceID     sql.NullInt64  `db:"alliance_id"`
-	AllianceName   sql.NullString `db:"alliance_name"`
-	Roles          sql.NullString `db:"roles"`
-	CreatedAt      time.Time      `db:"created_at"`
+	AllianceID      sql.NullInt64  `db:"alliance_id"`
+	AllianceName    sql.NullString `db:"alliance_name"`
+	Roles           sql.NullString `db:"roles"`
+	CreatedAt       time.Time      `db:"created_at"`
 }
 
 // DemoCharacters lists characters in the demo id range.

@@ -1,9 +1,9 @@
 package esi
 
 import (
-	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"context"
 	"fmt"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"net/http"
 	"time"
 )

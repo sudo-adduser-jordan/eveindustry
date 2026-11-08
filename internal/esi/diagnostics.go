@@ -9,32 +9,32 @@ import (
 type DiagEventKind string
 
 const (
-	DiagHTTPAttempt      DiagEventKind = "http_attempt"
-	DiagConnectionFail   DiagEventKind = "connection_failure"
-	DiagLocalDeferral    DiagEventKind = "local_deferral"
-	DiagCacheHit         DiagEventKind = "cache_hit"
-	DiagCacheMiss        DiagEventKind = "cache_miss"
-	DiagCacheRevalidate  DiagEventKind = "cache_revalidation"
-	DiagCircuitOpen      DiagEventKind = "circuit_opened"
-	DiagCircuitHalfOpen  DiagEventKind = "circuit_half_open"
-	DiagBudgetExhausted  DiagEventKind = "budget_exhausted"
-	DiagSkipped          DiagEventKind = "skipped"
+	DiagHTTPAttempt     DiagEventKind = "http_attempt"
+	DiagConnectionFail  DiagEventKind = "connection_failure"
+	DiagLocalDeferral   DiagEventKind = "local_deferral"
+	DiagCacheHit        DiagEventKind = "cache_hit"
+	DiagCacheMiss       DiagEventKind = "cache_miss"
+	DiagCacheRevalidate DiagEventKind = "cache_revalidation"
+	DiagCircuitOpen     DiagEventKind = "circuit_opened"
+	DiagCircuitHalfOpen DiagEventKind = "circuit_half_open"
+	DiagBudgetExhausted DiagEventKind = "budget_exhausted"
+	DiagSkipped         DiagEventKind = "skipped"
 )
 
 // DiagEvent is one passive capture record. Nothing here may alter an ESI
 // outcome: recording never returns errors to the caller.
 type DiagEvent struct {
-	Kind          DiagEventKind
-	Method        string
-	Endpoint      string
-	Operation     string
-	CharacterID   int64
-	HTTPStatus    int
-	Reason        string
-	DurationMs    *int
-	Group         string
-	Dataset       string
-	OccurredAt    time.Time
+	Kind        DiagEventKind
+	Method      string
+	Endpoint    string
+	Operation   string
+	CharacterID int64
+	HTTPStatus  int
+	Reason      string
+	DurationMs  *int
+	Group       string
+	Dataset     string
+	OccurredAt  time.Time
 }
 
 // DiagSink receives events. The Redis-stream sink and the flush worker land
