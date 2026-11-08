@@ -59,8 +59,8 @@ func TestMigrationsPairAndSplit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(versions) != 74 {
-		t.Fatalf("got %d versions, want 74", len(versions))
+	if len(versions) != 1 {
+		t.Fatalf("got %d versions, want 1 squashed baseline", len(versions))
 	}
 	for _, v := range versions {
 		for _, name := range []string{v + ".up.sql", v + ".down.sql"} {

@@ -107,7 +107,7 @@ Passive, flag-gated capture of ESI traffic (`app/Services/Esi/Diagnostics`), buf
 3. All ESI calls go through the `internal/esi` clients so they are rate-limited, error-limit tracked and cached. Never call ESI directly from a handler or job.
 4. New recurring work: register a job in `internal/jobs` with explicit queue, `MaxTries` and `Timeout`, and add a schedule entry in `cmd/scheduler` (with overlap guard). Limit per-user refreshes to users active in the last 7 days.
 5. Bulk writes use chunked upserts; marshal JSON columns explicitly first.
-6. Schema changes are new dated `migrations/*.up.sql`/`.down.sql` pairs; never edit existing ones (`cmd/migrate` chain test enforces ordering and key consistency).
+6. Schema changes are new dated `migrations/*.up.sql`/`.down.sql` pairs on top of the squashed baseline; never edit the baseline or applied ones (`cmd/migrate` chain test enforces ordering and key consistency).
 7. Work on a branch and merge to `master` by pull request.
 8. Do not add AI attribution (no `Co-Authored-By: Claude`, no "Generated with Claude Code") to commit messages or PR descriptions.
 
