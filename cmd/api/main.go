@@ -84,6 +84,15 @@ func main() {
 		circuit := esi.NewCircuit(coord)
 		esiClient := esi.NewClient(coord, limiter, circuit, cfg.ESIUserAgent)
 		esiClient.Cache = esi.NewHTTPCache(coord)
+
+	diagEnabled := os.Getenv("ESI_DIAGNOSTICS_ENABLED") == "true" || os.Getenv("ESI_DIAGNOSTICS_ENABLED") == "1"
+	diagSinkRedis := os.Getenv("ESI_DIAGNOSTICS_SINK") == "redis"
+	if diagEnabled && diagSinkRedis && rdb != nil {
+		stream := &esi.RedisStream{Client: rdb}
+		rec := &esi.DiagRecorder{Enabled: true, Sink: &esi.StreamSink{Stream: stream}}
+		esiClient.Recorder = rec
+		esiClient.Cache.Recorder = rec
+	}
 		esiClient.CompatibilityDate = cfg.ESICompatibilityDate
 		ssoHTTP := &http.Client{Timeout: 30 * time.Second}
 		refresher := esi.NewRefresher(coord, queries, ssoHTTP, cfg.ESIClientID, cfg.ESIClientSecret)

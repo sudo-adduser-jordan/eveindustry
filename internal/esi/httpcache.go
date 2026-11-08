@@ -29,6 +29,7 @@ type HTTPCache struct {
 	Store     CoordStore
 	Retention time.Duration
 	MaxBytes  int
+	Recorder  *DiagRecorder
 }
 
 // NewHTTPCache builds a cache with the PHP defaults (24h retention, 4MB cap).
@@ -65,6 +66,7 @@ func (c *HTTPCache) Remember(ctx context.Context, client *Client, endpoint strin
 	if raw, ok := c.Store.Get(key); ok {
 		var e cacheEntry
 		if json.Unmarshal(raw, &e) == nil && validEntry(&e) && e.FreshUntil > time.Now().Unix() {
+			c.recordCache(ctx, auth, endpoint, DiagCacheHit)
 			return entryResponse(&e), nil
 		}
 	}
@@ -73,6 +75,7 @@ func (c *HTTPCache) Remember(ctx context.Context, client *Client, endpoint strin
 		if raw, ok := c.Store.Get(key); ok {
 			var e cacheEntry
 			if json.Unmarshal(raw, &e) == nil && validEntry(&e) && e.FreshUntil > time.Now().Unix() {
+				c.recordCache(ctx, auth, endpoint, DiagCacheHit)
 				fetched = entryResponse(&e)
 				return nil
 			}
@@ -92,6 +95,11 @@ func (c *HTTPCache) Remember(ctx context.Context, client *Client, endpoint strin
 					cond["If-Modified-Since"] = lm
 				}
 			}
+		}
+		if stored != nil {
+			c.recordCache(ctx, auth, endpoint, DiagCacheRevalidate)
+		} else {
+			c.recordCache(ctx, auth, endpoint, DiagCacheMiss)
 		}
 		resp, err := client.sendOnce(ctx, http.MethodGet, endpoint, query, nil, cond, auth)
 		if err != nil {
@@ -215,4 +223,18 @@ func freshness(resp *Response, observed time.Time) (freshUntil, expiresAt int64)
 	}
 	_ = modified
 	return fresh, fresh
+}
+
+func (c *HTTPCache) recordCache(ctx context.Context, auth *Auth, endpoint string, kind DiagEventKind) {
+	if c.Recorder == nil || !c.Recorder.Enabled {
+		return
+	}
+	var charID int64
+	if auth != nil {
+		charID = auth.CharacterID
+	}
+	c.Recorder.Record(ctx, DiagEvent{
+		Kind: kind, Method: "GET", Endpoint: endpoint,
+		Operation: NormalizeRoute("get", endpoint), CharacterID: charID, Reason: "cache",
+	})
 }

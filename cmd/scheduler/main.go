@@ -53,6 +53,15 @@ func main() {
 		circuit := esi.NewCircuit(coord)
 		esiClient := esi.NewClient(coord, limiter, circuit, cfg.ESIUserAgent)
 		esiClient.Cache = esi.NewHTTPCache(coord)
+
+	diagEnabled := os.Getenv("ESI_DIAGNOSTICS_ENABLED") == "true" || os.Getenv("ESI_DIAGNOSTICS_ENABLED") == "1"
+	diagSinkRedis := os.Getenv("ESI_DIAGNOSTICS_SINK") == "redis"
+	if diagEnabled && diagSinkRedis && rdb != nil {
+		stream := &esi.RedisStream{Client: rdb}
+		rec := &esi.DiagRecorder{Enabled: true, Sink: &esi.StreamSink{Stream: stream}}
+		esiClient.Recorder = rec
+		esiClient.Cache.Recorder = rec
+	}
 		hd.ESIChars = esi.NewCharacterClient(esiClient, nil, hd.DB, nil, nil)
 		hd.ESIUniverse = esi.NewUniverseClient(esiClient, hd.DB, nil, hd.DB)
 		hd.ESIMarket = esi.NewMarketClient(esiClient, nil)
@@ -67,6 +76,11 @@ func main() {
 	}
 	r := jobs.NewRunner(jobs.Deps{Log: log, Redis: rdb})
 	jobs.RegisterRefreshJobs(r, hd)
+	diagDeps := jobs.DiagFlusherDeps{HandlerDeps: hd}
+	if rdb != nil {
+		diagDeps.Stream = &esi.RedisStream{Client: rdb}
+	}
+	jobs.RegisterDiagJobs(r, diagDeps)
 	sched := &jobs.Scheduler{
 		Runner: r, Queue: q, Redis: rdb, Now: time.Now,
 		Log: func(msg string, args ...any) { log.Warn(msg, args...) },
@@ -81,6 +95,9 @@ func main() {
 		sched.Entries = append(sched.Entries, e)
 	}
 	for _, e := range jobs.PrecomputeSchedule(hd) {
+		sched.Entries = append(sched.Entries, e)
+	}
+	for _, e := range jobs.DiagSchedule(diagDeps) {
 		sched.Entries = append(sched.Entries, e)
 	}
 	for _, e := range jobs.NotifySchedule(hd) {

@@ -66,6 +66,8 @@ type Client struct {
 	Refresh func(ctx context.Context, characterID int64, priorAccess string, force bool) (string, error)
 	// Cache serves GETs with ETag revalidation; nil disables caching.
 	Cache *HTTPCache
+	// Recorder captures passive diagnostics; nil disables collection.
+	Recorder *DiagRecorder
 }
 
 // NewClient builds a transport with the PHP timeouts.
@@ -103,17 +105,23 @@ func (c *Client) DoJSON(ctx context.Context, method, endpoint string, query map[
 	if auth != nil {
 		identity = strconv.FormatInt(auth.CharacterID, 10)
 	}
+	deferral := func(outcome Outcome) {
+		c.recordDeferral(ctx, method, endpoint, auth, group, outcome)
+	}
 	var reservation string
 	if group == "legacy" {
 		if c.Limiter != nil && c.Limiter.IsLimited(group, identity) {
+			deferral(OutcomeRateLimited)
 			return nil, &RequestError{Outcome: OutcomeRateLimited, RetryAfterSecs: maxInt(1, c.Limiter.ResetsIn(group, identity, 2))}
 		}
 	} else if c.Limiter != nil {
 		id, err := c.Limiter.Reserve(group, identity, 5)
 		if err != nil {
 			if re, ok := err.(*RequestError); ok {
+				deferral(re.Outcome)
 				return nil, re
 			}
+			deferral(OutcomeCoordination)
 			return nil, &RequestError{Outcome: OutcomeCoordination, RetryAfterSecs: 5}
 		}
 		if id == "" {
@@ -121,6 +129,7 @@ func (c *Client) DoJSON(ctx context.Context, method, endpoint string, query map[
 			if c.Limiter != nil {
 				wait = maxInt(1, c.Limiter.ResetsIn(group, identity, 5))
 			}
+			deferral(OutcomeRateLimited)
 			return nil, &RequestError{Outcome: OutcomeRateLimited, RetryAfterSecs: wait}
 		}
 		reservation = id
@@ -205,15 +214,74 @@ func (c *Client) sendOnce(ctx context.Context, method, endpoint string, query ma
 	}
 	started := time.Now()
 	hresp, err := c.HTTP.Do(req)
-	_ = started
 	if err != nil {
+		c.recordFailure(ctx, method, endpoint, auth, time.Since(started))
 		return nil, &RequestError{Outcome: OutcomeTransient, RetryAfterSecs: 30}
 	}
 	defer hresp.Body.Close()
 	raw, _ := io.ReadAll(io.LimitReader(hresp.Body, 32<<20))
 	resp := &Response{Status: hresp.StatusCode, Headers: hresp.Header.Clone(), Body: raw}
 	c.trackCircuit(hresp)
+	c.recordAttempt(ctx, method, endpoint, auth, resp, time.Since(started))
 	return resp, nil
+}
+
+// recordDeferral ports the local_deferral capture for budget-held requests.
+func (c *Client) recordDeferral(ctx context.Context, method, endpoint string, auth *Auth, group string, outcome Outcome) {
+	if c.Recorder == nil || !c.Recorder.Enabled {
+		return
+	}
+	reason := "rate_limited"
+	if outcome == OutcomeErrorLimited {
+		reason = "error_limited"
+	} else if outcome == OutcomeCoordination {
+		reason = "coordination"
+	}
+	var charID int64
+	if auth != nil {
+		charID = auth.CharacterID
+	}
+	c.Recorder.Record(ctx, DiagEvent{
+		Kind: DiagLocalDeferral, Method: strings.ToUpper(method), Endpoint: endpoint,
+		Operation: NormalizeRoute(method, endpoint), CharacterID: charID,
+		Reason: reason, Group: group,
+	})
+}
+
+// recordAttempt ports the http_attempt capture for wire responses.
+func (c *Client) recordAttempt(ctx context.Context, method, endpoint string, auth *Auth, resp *Response, duration time.Duration) {
+	if c.Recorder == nil || !c.Recorder.Enabled {
+		return
+	}
+	var charID int64
+	if auth != nil {
+		charID = auth.CharacterID
+	}
+	ms := int(duration.Milliseconds())
+	status := resp.Status
+	c.Recorder.Record(ctx, DiagEvent{
+		Kind: DiagHTTPAttempt, Method: strings.ToUpper(method), Endpoint: endpoint,
+		Operation: NormalizeRoute(method, endpoint), CharacterID: charID,
+		HTTPStatus: status, Reason: ClassifyReason(&status, esiErrorText(resp)),
+		DurationMs: &ms, Group: resp.Headers.Get("X-Ratelimit-Group"),
+	})
+}
+
+// recordFailure ports the connection_failure capture.
+func (c *Client) recordFailure(ctx context.Context, method, endpoint string, auth *Auth, duration time.Duration) {
+	if c.Recorder == nil || !c.Recorder.Enabled {
+		return
+	}
+	var charID int64
+	if auth != nil {
+		charID = auth.CharacterID
+	}
+	ms := int(duration.Milliseconds())
+	c.Recorder.Record(ctx, DiagEvent{
+		Kind: DiagConnectionFail, Method: strings.ToUpper(method), Endpoint: endpoint,
+		Operation: NormalizeRoute(method, endpoint), CharacterID: charID,
+		Reason: "connection", DurationMs: &ms,
+	})
 }
 
 func (c *Client) trackCircuit(hresp *http.Response) {
@@ -419,4 +487,15 @@ func maxInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// esiErrorText extracts the ESI error string for classification.
+func esiErrorText(r *Response) string {
+	var data struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(r.Body, &data); err != nil {
+		return ""
+	}
+	return data.Error
 }

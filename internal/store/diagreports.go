@@ -164,16 +164,6 @@ type DiagBatch struct {
 	CharacterID *int64
 }
 
-// DiagCheckpoint mirrors the collector checkpoint row.
-type DiagCheckpoint struct {
-	LastFlushedAt sql.NullTime
-	DroppedEvents int
-	GapCount      int
-	LastGapAt     sql.NullTime
-	LastGapReason sql.NullString
-	ExpiredRows   int
-}
-
 func fmtDiag(t time.Time) string { return t.UTC().Format("2006-01-02 15:04:05") }
 func hourDiag(t time.Time) string {
 	return time.Date(t.UTC().Year(), t.UTC().Month(), t.UTC().Day(), t.UTC().Hour(), 0, 0, 0, time.UTC).Format("2006-01-02 15:04:05")
@@ -757,13 +747,13 @@ func (s *SQL) DiagCheckpoint(ctx context.Context) (*DiagCheckpoint, error) {
 	}
 	out := &DiagCheckpoint{LastFlushedAt: r.LastFlushed, LastGapAt: r.GapAt, LastGapReason: r.GapReason}
 	if r.Dropped.Valid {
-		out.DroppedEvents = int(r.Dropped.Int64)
+		out.DroppedEvents = r.Dropped.Int64
 	}
 	if r.Gaps.Valid {
-		out.GapCount = int(r.Gaps.Int64)
+		out.GapCount = r.Gaps.Int64
 	}
 	if r.Expired.Valid {
-		out.ExpiredRows = int(r.Expired.Int64)
+		out.ExpiredRows = r.Expired.Int64
 	}
 	return out, nil
 }
