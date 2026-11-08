@@ -17,6 +17,7 @@ import (
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/config"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/cache"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 	gohttp "github.com/sudo-adduser-jordan/eveindustry/internal/http"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
@@ -54,6 +55,7 @@ func main() {
 	}
 
 	deps := gohttp.Deps{
+		Cache: &cache.Cache{Client: rdb},
 		App: gohttp.AppConfig{
 			SourceURL: cfg.SourceURL, DiscordURL: cfg.DiscordURL, DiscordBot: cfg.DiscordBot,
 		},

@@ -348,3 +348,51 @@ func (c *UniverseClient) DogmaTypeAttributes(ctx context.Context, typeID int) (m
 	c.memo.Set(key, out, 30*24*time.Hour)
 	return out, nil
 }
+
+// GetCorporation ports the corporation lookup: public, 30-day memo.
+func (c *UniverseClient) GetCorporation(ctx context.Context, corporationID int64) (map[string]any, error) {
+	key := fmt.Sprintf("esi.corporation.%d", corporationID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.(map[string]any), nil
+	}
+	resp, err := c.client.DoJSON(ctx, http.MethodGet, fmt.Sprintf("/corporations/%d/", corporationID), nil, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	if !resp.Successful() {
+		return nil, nil
+	}
+	m, _ := resp.JSON().(map[string]any)
+	if m == nil {
+		return nil, nil
+	}
+	c.memo.Set(key, m, 30*24*time.Hour)
+	return m, nil
+}
+
+// GetAlliance ports the alliance lookup: public, 30-day memo.
+func (c *UniverseClient) GetAlliance(ctx context.Context, allianceID int64) (map[string]any, error) {
+	key := fmt.Sprintf("esi.alliance.%d", allianceID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.(map[string]any), nil
+	}
+	resp, err := c.client.DoJSON(ctx, http.MethodGet, fmt.Sprintf("/alliances/%d/", allianceID), nil, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	if !resp.Successful() {
+		return nil, nil
+	}
+	m, _ := resp.JSON().(map[string]any)
+	if m == nil {
+		return nil, nil
+	}
+	c.memo.Set(key, m, 30*24*time.Hour)
+	return m, nil
+}

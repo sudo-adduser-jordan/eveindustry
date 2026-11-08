@@ -19,6 +19,8 @@ type AuthStore interface {
 	CharacterOwner(ctx context.Context, characterID int64) (userID int64, isMain bool, count int, err error)
 	SetMainCharacter(ctx context.Context, userID, characterID int64) error
 	DeleteCharacter(ctx context.Context, userID, characterID int64) error
+	UpdateCharacterRefresh(ctx context.Context, characterID int64, r CharacterRefresh) error
+	EsiActiveCharacters(ctx context.Context, userID *int64) ([]auth.Character, error)
 }
 
 type authUserRow struct {
@@ -80,6 +82,10 @@ func (s *SQL) CharactersForUser(ctx context.Context, userID int64) ([]auth.Chara
 	if err != nil {
 		return nil, err
 	}
+	return scanAuthCharacters(rows), nil
+}
+
+func scanAuthCharacters(rows []authCharacterRow) []auth.Character {
 	out := make([]auth.Character, 0, len(rows))
 	for _, r := range rows {
 		ch := auth.Character{
@@ -121,7 +127,7 @@ func (s *SQL) CharactersForUser(ctx context.Context, userID int64) ([]auth.Chara
 		}
 		out = append(out, ch)
 	}
-	return out, nil
+	return out
 }
 
 func (s *SQL) DeleteUser(ctx context.Context, userID int64) error {
@@ -215,6 +221,110 @@ func (s *SQL) DemoCharacters(ctx context.Context) ([]DemoCharacterRow, error) {
 		WHERE character_id >= 99000000000 AND character_id < 99300000000 ORDER BY character_id`)
 	if out == nil {
 		out = []DemoCharacterRow{}
+	}
+	return out, err
+}
+
+// CharacterRefresh holds the refreshed character columns.
+type CharacterRefresh struct {
+	CorporationID   *int64
+	CorporationName *string
+	AllianceID      *int64
+	AllianceName    *string
+	CachedLocation  *string
+	NullLocation    bool
+	CachedTraining  *string
+	NullTraining    bool
+	Roles           []string
+	NullRoles       bool
+	IsDirectorCEO   *bool
+}
+
+// UpdateCharacterRefresh applies a profile refresh (only set fields change;
+// Null* clears the column).
+func (s *SQL) UpdateCharacterRefresh(ctx context.Context, characterID int64, r CharacterRefresh) error {
+	set := ""
+	var args []any
+	if r.CorporationID != nil {
+		set += "corporation_id = ?, "
+		args = append(args, *r.CorporationID)
+	}
+	if r.CorporationName != nil {
+		set += "corporation_name = ?, "
+		args = append(args, *r.CorporationName)
+	}
+	if r.AllianceID != nil {
+		set += "alliance_id = ?, "
+		args = append(args, *r.AllianceID)
+	}
+	if r.AllianceName != nil {
+		set += "alliance_name = ?, "
+		args = append(args, *r.AllianceName)
+	}
+	if r.CachedLocation != nil {
+		set += "cached_location = ?, "
+		args = append(args, *r.CachedLocation)
+	} else if r.NullLocation {
+		set += "cached_location = NULL, "
+	}
+	if r.CachedTraining != nil {
+		set += "cached_training = ?, "
+		args = append(args, *r.CachedTraining)
+	} else if r.NullTraining {
+		set += "cached_training = NULL, "
+	}
+	if r.Roles != nil || r.NullRoles {
+		set += "roles = ?, is_director_ceo = ?, "
+		var roles any
+		if r.Roles != nil {
+			bs, _ := json.Marshal(r.Roles)
+			roles = string(bs)
+		}
+		dir := false
+		if r.IsDirectorCEO != nil {
+			dir = *r.IsDirectorCEO
+		}
+		args = append(args, roles, dir)
+	} else if r.IsDirectorCEO != nil {
+		set += "is_director_ceo = ?, "
+		args = append(args, *r.IsDirectorCEO)
+	}
+	if set == "" {
+		return nil
+	}
+	set += "updated_at = NOW()"
+	args = append(args, characterID)
+	_, err := s.db.ExecContext(ctx, `UPDATE characters SET `+set+` WHERE character_id = ?`, args...)
+	return err
+}
+
+// EsiActiveCharacters lists ESI-active characters for refresh fan-out.
+func (s *SQL) EsiActiveCharacters(ctx context.Context, userID *int64) ([]auth.Character, error) {
+	q := `SELECT character_id, name, corporation_id, corporation_name, alliance_id, alliance_name,
+		is_main, is_esi_active, is_director_ceo, cached_location, cached_training, scopes, roles
+		FROM characters WHERE is_esi_active = 1`
+	var args []any
+	if userID != nil {
+		q += " AND user_id = ?"
+		args = append(args, *userID)
+	}
+	q += " ORDER BY user_id, character_id"
+	var rows []authCharacterRow
+	if err := s.db.SelectContext(ctx, &rows, q, args...); err != nil {
+		return nil, err
+	}
+	return scanAuthCharacters(rows), nil
+}
+
+// ActiveUserIDs ports the refresh fan-out: active users with a login in the
+// last 7 days.
+func (s *SQL) ActiveUserIDs(ctx context.Context) ([]int64, error) {
+	var out []int64
+	err := s.db.SelectContext(ctx, &out, `SELECT id FROM users
+		WHERE is_active = 1 AND last_login_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+		ORDER BY id`)
+	if out == nil {
+		out = []int64{}
 	}
 	return out, err
 }

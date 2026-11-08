@@ -1,52 +1,110 @@
-// Command worker runs one background job by name.
-//
-// Phase 3 will back this with a durable queue (riverqueue/asynq) and three
-// lanes mirroring Horizon (default/market/updates). Until then each job is
-// registered under its PHP class name with its queue lane, and execution
-// reports "not ported" so nothing silently pretends to work.
 package main
 
 import (
-	"fmt"
+	"context"
+	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+	"github.com/redis/go-redis/v9"
+
+	"github.com/sudo-adduser-jordan/eveindustry/internal/cache"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/config"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/jobs"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// Job mirrors one class in app/Jobs plus its queue lane from AGENTS.md:
-// per-user refreshes on default, sweeps on market, imports on updates.
-type Job struct {
-	Name  string
-	Queue string
-}
-
-var jobs = []Job{
-	{"RefreshCharacterProfile", "default"},
-	{"RefreshDashboardStats", "default"},
-	{"RefreshIndustryData", "default"},
-	{"RefreshAssetData", "default"},
-	{"DispatchUserNotifications", "default"},
-	{"FlushEsiDiagnostics", "default"},
-	{"FetchRegionOrders", "market"},
-	{"FetchRegionOrderPages", "market"},
-	{"CompleteMarketOrderSweep", "market"},
-	{"ProcessEveTypeChunk", "updates"},
-	{"ProcessBlueprintDataChunk", "updates"},
-	{"ImportDailyMarketHistory", "updates"},
-	{"ImportPublicContracts", "updates"},
-	{"PrecomputeManufacturingCostsChunk", "updates"},
-	{"ManufacturingCostWriter", "updates"},
-	{"FetchRegionHistory", "updates"},
-	{"FetchRegionHistoryChunk", "updates"},
-}
-
+// Command worker consumes queues and runs jobs. APP_ROLE selects lanes:
+// "worker" runs default, "worker-market" runs market, "worker-updates"
+// runs updates, "worker-all" runs everything (dev default).
 func main() {
-	if len(os.Args) != 3 || os.Args[1] != "run" {
-		fmt.Fprintln(os.Stderr, "usage: worker run <JobName>")
-		fmt.Fprintln(os.Stderr, "registered jobs:")
-		for _, j := range jobs {
-			fmt.Fprintf(os.Stderr, "  %-32s %s\n", j.Name, j.Queue)
+	cfg := config.Load()
+	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	role := os.Getenv("APP_ROLE")
+	queues := []string{jobs.QueueDefault}
+	switch role {
+	case "worker-market":
+		queues = []string{jobs.QueueMarket}
+	case "worker-updates":
+		queues = []string{jobs.QueueUpdates}
+	case "worker-all", "worker", "":
+		if role == "" || role == "worker" {
+			queues = []string{jobs.QueueDefault}
+		} else {
+			queues = []string{jobs.QueueDefault, jobs.QueueUpdates, jobs.QueueMarket}
 		}
-		os.Exit(2)
 	}
-	fmt.Fprintf(os.Stderr, "worker: job %s is not ported to Go yet\n", os.Args[2])
-	os.Exit(1)
+
+	var rdb *redis.Client
+	if host := os.Getenv("REDIS_HOST"); host != "" {
+		rdb = redis.NewClient(&redis.Options{Addr: cfg.RedisAddr, Password: cfg.RedisPassword, DB: cfg.RedisDB})
+		defer func() { _ = rdb.Close() }()
+	}
+
+	var db *sqlx.DB
+	if cfg.DBDSN != "" {
+		var err error
+		db, err = sqlx.Connect("mysql", cfg.DBDSN)
+		if err != nil {
+			log.Error("worker without database", "err", err)
+			db = nil
+		}
+	}
+	hd := jobs.HandlerDeps{Log: log, Redis: rdb, Cache: &cache.Cache{Client: rdb}}
+	var q jobs.Queue = jobs.NewMemoryQueue()
+	if rdb != nil {
+		q = &jobs.RedisQueue{Client: rdb}
+	}
+	if db != nil {
+		hd.DB = store.NewSQL(db)
+		hd.Industry = industry.NewSQL(db)
+		coord := esi.NewMemStore()
+		limiter := esi.NewLimiter(coord, "eve-industrialist")
+		circuit := esi.NewCircuit(coord)
+		esiClient := esi.NewClient(coord, limiter, circuit, cfg.ESIUserAgent)
+		esiClient.Cache = esi.NewHTTPCache(coord)
+		hd.ESIChars = esi.NewCharacterClient(esiClient, nil, hd.DB, nil, nil)
+		hd.ESIUniverse = esi.NewUniverseClient(esiClient, hd.DB, nil, hd.DB)
+	}
+	r := jobs.NewRunner(jobs.Deps{Log: log, Redis: rdb})
+	jobs.RegisterRefreshJobs(r, hd)
+	for _, e := range jobs.RefreshSchedule(hd) {
+		_ = e
+	}
+
+	log.Info("worker started", "queues", queues)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+		queue, env, ok, err := q.Pop(ctx, queues, 5*time.Second)
+		if err != nil {
+			log.Error("queue pop failed", "err", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		if !ok {
+			continue
+		}
+		if err := r.RunOne(ctx, env); err != nil {
+			if next, retry := r.ShouldRetry(env); retry {
+				if perr := q.Push(ctx, queue, next); perr != nil {
+					log.Error("requeue failed", "job", env.Name, "err", perr)
+				}
+				continue
+			}
+			log.Error("job dropped after retries", "job", env.Name, "attempts", env.Attempts+1)
+		}
+	}
 }

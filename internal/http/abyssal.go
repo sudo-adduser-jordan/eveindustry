@@ -10,6 +10,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sudo-adduser-jordan/eveindustry/internal/assets"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
@@ -34,7 +35,7 @@ type AbyssalUniverse interface {
 
 // AbyssalDeps reuses the asset browser ESI surface plus dogma lookups.
 type AbyssalDeps struct {
-	Characters AssetBrowserESI
+	Characters assets.Characters
 	Reference  ProgressReference
 	Universe   AbyssalUniverse
 	Dogma      AbyssalESI
@@ -58,16 +59,20 @@ func handleAbyssal(d Deps) echo.HandlerFunc {
 		if err != nil {
 			return dbError(c, err)
 		}
-		ad := d
-		ad.AssetBrowser = AssetBrowserDeps{Characters: d.Abyssal.Characters, Universe: d.Abyssal.Universe, Reference: d.Abyssal.Reference}
-		all := fetchUserAssets(ctx, ad, chars, true)
+		d.AssetBrowser.Characters = d.Abyssal.Characters
+		d.AssetBrowser.Universe = d.Abyssal.Universe
+		d.AssetBrowser.Reference = d.Abyssal.Reference
+		all, _ := cachedOrLiveAssets(ctx, d, uid, chars, true)
 		typeIDs := map[int]bool{}
 		for _, a := range all {
-			if a.typeID > 0 {
-				typeIDs[a.typeID] = true
+			if a.TypeID > 0 {
+				typeIDs[a.TypeID] = true
 			}
 		}
-		ids := keysInt(typeIDs)
+				ids := make([]int, 0, len(typeIDs))
+		for id := range typeIDs {
+			ids = append(ids, id)
+		}
 		abyssal := map[int]bool{}
 		if len(ids) > 0 {
 			if meta, err := d.Industry.TypeGroupMeta(ctx, ids); err == nil {
@@ -92,21 +97,21 @@ func handleAbyssal(d Deps) echo.HandlerFunc {
 		}
 		byID := map[int64]enrichedAsset{}
 		for _, a := range all {
-			byID[a.itemID] = a
+			byID[a.ItemID] = a
 		}
 		groups := map[int]*abyssalGroup{}
 		for _, a := range all {
-			if !abyssal[a.typeID] || a.itemID == 0 {
+			if !abyssal[a.TypeID] || a.ItemID == 0 {
 				continue
 			}
 			owner := scoped[0]
 			for _, ch := range scoped {
-				if ch.CharacterID == a.charID {
+				if ch.CharacterID == a.CharID {
 					owner = ch
 					break
 				}
 			}
-			dyn, err := d.Abyssal.Dogma.GetDynamicItem(ctx, a.typeID, a.itemID, owner.CharacterID)
+			dyn, err := d.Abyssal.Dogma.GetDynamicItem(ctx, a.TypeID, a.ItemID, owner.CharacterID)
 			if err != nil || dyn == nil {
 				continue
 			}
@@ -120,7 +125,7 @@ func handleAbyssal(d Deps) echo.HandlerFunc {
 			}
 			g := groups[srcID]
 			if g == nil {
-				g = &abyssalGroup{sourceID: srcID, sourceName: resolveAssetTypeName(ctx, ad, srcID)}
+				g = &abyssalGroup{sourceID: srcID, sourceName: assets.ResolveTypeName(ctx, assetDeps(d), srcID)}
 				groups[srcID] = g
 			}
 			g.items = append(g.items, *item)
@@ -322,11 +327,11 @@ func analyzeAbyssalItem(ctx context.Context, uni AbyssalUniverse, a enrichedAsse
 		return attrs[i].(map[string]any)["name"].(string) < attrs[j].(map[string]any)["name"].(string)
 	})
 	var container *string
-	if a.parentID != nil {
-		if p, ok := byID[*a.parentID]; ok {
-			name := strOrNilAbyss(p.name)
+	if a.ParentID != nil {
+		if p, ok := byID[*a.ParentID]; ok {
+			name := strOrNilAbyss(p.Name)
 			if name == "" {
-				name = p.typeName
+				name = p.TypeName
 			}
 			container = &name
 		}
@@ -337,8 +342,8 @@ func analyzeAbyssalItem(ctx context.Context, uni AbyssalUniverse, a enrichedAsse
 		mutator = &v
 	}
 	return &abyssalItem{
-		itemID: a.itemID, typeID: a.typeID, typeName: a.typeName,
-		charID: a.charID, charName: a.charName, location: a.location,
+		itemID: a.ItemID, typeID: a.TypeID, typeName: a.TypeName,
+		charID: a.CharID, charName: a.CharName, location: a.Location,
 		container: container, mutator: mutator, score: score, attrs: attrs,
 	}
 }

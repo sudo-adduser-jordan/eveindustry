@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+
+	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 )
 
 // registerDashboard mounts GET /dashboard: industry + planetary stats with
@@ -24,37 +26,72 @@ func handleDashboardShow(d Deps) echo.HandlerFunc {
 		uid := c.Get(string(ctxUIDKey)).(int64)
 		ctx := c.Request().Context()
 		now := time.Now().UTC()
-		industry := map[string]any{"in_progress": 0, "ready": 0, "available_slots": 0}
-		if d.IndustryDeps.Characters != nil && d.Industry != nil && d.Market != nil {
-			if avail, err := availabilityData(ctx, d, uid, now); err == nil {
+		ind := map[string]any{"in_progress": 0, "ready": 0, "available_slots": 0}
+		if d.Cache != nil {
+			var payload map[string]any
+			if d.Cache.GetJSON(ctx, "dashboard.industry_stats."+itoaProg(int(uid)), &payload) {
 				inProg, ready, slots := 0, 0, 0
-				if totals, ok := avail["totals"].(map[string]any); ok {
+				if totals, ok := payload["totals"].(map[string]any); ok {
 					for _, k := range []string{"manufacturing", "research", "reactions"} {
-						if t, ok := totals[k].(map[string]int); ok {
-							inProg += t["active"]
-							slots += t["available"]
+						if t, ok := totals[k].(map[string]any); ok {
+							inProg += int(numAny(t["active"]))
+							slots += int(numAny(t["available"]))
 						}
 					}
 				}
-				if chars, ok := avail["characters"].([]any); ok {
-					for _, cv := range chars {
-						ch := cv.(map[string]any)
+				if list, ok := payload["characters"].([]any); ok {
+					for _, cv := range list {
+						ch, ok := cv.(map[string]any)
+						if !ok {
+							continue
+						}
 						for _, k := range []string{"manufacturing", "research", "reactions"} {
 							g, _ := ch[k].(map[string]any)
 							jobs, _ := g["jobs"].([]any)
 							for _, jv := range jobs {
-								if jv.(map[string]any)["ready_for_delivery"] == true {
+								if j, ok := jv.(map[string]any); ok && j["ready_for_delivery"] == true {
 									ready++
 								}
 							}
 						}
 					}
 				}
-				industry = map[string]any{"in_progress": inProg, "ready": ready, "available_slots": slots}
+				ind = map[string]any{"in_progress": inProg, "ready": ready, "available_slots": slots}
+			}
+		} else if d.IndustryDeps.Characters != nil && d.Industry != nil && d.Market != nil {
+			chars, err := d.Users.CharactersForUser(ctx, uid)
+			if err == nil {
+				avail := industry.AvailabilityData(ctx, availDeps(d), chars, uid, now)
+				inProg, ready, slots := 0, 0, 0
+				for _, cv := range avail.Characters {
+					ch := cv.(map[string]any)
+					for _, k := range []string{"manufacturing", "research", "reactions"} {
+						g, _ := ch[k].(map[string]any)
+						jobs, _ := g["jobs"].([]any)
+						for _, jv := range jobs {
+							if jv.(map[string]any)["ready_for_delivery"] == true {
+								ready++
+							}
+						}
+					}
+				}
+				for _, k := range []string{"manufacturing", "research", "reactions"} {
+					inProg += avail.Totals[k]["active"]
+					slots += avail.Totals[k]["available"]
+				}
+				ind = map[string]any{"in_progress": inProg, "ready": ready, "available_slots": slots}
 			}
 		}
 		planetary := map[string]any{"expired_extractors": 0, "full_storage": 0}
-		if d.Planetary.Characters != nil && d.Planetary.Universe != nil {
+		if d.Cache != nil {
+			var piStats map[string]any
+			if d.Cache.GetJSON(ctx, "dashboard.pi_stats."+itoaProg(int(uid)), &piStats) {
+				planetary = map[string]any{
+					"expired_extractors": int(numAny(piStats["expired_extractors"])),
+					"full_storage": int(numAny(piStats["full_storage"])),
+				}
+			}
+		} else if d.Planetary.Characters != nil && d.Planetary.Universe != nil {
 			if chars, err := collectPlanetary(ctx, d, uid, now); err == nil {
 				expired, full := 0, 0
 				for _, pc := range chars {
@@ -105,7 +142,7 @@ func handleDashboardShow(d Deps) echo.HandlerFunc {
 			ip = append(ip, map[string]any{"id": p.ID, "name": p.Name})
 		}
 		return Success(c, http.StatusOK, map[string]any{
-			"industry": industry, "planetary": planetary,
+			"industry": ind, "planetary": planetary,
 			"characters": charOut, "reaction_plans": rp, "invention_plans": ip,
 		}, nil)
 	}

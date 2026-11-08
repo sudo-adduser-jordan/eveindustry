@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"sort"
 	"time"
@@ -42,100 +41,44 @@ func registerPlanetary(v1 *echo.Group, d Deps) {
 	v1.POST("/planetary/refresh", handlePlanetaryRefresh(d))
 }
 
-type colonyRaw struct {
-	ch      *auth.Character
-	colony  map[string]any
-	details map[string]any
-}
-
-// GET /planetary — colonies with extractors, factories, storage, outputs,
-// alerts and capacity. ESI-active characters with the PI scope.
 // GET /planetary — colonies with extractors, factories, storage, outputs,
 // alerts and capacity. ESI-active characters with the PI scope.
 func handlePlanetaryShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
 		ctx := c.Request().Context()
-		dash, err := planetaryDashboardData(ctx, d, uid, time.Now().UTC())
+		now := time.Now().UTC()
+		if d.Cache != nil {
+			var cached []any
+			if d.Cache.GetJSON(ctx, "planetary.user."+itoaProg(int(uid)), &cached) {
+				return Success(c, http.StatusOK, assemblePlanetary(cached), nil)
+			}
+		}
+		chars, err := collectPlanetary(ctx, d, uid, now)
 		if err != nil {
 			return dbError(c, err)
 		}
-		return Success(c, http.StatusOK, dash, nil)
+		charOut := make([]any, 0, len(chars))
+		for _, pc := range chars {
+			var portrait any
+			if pc.ch.PortraitURL() != "" {
+				portrait = pc.ch.PortraitURL()
+			}
+			charOut = append(charOut, map[string]any{
+				"character_id": pc.ch.CharacterID, "character_name": pc.ch.Name,
+				"portrait_url": portrait, "planets": pc.planets,
+			})
+		}
+		if d.Cache != nil {
+			d.Cache.SetJSON(ctx, "planetary.user."+itoaProg(int(uid)), charOut, 1200*time.Second)
+		}
+		return Success(c, http.StatusOK, assemblePlanetary(charOut), nil)
 	}
 }
 
-// planetaryChar is one dashboard character with analyzed planets.
-type planetaryChar struct {
-	ch      *auth.Character
-	planets []any
-}
-
-// collectPlanetary fetches and analyzes every eligible colony.
-func collectPlanetary(ctx context.Context, d Deps, uid int64, now time.Time) ([]planetaryChar, error) {
-	chars, err := d.Users.CharactersForUser(ctx, uid)
-	if err != nil {
-		return nil, err
-	}
-	var raw []colonyRaw
-	for i := range chars {
-		ch := &chars[i]
-		if !ch.IsEsiActive || !hasScope(*ch, "esi-planets.manage_planets.v1") {
-			continue
-		}
-		planets, err := d.Planetary.Characters.GetCharacterPlanets(ctx, ch.CharacterID)
-		if err != nil {
-			return nil, err
-		}
-		if planets == nil {
-			continue
-		}
-		for _, colony := range planets {
-			pid := piInt(colony["planet_id"])
-			if pid == 0 {
-				continue
-			}
-			details, err := d.Planetary.Characters.GetCharacterPlanetDetails(ctx, ch.CharacterID, pid)
-			if err != nil {
-				return nil, err
-			}
-			if details == nil {
-				return nil, errColonyIncomplete
-			}
-			raw = append(raw, colonyRaw{ch: ch, colony: colony, details: details})
-		}
-	}
-	resolver := piBatchResolver(ctx, d, raw)
-	out := []planetaryChar{}
-	byChar := map[int64]int{}
-	for _, r := range raw {
-		i, ok := byChar[r.ch.CharacterID]
-		if !ok {
-			i = len(out)
-			byChar[r.ch.CharacterID] = i
-			out = append(out, planetaryChar{ch: r.ch})
-		}
-		out[i].planets = append(out[i].planets, planetaryAnalyze(ctx, d, r.ch, r.colony, r.details, resolver, now))
-	}
-	return out, nil
-}
-
-// planetaryDashboardData ports the dashboard + PI-show aggregation.
-func planetaryDashboardData(ctx context.Context, d Deps, uid int64, now time.Time) (map[string]any, error) {
-	chars, err := collectPlanetary(ctx, d, uid, now)
-	if err != nil {
-		return nil, err
-	}
-	charOut := make([]any, 0, len(chars))
-	for _, pc := range chars {
-		var portrait any
-		if pc.ch.PortraitURL() != "" {
-			portrait = pc.ch.PortraitURL()
-		}
-		charOut = append(charOut, map[string]any{
-			"character_id": pc.ch.CharacterID, "character_name": pc.ch.Name,
-			"portrait_url": portrait, "planets": pc.planets,
-		})
-	}
+// assemblePlanetary aggregates shaped characters into the dashboard payload.
+// Numbers read float-tolerantly so cached (JSON) payloads work too.
+func assemblePlanetary(charOut []any) map[string]any {
 	type outAgg struct {
 		typeID  int
 		name    string
@@ -147,33 +90,50 @@ func planetaryDashboardData(ctx context.Context, d Deps, uid int64, now time.Tim
 	var totalPlanets, totalExt, totalFac int
 	var planetsFlat []map[string]any
 	for _, c := range charOut {
-		cm := c.(map[string]any)
-		for _, pv := range cm["planets"].([]any) {
-			pm := pv.(map[string]any)
+		cm, ok := c.(map[string]any)
+		if !ok {
+			continue
+		}
+		plist, _ := cm["planets"].([]any)
+		for _, pv := range plist {
+			pm, ok := pv.(map[string]any)
+			if !ok {
+				continue
+			}
 			planetsFlat = append(planetsFlat, map[string]any{
 				"character_name": cm["character_name"], "planet_name": pm["planet_name"],
 				"planet_type": pm["planet_type"], "summary": pm["summary"],
 			})
 			totalPlanets++
-			sum := pm["summary"].(map[string]any)
-			totalExt += sum["extractor_count"].(int)
-			totalFac += sum["factory_count"].(int)
-			for _, ov := range pm["outputs"].([]any) {
-				o := ov.(map[string]any)
-				tid := o["type_id"].(int)
-				a := agg[tid]
-				if a == nil {
-					a = &outAgg{typeID: tid, name: o["name"].(string)}
-					agg[tid] = a
-				}
-				a.perHour += o["per_hour"].(float64)
-				a.planets++
+			if sum, ok := pm["summary"].(map[string]any); ok {
+				totalExt += int(numAny(sum["extractor_count"]))
+				totalFac += int(numAny(sum["factory_count"]))
 			}
-			for _, av := range pm["alerts"].([]any) {
-				a := av.(map[string]any)
-				a["character_name"] = cm["character_name"]
-				a["planet_name"] = pm["planet_name"]
-				alerts = append(alerts, a)
+			if ol, ok := pm["outputs"].([]any); ok {
+				for _, ov := range ol {
+					o, ok := ov.(map[string]any)
+					if !ok {
+						continue
+					}
+					tid := int(numAny(o["type_id"]))
+					a := agg[tid]
+					if a == nil {
+						name, _ := o["name"].(string)
+						a = &outAgg{typeID: tid, name: name}
+						agg[tid] = a
+					}
+					a.perHour += numAny(o["per_hour"])
+					a.planets++
+				}
+			}
+			if al, ok := pm["alerts"].([]any); ok {
+				for _, av := range al {
+					if a, ok := av.(map[string]any); ok {
+						a["character_name"] = cm["character_name"]
+						a["planet_name"] = pm["planet_name"]
+						alerts = append(alerts, a)
+					}
+				}
 			}
 		}
 	}
@@ -197,30 +157,62 @@ func planetaryDashboardData(ctx context.Context, d Deps, uid int64, now time.Tim
 			"extractors": totalExt, "factories": totalFac,
 		},
 		"outputs": outputs, "alerts": alerts,
-		"capacity":   pi.BuildCapacityAnalysis(planetsFlat),
+		"capacity": pi.BuildCapacityAnalysis(planetsFlat),
 		"characters": charOut,
-	}, nil
+	}
 }
 
-// planetaryAnalyze ports fetchCharacterPlanetaryData's per-planet block.
-func planetaryAnalyze(ctx context.Context, d Deps, ch *auth.Character, colony, details map[string]any, resolver pi.TypeResolver, now time.Time) any {
-	pid := piInt(colony["planet_id"])
-	name := "Planet " + itoaProg(pid)
-	if info, err := d.Planetary.Universe.GetPlanetInfo(ctx, pid); err == nil && info != nil {
-		if n, ok := info["name"].(string); ok && n != "" {
-			name = n
-		}
+func numAny(v any) float64 {
+	switch n := v.(type) {
+	case int:
+		return float64(n)
+	case int64:
+		return float64(n)
+	case float64:
+		return n
 	}
-	analysis := pi.AnalyzePlanet(details, resolver, func(id int) map[string]any {
-		s, err := d.Planetary.Universe.GetPlanetarySchematic(ctx, id)
-		if err != nil {
-			return nil
+	return 0
+}
+
+
+// planetaryChar is one dashboard character with analyzed planets.
+type planetaryChar struct {
+	ch      *auth.Character
+	planets []any
+}
+
+// collectPlanetary fetches and analyzes every eligible colony.
+func collectPlanetary(ctx context.Context, d Deps, uid int64, now time.Time) ([]planetaryChar, error) {
+	chars, err := d.Users.CharactersForUser(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	colonies, err := pi.AnalyzeColonies(ctx, pi.ColonyDeps{
+		Characters: d.Planetary.Characters, Universe: d.Planetary.Universe, Industry: d.Industry,
+	}, chars, now)
+	if err != nil {
+		return nil, err
+	}
+	byChar := map[int64]int{}
+	var out []planetaryChar
+	for _, c := range colonies {
+		i, ok := byChar[c.Char.CharacterID]
+		if !ok {
+			i = len(out)
+			byChar[c.Char.CharacterID] = i
+			ch := c.Char
+			out = append(out, planetaryChar{ch: &ch})
 		}
-		return s
-	}, now)
+		out[i].planets = append(out[i].planets, shapeColony(c))
+	}
+	return out, nil
+}
+
+// shapeColony renders one analyzed colony like the dashboard resource.
+func shapeColony(c pi.Colony) any {
 	extractors := []any{}
 	factories := []any{}
-	for _, pv := range analysis.Pins {
+	for _, pv := range c.Analysis.Pins {
 		p := pv.(map[string]any)
 		if e, ok := p["extractor"]; ok {
 			extractors = append(extractors, e)
@@ -233,8 +225,8 @@ func planetaryAnalyze(ctx context.Context, d Deps, ch *auth.Character, colony, d
 			})
 		}
 	}
-	outs := make([]any, 0, len(analysis.Outputs))
-	for _, ov := range analysis.Outputs {
+	outs := make([]any, 0, len(c.Analysis.Outputs))
+	for _, ov := range c.Analysis.Outputs {
 		o := ov.(map[string]any)
 		outs = append(outs, map[string]any{
 			"type_id": o["type_id"], "name": o["name"],
@@ -242,111 +234,20 @@ func planetaryAnalyze(ctx context.Context, d Deps, ch *auth.Character, colony, d
 			"per_hour": o["per_hour"], "source": o["source"],
 		})
 	}
-	summary := map[string]any{
-		"extractor_count": analysis.Summary["extractor_count"],
-		"factory_count":   analysis.Summary["factory_count"],
-		"storage_count":   analysis.Summary["storage_count"],
-		"launchpad_count": analysis.Summary["launchpad_count"],
-		"route_count":     len(analysis.Routes),
-	}
 	return map[string]any{
-		"planet_id": pid, "planet_name": name,
-		"planet_type":   strOrColony(colony["planet_type"], "unknown"),
-		"upgrade_level": piInt(colony["upgrade_level"]), "num_pins": piInt(colony["num_pins"]),
-		"summary": summary, "alerts": stripPlanetAlertContext(analysis.Alerts),
+		"planet_id": c.PlanetID, "planet_name": c.Name,
+		"planet_type": c.Type, "upgrade_level": c.Upgrade, "num_pins": c.NumPins,
+		"summary": map[string]any{
+			"extractor_count": c.Analysis.Summary["extractor_count"],
+			"factory_count":   c.Analysis.Summary["factory_count"],
+			"storage_count":   c.Analysis.Summary["storage_count"],
+			"launchpad_count": c.Analysis.Summary["launchpad_count"],
+			"route_count":     len(c.Analysis.Routes),
+		},
+		"alerts": stripPlanetAlertContext(c.Analysis.Alerts),
 		"outputs": outs, "extractors": extractors, "factories": factories,
-		"pins": analysis.Pins, "routes": analysis.Routes,
+		"pins": c.Analysis.Pins, "routes": c.Analysis.Routes,
 	}
-}
-
-// piBatchResolver collects every type id across the raw colonies and
-// batch-resolves names (industry store, ESI fallback) and volumes.
-func piBatchResolver(ctx context.Context, d Deps, raw []colonyRaw) pi.TypeResolver {
-	set := map[int]bool{}
-	var pinIDs, contentIDs []int
-	for _, r := range raw {
-		for _, pv := range piListOf(r.details["pins"]) {
-			p, _ := pv.(map[string]any)
-			if p == nil {
-				continue
-			}
-			if id := piInt(p["type_id"]); id != 0 && !set[id] {
-				set[id] = true
-				pinIDs = append(pinIDs, id)
-			}
-			if ext, ok := p["extractor_details"].(map[string]any); ok {
-				if id := piInt(ext["product_type_id"]); id != 0 && !set[id] {
-					set[id] = true
-					pinIDs = append(pinIDs, id)
-				}
-			}
-			for _, cv := range piListOf(p["contents"]) {
-				c, _ := cv.(map[string]any)
-				if c == nil {
-					continue
-				}
-				if id := piInt(c["type_id"]); id != 0 && !set[id] {
-					set[id] = true
-					contentIDs = append(contentIDs, id)
-				}
-			}
-		}
-		for _, rv := range piListOf(r.details["routes"]) {
-			route, _ := rv.(map[string]any)
-			if route == nil {
-				continue
-			}
-			if id := piInt(route["content_type_id"]); id != 0 && !set[id] {
-				set[id] = true
-				contentIDs = append(contentIDs, id)
-			}
-		}
-	}
-	names := map[int]string{}
-	if len(pinIDs) > 0 {
-		if n, err := d.Industry.TypeNames(ctx, pinIDs); err == nil {
-			for id, name := range n {
-				names[id] = name
-			}
-		}
-	}
-	all := append(append([]int{}, pinIDs...), contentIDs...)
-	vols := map[int]float64{}
-	if len(all) > 0 {
-		if v, err := d.Industry.TypeVolumes(ctx, all); err == nil {
-			for id, vol := range v {
-				vols[id] = vol
-			}
-		}
-	}
-	// ESI fallback for names the DB lacks.
-	var missing []int
-	for _, id := range all {
-		if names[id] == "" {
-			missing = append(missing, id)
-		}
-	}
-	for _, id := range missing {
-		if info, err := d.Planetary.Universe.GetTypeInfo(ctx, id); err == nil && info != nil {
-			if n, ok := info["name"].(string); ok && n != "" {
-				names[id] = n
-			}
-			if v, ok := asNumProg(info["volume"]); ok && v > 0 && vols[id] == 0 {
-				vols[id] = v
-			}
-		}
-		if names[id] == "" {
-			names[id] = "Type " + itoaProg(id)
-		}
-	}
-	return pi.TypeResolver{Names: names, Volumes: vols}
-}
-
-func piListOf(v any) []any {
-	if l, ok := v.([]any); ok {
-		return l
-	}
-	return []any{}
 }
 
 // POST /planetary/refresh — forget colony memos, 204.
@@ -364,7 +265,6 @@ func handlePlanetaryRefresh(d Deps) echo.HandlerFunc {
 	}
 }
 
-// piResolver builds the type resolver from industry stores + ESI fallback.
 func piResolver(ctx context.Context, d Deps) pi.TypeResolver {
 	return pi.TypeResolver{
 		Names:   piNames(ctx, d),
@@ -380,25 +280,6 @@ func piVolumes(ctx context.Context, d Deps) map[int]float64 {
 	return map[int]float64{}
 }
 
-func piInt(v any) int {
-	switch n := v.(type) {
-	case int:
-		return n
-	case int64:
-		return int(n)
-	case float64:
-		return int(n)
-	}
-	return 0
-}
-
-func strOrColony(v any, def string) string {
-	if s, ok := v.(string); ok && s != "" {
-		return s
-	}
-	return def
-}
-
 func stripPlanetAlertContext(alerts []any) []any {
 	out := make([]any, 0, len(alerts))
 	for _, av := range alerts {
@@ -411,4 +292,3 @@ func stripPlanetAlertContext(alerts []any) []any {
 	return out
 }
 
-var errColonyIncomplete = errors.New("planetary colony refresh did not complete")

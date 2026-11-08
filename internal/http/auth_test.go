@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
 // stubAuth implements auth.Sessions + store.AuthStore for handler tests: a
@@ -206,4 +207,11 @@ func (s *stubAuth) DeleteCharacter(ctx context.Context, uid, id int64) error {
 	}
 	s.chars = kept
 	return nil
+}
+
+func (s *stubAuth) UpdateCharacterRefresh(ctx context.Context, id int64, r store.CharacterRefresh) error {
+	return nil
+}
+func (s *stubAuth) EsiActiveCharacters(ctx context.Context, uid *int64) ([]auth.Character, error) {
+	return s.chars, nil
 }

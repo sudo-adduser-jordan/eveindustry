@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/cache"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/health"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/setup"
@@ -60,6 +61,7 @@ type Deps struct {
 	AdminStats         store.AdminStatsStore
 	SponsorImages      SponsorStorage
 	Diag               store.DiagStore
+	Cache              *cache.Cache
 	Discord            store.DiscordStore
 	Notify             store.NotifyStore
 	NotifyPush         NotifyPush

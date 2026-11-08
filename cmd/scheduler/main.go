@@ -1,52 +1,86 @@
-// Command scheduler prints the tick table for the Go scheduler.
-//
-// Phase 3 replaces cron schedule:run with a gocron/robfig-cron process
-// running this table (cadences mirror routes/console.php; times are UTC).
-// `scheduler list` is the machine-readable form the supervisor will tick.
 package main
 
 import (
-	"fmt"
+	"context"
+	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+	"github.com/redis/go-redis/v9"
+
+	"github.com/sudo-adduser-jordan/eveindustry/internal/cache"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/config"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/jobs"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// Entry is one recurring task: the artisan command it replaces, its cadence
-// and the queue lane its jobs fan out to.
-type Entry struct {
-	Command string
-	Cadence string
-	Queue   string
-}
-
-var table = []Entry{
-	{"sde:import", "daily 02:00", "-"},
-	{"market:update-prices", "daily 04:00", "-"},
-	{"esi:import-types", "weekly Sun 03:00", "updates"},
-	{"sde:import-blueprints", "weekly Sun 05:00", "updates"},
-	{"characters:refresh-data", "every 30m", "default"},
-	{"market:fetch-region-orders --region=10000002", "every 15m (gated)", "market"},
-	{"market:fetch-region-orders --exclude=10000002", "hourly", "market"},
-	{"market:import-daily-history", "every 3h", "updates"},
-	{"contracts:import", "hourly", "updates"},
-	{"dashboard:refresh", "every 15m", "default"},
-	{"industry:refresh", "every 30m", "default"},
-	{"assets:refresh", "every 30m", "default"},
-	{"esi:import-market-groups", "cron 0 3 1,15 * *", "updates"},
-	{"manufacturing:precompute-costs", "every 4h", "updates"},
-	{"market:snapshots-prune --write", "daily", "-"},
-	{"esi:diagnostics-flush", "every 1m", "default"},
-	{"esi:diagnostics-prune", "daily 06:30", "default"},
-	{"notifications:dispatch", "every 5m", "default"},
-	{"demo:reset", "daily 03:30", "default"},
-}
-
+// Command scheduler ticks every minute and dispatches due entries, mirroring
+// routes/console.php (single scheduler per environment; the Redis lock
+// implements withoutOverlapping + onOneServer).
 func main() {
-	if len(os.Args) == 2 && os.Args[1] == "list" {
-		for _, e := range table {
-			fmt.Printf("%-45s %-18s %s\n", e.Command, e.Cadence, e.Queue)
-		}
-		return
+	cfg := config.Load()
+	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	var rdb *redis.Client
+	if host := os.Getenv("REDIS_HOST"); host != "" {
+		rdb = redis.NewClient(&redis.Options{Addr: cfg.RedisAddr, Password: cfg.RedisPassword, DB: cfg.RedisDB})
+		defer func() { _ = rdb.Close() }()
 	}
-	fmt.Fprintln(os.Stderr, "usage: scheduler list   (tick loop lands in Phase 3)")
-	os.Exit(2)
+	var db *sqlx.DB
+	if cfg.DBDSN != "" {
+		var err error
+		db, err = sqlx.Connect("mysql", cfg.DBDSN)
+		if err != nil {
+			log.Error("scheduler without database", "err", err)
+			db = nil
+		}
+	}
+	hd := jobs.HandlerDeps{Log: log, Redis: rdb, Cache: &cache.Cache{Client: rdb}}
+	if db != nil {
+		hd.DB = store.NewSQL(db)
+		hd.Industry = industry.NewSQL(db)
+		coord := esi.NewMemStore()
+		limiter := esi.NewLimiter(coord, "eve-industrialist")
+		circuit := esi.NewCircuit(coord)
+		esiClient := esi.NewClient(coord, limiter, circuit, cfg.ESIUserAgent)
+		esiClient.Cache = esi.NewHTTPCache(coord)
+		hd.ESIChars = esi.NewCharacterClient(esiClient, nil, hd.DB, nil, nil)
+		hd.ESIUniverse = esi.NewUniverseClient(esiClient, hd.DB, nil, hd.DB)
+	}
+	var q jobs.Queue = jobs.NewMemoryQueue()
+	if rdb != nil {
+		q = &jobs.RedisQueue{Client: rdb}
+	}
+	r := jobs.NewRunner(jobs.Deps{Log: log, Redis: rdb})
+	jobs.RegisterRefreshJobs(r, hd)
+	sched := &jobs.Scheduler{
+		Runner: r, Queue: q, Redis: rdb, Now: time.Now,
+		Log: func(msg string, args ...any) { log.Warn(msg, args...) },
+	}
+	for _, e := range jobs.RefreshSchedule(hd) {
+		sched.Entries = append(sched.Entries, e)
+	}
+
+	log.Info("scheduler started", "entries", len(sched.Entries))
+	last := map[string]time.Time{}
+	tick := time.NewTicker(time.Minute)
+	defer tick.Stop()
+	sched.Tick(ctx, map[string]time.Time{})
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case t := <-tick.C:
+			_ = t
+			last = sched.Tick(ctx, last)
+		}
+	}
 }

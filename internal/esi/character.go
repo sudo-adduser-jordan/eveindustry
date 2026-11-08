@@ -297,6 +297,33 @@ func (c *CharacterClient) GetBlueprints(ctx context.Context, characterID int64) 
 	return all, nil
 }
 
+// GetSkillqueue ports fetchPilotTrainingQueue(): training queue, 1h memo.
+func (c *CharacterClient) GetSkillqueue(ctx context.Context, characterID int64) ([]map[string]any, error) {
+	key := fmt.Sprintf("esi.skillqueue.%d", characterID)
+	if v, ok := c.memo.Get(key); ok {
+		if v == nil {
+			return nil, nil
+		}
+		return v.([]map[string]any), nil
+	}
+	raw, err := c.authed(ctx, http.MethodGet, fmt.Sprintf("/characters/%d/skillqueue/", characterID), characterID, nil)
+	if err != nil {
+		if reqErr, ok := err.(*RequestError); ok && reqErr.Outcome == OutcomeCredential {
+			return nil, nil
+		}
+		return nil, err
+	}
+	list, _ := raw.([]any)
+	out := make([]map[string]any, 0, len(list))
+	for _, item := range list {
+		if m, ok := item.(map[string]any); ok {
+			out = append(out, m)
+		}
+	}
+	c.memo.Set(key, out, time.Hour)
+	return out, nil
+}
+
 // GetIndustryJobs ports getCharacterIndustryJobs(): active jobs (or with
 // completed), 5 minute cache. Scope/active gating is the caller's job.
 func (c *CharacterClient) GetIndustryJobs(ctx context.Context, characterID int64, includeCompleted bool) ([]map[string]any, error) {

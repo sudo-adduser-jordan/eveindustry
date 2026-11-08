@@ -5,26 +5,13 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sudo-adduser-jordan/eveindustry/internal/assets"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
-
-// AssetBrowserESI is the ESI surface the asset browser needs.
-type AssetBrowserESI interface {
-	GetAssets(ctx context.Context, characterID int64) ([]map[string]any, error)
-	GetCorporationAssets(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error)
-	GetAssetNames(ctx context.Context, characterID int64, itemIDs []int64) (map[int64]string, error)
-	GetCorporationAssetNames(ctx context.Context, characterID, corporationID int64, itemIDs []int64) (map[int64]string, error)
-}
-
-// AssetBrowserDeps carries the ESI + reference surface the asset browser needs.
-type AssetBrowserDeps struct {
-	Characters AssetBrowserESI
-	Universe   UniverseReader
-	Reference  ProgressReference
-}
 
 // registerAssets mounts the asset browser: personal/corporate lists,
 // by-location groupings, and the refresh queue stub.
@@ -39,259 +26,76 @@ func registerAssets(v1 *echo.Group, d Deps) {
 	v1.POST("/assets/refresh", handleAssetsRefresh(d))
 }
 
-var corpHangarFlags = map[string]string{
-	"CorpSAG1": "Corp Hangar 1", "CorpSAG2": "Corp Hangar 2",
-	"CorpSAG3": "Corp Hangar 3", "CorpSAG4": "Corp Hangar 4",
-	"CorpSAG5": "Corp Hangar 5", "CorpSAG6": "Corp Hangar 6",
-	"CorpSAG7": "Corp Hangar 7", "CorpDeliveries": "Corp Deliveries",
+// cachedOrLiveAssets ports the getAssetsForUser cache: warmed rows plus the
+// fill time, or live ESI when the cache is empty.
+func cachedOrLiveAssets(ctx context.Context, d Deps, uid int64, chars []auth.Character, corpOK bool) ([]assets.Asset, *time.Time) {
+	if d.Cache != nil {
+		var cached []assets.Asset
+		if d.Cache.GetJSON(ctx, "assets.user."+itoaProg(int(uid)), &cached) {
+			var at int64
+			var filled *time.Time
+			if d.Cache.GetJSON(ctx, "assets.user."+itoaProg(int(uid))+".cached_at", &at) && at > 0 {
+				t := time.Unix(at, 0).UTC()
+				filled = &t
+			}
+			return cached, filled
+		}
+	}
+	return assets.FetchUserAssets(ctx, assetDeps(d), chars, corpOK), nil
 }
 
+// enrichedAsset aliases the shared asset row so the tree code is untouched.
+type enrichedAsset = assets.Asset
+
+// AssetBrowserDeps carries the asset browser ESI + reference surface.
+type AssetBrowserDeps struct {
+	Characters assets.Characters
+	Universe   UniverseReader
+	Reference  ProgressReference
+}
+
+// assetSortFields mirrors the PHP sort allow-list.
 var assetSortFields = map[string]bool{
 	"type_name": true, "quantity": true, "location_name": true,
 	"character_name": true, "owner_type": true,
 }
 
-// enrichedAsset is a flat ESI asset with resolved names.
-type enrichedAsset struct {
-	itemID     int64
-	typeID     int
-	typeName   string
-	name       *string
-	quantity   int64
-	locationID int64
-	location   string
-	flag       string
-	charID     int64
-	charName   string
-	owner      string
-	corpName   *string
-	singleton  bool
-	parentID   *int64
-}
-
-// fetchUserAssets ports fetchAndCacheAssets without the cache: live ESI per
-// character plus corporate via the main (director/CEO + scope required).
-// lastUpdated is always nil until the jobs phase warms snapshots.
-func fetchUserAssets(ctx context.Context, d Deps, chars []auth.Character, corpOK bool) []enrichedAsset {
-	var out []enrichedAsset
-	var scoped []auth.Character
-	for _, ch := range chars {
-		if hasScope(ch, "esi-universe.read_structures.v1") {
-			scoped = append(scoped, ch)
-		}
-	}
-	var main *auth.Character
-	for i := range chars {
-		if chars[i].IsMain {
-			main = &chars[i]
-			break
-		}
-	}
-	for _, ch := range chars {
-		if !ch.IsEsiActive || !hasScope(ch, "esi-assets.read_assets.v1") {
-			continue
-		}
-		raw, err := d.AssetBrowser.Characters.GetAssets(ctx, ch.CharacterID)
-		if err != nil {
-			continue
-		}
-		typeIDs := map[int]bool{}
-		for _, a := range raw {
-			if id, ok := asInt64Prog(a["type_id"]); ok && id > 0 {
-				typeIDs[int(id)] = true
-			}
-		}
-		names := batchTypeNames(ctx, d, keysInt(typeIDs))
-		singletons := singletonIDs(raw)
-		custom := map[int64]string{}
-		if len(singletons) > 0 {
-			if n, err := d.AssetBrowser.Characters.GetAssetNames(ctx, ch.CharacterID, singletons); err == nil {
-				custom = n
-			}
-		}
-		for _, a := range raw {
-			out = append(out, enrichOne(a, &ch, "personal", nil, names, custom, scoped, ctx, d))
-		}
-	}
-	if corpOK && main != nil && main.CorporationID != nil {
-		raw, err := d.AssetBrowser.Characters.GetCorporationAssets(ctx, main.CharacterID, *main.CorporationID)
-		if err == nil {
-			typeIDs := map[int]bool{}
-			for _, a := range raw {
-				if id, ok := asInt64Prog(a["type_id"]); ok && id > 0 {
-					typeIDs[int(id)] = true
-				}
-			}
-			names := batchTypeNames(ctx, d, keysInt(typeIDs))
-			singletons := singletonIDs(raw)
-			custom := map[int64]string{}
-			if len(singletons) > 0 {
-				if n, err := d.AssetBrowser.Characters.GetCorporationAssetNames(ctx, main.CharacterID, *main.CorporationID, singletons); err == nil {
-					custom = n
-				}
-			}
-			var corpName *string
-			if main.CorporationName != nil {
-				corpName = main.CorporationName
-			}
-			for _, a := range raw {
-				out = append(out, enrichOne(a, main, "corporate", corpName, names, custom, scoped, ctx, d))
-			}
-		}
-	}
-	return out
-}
-
-func singletonIDs(raw []map[string]any) []int64 {
-	var out []int64
-	seen := map[int64]bool{}
-	for _, a := range raw {
-		if b, _ := a["is_singleton"].(bool); !b {
-			continue
-		}
-		if id, ok := asInt64Prog(a["item_id"]); ok && !seen[id] {
-			seen[id] = true
-			out = append(out, id)
-		}
-	}
-	return out
-}
-
-func keysInt(m map[int]bool) []int {
-	out := make([]int, 0, len(m))
-	for k := range m {
-		out = append(out, k)
-	}
-	return out
-}
-
-func batchTypeNames(ctx context.Context, d Deps, ids []int) map[int]string {
-	if len(ids) == 0 {
-		return map[int]string{}
-	}
-	names, err := d.Industry.TypeNames(ctx, ids)
-	if err != nil {
-		return map[int]string{}
-	}
-	return names
-}
-
-func enrichOne(a map[string]any, ch *auth.Character, owner string, corpName *string, names map[int]string, custom map[int64]string, scoped []auth.Character, ctx context.Context, d Deps) enrichedAsset {
-	itemID, _ := asInt64Prog(a["item_id"])
-	typeID, _ := asInt64Prog(a["type_id"])
-	tname := names[int(typeID)]
-	if tname == "" {
-		tname = resolveAssetTypeName(ctx, d, int(typeID))
-	}
-	var customName *string
-	if n, ok := custom[itemID]; ok {
-		customName = &n
-	}
-	locID, _ := asInt64Prog(a["location_id"])
-	locType, _ := a["location_type"].(string)
-	flag, _ := a["location_flag"].(string)
-	if f, ok := corpHangarFlags[flag]; ok {
-		flag = f
-	}
-	var parent *int64
-	if locType == "item" {
-		parent = &locID
-	}
-	qty, _ := asInt64Prog(a["quantity"])
-	if qty == 0 {
-		if f, ok := asNumProg(a["quantity"]); ok {
-			qty = int64(f)
-		}
-	}
-	return enrichedAsset{
-		itemID: itemID, typeID: int(typeID), typeName: tname, name: customName,
-		quantity: qty, locationID: locID, location: assetLocationName(ctx, d, a, scoped),
-		flag: flag, charID: ch.CharacterID, charName: ch.Name, owner: owner,
-		corpName: corpName, singleton: boolProg(a["is_singleton"]), parentID: parent,
+// assetDeps adapts the handler Deps to the shared fetch surface.
+func assetDeps(d Deps) assets.Deps {
+	return assets.Deps{
+		Characters: d.AssetBrowser.Characters, Universe: d.AssetBrowser.Universe,
+		Reference: assetRefAdapter{d.AssetBrowser.Reference}, Industry: d.Industry,
 	}
 }
 
-func resolveAssetTypeName(ctx context.Context, d Deps, typeID int) string {
-	if typeID <= 0 {
-		return "Unknown"
+// assetRefAdapter maps the store-shaped reference to the shared one.
+type assetRefAdapter struct{ r ProgressReference }
+
+func (a assetRefAdapter) FindStation(ctx context.Context, id uint64) (string, *int, bool) {
+	if a.r == nil {
+		return "", nil, false
 	}
-	if info, err := d.AssetBrowser.Universe.GetTypeInfo(ctx, typeID); err == nil && info != nil {
-		if n, ok := info["name"].(string); ok && n != "" {
-			return n
-		}
+	st, err := a.r.FindStation(ctx, id)
+	if err != nil || st == nil {
+		return "", nil, false
 	}
-	return "Type #" + itoaProg(typeID)
+	var sys *int
+	if st.SolarSystemID.Valid {
+		v := int(st.SolarSystemID.Int64)
+		sys = &v
+	}
+	return st.StationName, sys, true
 }
 
-// assetLocationName resolves stations, structures (scoped chars) and systems;
-// items inside containers name their parent type ("<type> (in <parent>)"
-// is NOT PHP — PHP walks to the root station; nested items show the root
-// location name via resolveAssetLocationName recursion).
-func assetLocationName(ctx context.Context, d Deps, a map[string]any, scoped []auth.Character) string {
-	locID, _ := asInt64Prog(a["location_id"])
-	if locID <= 0 {
-		return "Unknown Location"
+func (a assetRefAdapter) FindSystem(ctx context.Context, id int) (string, bool) {
+	if a.r == nil {
+		return "", false
 	}
-	if d.AssetBrowser.Reference != nil {
-		if locID >= 60000000 && locID < 64000000 {
-			if st, err := d.AssetBrowser.Reference.FindStation(ctx, uint64(locID)); err == nil && st != nil {
-				return st.StationName
-			}
-		} else if locID >= 30000000 && locID < 33000000 {
-			if s, err := d.AssetBrowser.Reference.FindSystem(ctx, int(locID)); err == nil && s != nil {
-				return s.SolarSystemName
-			}
-		}
+	st, err := a.r.FindSystem(ctx, id)
+	if err != nil || st == nil {
+		return "", false
 	}
-	uv := d.AssetBrowser.Universe
-	if locID >= 60000000 && locID < 64000000 {
-		if st, err := uv.GetStation(ctx, uint64(locID)); err == nil && st != nil {
-			if n, ok := st["name"].(string); ok && n != "" {
-				return n
-			}
-		}
-	} else if locID > 2000000000000 {
-		for _, ch := range scoped {
-			if st, err := uv.GetStructure(ctx, uint64(locID), ch.CharacterID); err == nil && st != nil {
-				if n, ok := st["name"].(string); ok && n != "" {
-					return n
-				}
-			}
-		}
-	} else if locID >= 30000000 && locID < 33000000 {
-		if s, err := uv.GetSystem(ctx, int(locID)); err == nil && s != nil {
-			if n, ok := s["name"].(string); ok && n != "" {
-				return n
-			}
-		}
-	}
-	return "Location #" + itoaProg(int(locID))
-}
-
-// corpDenial ports corporationAssetsDenial's static checks (no re-verify
-// roundtrip: the Go port trusts the stored Director/CEO flag + scope).
-func corpDenial(chars []auth.Character) *string {
-	var main *auth.Character
-	for i := range chars {
-		if chars[i].IsMain {
-			main = &chars[i]
-			break
-		}
-	}
-	msg := func(s string) *string { return &s }
-	if main == nil {
-		return msg("No main character is set. Corporation assets can only be retrieved by your main character.")
-	}
-	if main.CorporationID == nil || *main.CorporationID == 0 {
-		return msg("Your main character (" + main.Name + ") is not in a corporation.")
-	}
-	if !main.IsDirectorCEO {
-		return msg("Your main character (" + main.Name + ") does not hold the Director or CEO role in their corporation.")
-	}
-	if !hasScope(*main, "esi-assets.read_corporation_assets.v1") {
-		return msg("Your main character (" + main.Name + ") does not have the Corporation Assets ESI scope. Re-authenticate to grant it.")
-	}
-	return nil
+	return st.SolarSystemName, true
 }
 
 // GET /assets or /corporation/assets — paginated tree with search, sort,
@@ -356,18 +160,18 @@ func handleAssetsIndex(d Deps, corporate bool) echo.HandlerFunc {
 			return dbError(c, err)
 		}
 		if corporate {
-			if denial := corpDenial(chars); denial != nil {
+			if denial := assets.CorpDenial(chars); denial != nil {
 				return Failure(c, http.StatusForbidden, *denial, nil)
 			}
 		}
-		all := fetchUserAssets(ctx, d, chars, true)
+		all, filled := cachedOrLiveAssets(ctx, d, uid, chars, true)
 		owner := "personal"
 		if corporate {
 			owner = "corporate"
 		}
 		var filtered []enrichedAsset
 		for _, a := range all {
-			if a.owner != owner {
+			if a.Owner != owner {
 				continue
 			}
 			filtered = append(filtered, a)
@@ -378,7 +182,7 @@ func handleAssetsIndex(d Deps, corporate bool) echo.HandlerFunc {
 		} else if locationID != nil {
 			kept := tree[:0]
 			for _, t := range tree {
-				if t.locationID == *locationID {
+				if t.LocationID == *locationID {
 					kept = append(kept, t)
 				}
 			}
@@ -398,7 +202,7 @@ func handleAssetsIndex(d Deps, corporate bool) echo.HandlerFunc {
 			items = append(items, assetNodeShape(t))
 		}
 		return Success(c, http.StatusOK, pagedSlice(items, page, perPage), map[string]any{
-			"last_updated": nil,
+			"last_updated": lastUpdated(filled),
 		})
 	}
 }
@@ -413,12 +217,12 @@ func buildAssetTree(all []enrichedAsset, search, sortBy, dir string) []assetNode
 	byID := map[int64]*assetNode{}
 	for _, a := range all {
 		n := &assetNode{enrichedAsset: a}
-		byID[a.itemID] = n
+		byID[a.ItemID] = n
 	}
 	var tree []*assetNode
 	for _, n := range byID {
-		if n.parentID != nil {
-			if p, ok := byID[*n.parentID]; ok {
+		if n.ParentID != nil {
+			if p, ok := byID[*n.ParentID]; ok {
 				p.children = append(p.children, *n)
 				continue
 			}
@@ -461,11 +265,11 @@ func buildAssetTree(all []enrichedAsset, search, sortBy, dir string) []assetNode
 }
 
 func assetMatches(n assetNode, lower string) bool {
-	return strings.Contains(strings.ToLower(n.typeName), lower) ||
-		strings.Contains(strings.ToLower(strOrEmpty(n.name)), lower) ||
-		strings.Contains(strings.ToLower(n.location), lower) ||
-		strings.Contains(strings.ToLower(n.charName), lower) ||
-		strings.Contains(strings.ToLower(n.owner), lower)
+	return strings.Contains(strings.ToLower(n.TypeName), lower) ||
+		strings.Contains(strings.ToLower(strOrEmpty(n.Name)), lower) ||
+		strings.Contains(strings.ToLower(n.Location), lower) ||
+		strings.Contains(strings.ToLower(n.CharName), lower) ||
+		strings.Contains(strings.ToLower(n.Owner), lower)
 }
 
 func strOrEmpty(s *string) string {
@@ -479,15 +283,15 @@ func sortAssets(list []assetNode, sortBy, dir string) {
 	val := func(n assetNode) any {
 		switch sortBy {
 		case "quantity":
-			return n.quantity
+			return n.Quantity
 		case "location_name":
-			return n.location
+			return n.Location
 		case "character_name":
-			return n.charName
+			return n.CharName
 		case "owner_type":
-			return n.owner
+			return n.Owner
 		default:
-			return n.typeName
+			return n.TypeName
 		}
 	}
 	sort.SliceStable(list, func(i, j int) bool {
@@ -508,7 +312,7 @@ func sortAssets(list []assetNode, sortBy, dir string) {
 
 func findAssetChildren(tree []assetNode, parent int64) []assetNode {
 	for _, n := range tree {
-		if n.itemID == parent {
+		if n.ItemID == parent {
 			if n.children == nil {
 				return []assetNode{}
 			}
@@ -533,23 +337,23 @@ func assetNodeShape(n assetNode) map[string]any {
 		has = len(n.children) > 0
 	}
 	var pid any
-	if n.parentID != nil {
-		pid = *n.parentID
+	if n.ParentID != nil {
+		pid = *n.ParentID
 	}
 	var corp any
-	if n.corpName != nil {
-		corp = *n.corpName
+	if n.CorpName != nil {
+		corp = *n.CorpName
 	}
 	var nm any
-	if n.name != nil {
-		nm = *n.name
+	if n.Name != nil {
+		nm = *n.Name
 	}
 	return map[string]any{
-		"item_id": n.itemID, "type_id": n.typeID, "type_name": n.typeName,
-		"name": nm, "quantity": n.quantity, "location_id": n.locationID,
-		"location_name": n.location, "location_flag": n.flag,
-		"character_id": n.charID, "character_name": n.charName,
-		"owner_type": n.owner, "is_singleton": n.singleton,
+		"item_id": n.ItemID, "type_id": n.TypeID, "type_name": n.TypeName,
+		"name": nm, "quantity": n.Quantity, "location_id": n.LocationID,
+		"location_name": n.Location, "location_flag": n.Flag,
+		"character_id": n.CharID, "character_name": n.CharName,
+		"owner_type": n.Owner, "is_singleton": n.Singleton,
 		"corporation_name": corp, "parent_item_id": pid,
 		"children": kids, "children_count": count, "has_children": has,
 	}
@@ -573,18 +377,18 @@ func handleAssetsByLocation(d Deps, corporate bool) echo.HandlerFunc {
 			return dbError(c, err)
 		}
 		if corporate {
-			if denial := corpDenial(chars); denial != nil {
+			if denial := assets.CorpDenial(chars); denial != nil {
 				return Failure(c, http.StatusForbidden, *denial, nil)
 			}
 		}
-		all := fetchUserAssets(ctx, d, chars, true)
+		all, filled := cachedOrLiveAssets(ctx, d, uid, chars, true)
 		owner := "personal"
 		if corporate {
 			owner = "corporate"
 		}
 		var filtered []enrichedAsset
 		for _, a := range all {
-			if a.owner == owner {
+			if a.Owner == owner {
 				filtered = append(filtered, a)
 			}
 		}
@@ -598,8 +402,8 @@ func handleAssetsByLocation(d Deps, corporate bool) echo.HandlerFunc {
 		types := map[int]bool{}
 		var qty int64
 		for _, a := range filtered {
-			qty += a.quantity
-			types[a.typeID] = true
+			qty += a.Quantity
+			types[a.TypeID] = true
 		}
 		summary["total_quantity"] = qty
 		summary["type_count"] = len(types)
@@ -612,7 +416,7 @@ func handleAssetsByLocation(d Deps, corporate bool) echo.HandlerFunc {
 		summary["location_count"] = locCount
 		return Success(c, http.StatusOK, map[string]any{
 			"summary": summary, "solar_systems": sysItems,
-		}, map[string]any{"last_updated": nil})
+		}, map[string]any{"last_updated": lastUpdated(filled)})
 	}
 }
 
@@ -638,12 +442,12 @@ func groupAssetsByLocation(ctx context.Context, d Deps, tree []assetNode) []syst
 	stationMap := map[int64]*stationGroup{}
 	var order []int64
 	for _, n := range tree {
-		loc := n.locationID
+		loc := n.LocationID
 		if loc == 0 {
-			loc = -n.itemID
+			loc = -n.ItemID
 		}
 		if _, ok := stationMap[loc]; !ok {
-			stationMap[loc] = &stationGroup{id: n.locationID, name: n.location}
+			stationMap[loc] = &stationGroup{id: n.LocationID, name: n.Location}
 			order = append(order, loc)
 		}
 		stationMap[loc].items = append(stationMap[loc].items, n)
@@ -763,4 +567,11 @@ func pagedSlice(items []any, page, perPage int) []any {
 		end = total
 	}
 	return items[start:end]
+}
+
+func lastUpdated(t *time.Time) any {
+	if t == nil {
+		return nil
+	}
+	return t.UTC().Format("2006-01-02T15:04:05Z")
 }

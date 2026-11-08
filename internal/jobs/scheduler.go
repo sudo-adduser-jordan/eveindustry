@@ -1,0 +1,121 @@
+package jobs
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/redis/go-redis/v9"
+)
+
+// ScheduleEntry mirrors one routes/console.php line: when it fires and what
+// it dispatches. withoutOverlapping + onOneServer both map onto the Redis
+// lock (single scheduler process per environment, like cron + Forge).
+type ScheduleEntry struct {
+	Name     string
+	Every    time.Duration
+	At       string // "15:04" daily time (UTC); "" = pure interval
+	CronDays string // allowed weekdays for At ("*" or e.g. "Sun")
+	CronDOM  string // allowed month days ("*" or "1,15")
+	When     func(ctx context.Context) bool
+	Run      func(ctx context.Context, r *Runner, q Queue) error
+	Overlap  time.Duration // withoutOverlapping window (0 = Every)
+}
+
+// Scheduler ticks every minute and fires due entries.
+type Scheduler struct {
+	Entries []ScheduleEntry
+	Runner  *Runner
+	Queue   Queue
+	Redis   *redis.Client
+	Now     func() time.Time
+	Log     func(msg string, args ...any)
+}
+
+// Due reports whether an entry fires at now given its last fire time.
+func (e ScheduleEntry) Due(now time.Time, last time.Time) bool {
+	if !last.IsZero() {
+		window := e.Every
+		if window <= 0 {
+			window = 24 * time.Hour
+		}
+		if now.Sub(last) < window {
+			return false
+		}
+	}
+	if e.At == "" {
+		return true
+	}
+	hh, mm := e.At[0:2], e.At[3:5]
+	var h, m int
+	fmt.Sscanf(hh, "%d", &h)
+	fmt.Sscanf(mm, "%d", &m)
+	if now.Hour() != h || now.Minute() != m {
+		return false
+	}
+	if e.CronDays != "" && e.CronDays != "*" {
+		allowed := false
+		for _, d := range strings.Split(e.CronDays, ",") {
+			if strings.EqualFold(strings.TrimSpace(d), now.Weekday().String()[:3]) ||
+				strings.EqualFold(strings.TrimSpace(d), now.Weekday().String()) {
+				allowed = true
+			}
+		}
+		if !allowed {
+			return false
+		}
+	}
+	if e.CronDOM != "" && e.CronDOM != "*" {
+		allowed := false
+		for _, d := range strings.Split(e.CronDOM, ",") {
+			var day int
+			fmt.Sscanf(strings.TrimSpace(d), "%d", &day)
+			if day == now.Day() {
+				allowed = true
+			}
+		}
+		if !allowed {
+			return false
+		}
+	}
+	return true
+}
+
+// Tick fires every due entry once. last tracks per-entry fire times.
+func (s *Scheduler) Tick(ctx context.Context, last map[string]time.Time) map[string]time.Time {
+	now := time.Now()
+	if s.Now != nil {
+		now = s.Now()
+	}
+	next := map[string]time.Time{}
+	for k, v := range last {
+		next[k] = v
+	}
+	for _, e := range s.Entries {
+		if !e.Due(now, last[e.Name]) {
+			continue
+		}
+		if e.When != nil && !e.When(ctx) {
+			continue
+		}
+		window := e.Overlap
+		if window <= 0 {
+			window = e.Every
+		}
+		if window <= 0 {
+			window = time.Minute
+		}
+		if s.Redis != nil {
+			ok, err := s.Redis.SetNX(ctx, "jobs:schedule:"+e.Name, "1", window).Result()
+			if err != nil || !ok {
+				continue
+			}
+		}
+		if err := e.Run(ctx, s.Runner, s.Queue); err != nil && s.Log != nil {
+			s.Log("schedule failed", "entry", e.Name, "err", err)
+		}
+		next[e.Name] = now
+	}
+	return next
+}

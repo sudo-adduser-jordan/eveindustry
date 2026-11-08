@@ -11,6 +11,7 @@ import (
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
 // registerAvailability mounts the heavy industry reads: slot availability
@@ -63,94 +64,73 @@ func handleAvailability(d Deps) echo.HandlerFunc {
 		uid := c.Get(string(ctxUIDKey)).(int64)
 		ctx := c.Request().Context()
 		now := time.Now().UTC()
-		data, err := availabilityData(ctx, d, uid, now)
+		if d.Cache != nil {
+			var payload map[string]any
+			if d.Cache.GetJSON(ctx, "dashboard.industry_stats."+itoaProg(int(uid)), &payload) {
+				if chars, ok := payload["characters"].([]any); ok {
+					totals := map[string]any{}
+					if t, ok := payload["totals"].(map[string]any); ok {
+						totals = t
+					}
+					var ready []any
+					if r, ok := payload["ready_for_collection"].([]any); ok {
+						ready = r
+					}
+					return Success(c, http.StatusOK, map[string]any{
+						"characters": chars, "totals": totals, "ready_for_collection": ready,
+					}, map[string]any{
+						"cached_until": now.Add(20 * time.Minute).Format(time.RFC3339),
+					})
+				}
+			}
+		}
+		chars, err := d.Users.CharactersForUser(ctx, uid)
 		if err != nil {
 			return dbError(c, err)
 		}
-		return Success(c, http.StatusOK, data, map[string]any{
+		data := industry.AvailabilityData(ctx, availDeps(d), chars, uid, now)
+		return Success(c, http.StatusOK, map[string]any{
+			"characters": data.Characters,
+			"totals": map[string]any{
+				"manufacturing": data.Totals["manufacturing"],
+				"research":      data.Totals["research"],
+				"reactions":     data.Totals["reactions"],
+			},
+			"ready_for_collection": data.Ready,
+		}, map[string]any{
 			"cached_until": now.Add(20 * time.Minute).Format(time.RFC3339),
 		})
 	}
 }
 
-// availabilityData ports the slot computation shared by /availability and
-// the dashboard industry stats.
-func availabilityData(ctx context.Context, d Deps, uid int64, now time.Time) (map[string]any, error) {
-	chars, err := d.Users.CharactersForUser(ctx, uid)
+// availDeps adapts the handler Deps to the shared computation.
+func availDeps(d Deps) industry.AvailDeps {
+	return industry.AvailDeps{
+		Characters: d.IndustryDeps.Characters,
+		Universe:   d.IndustryDeps.Universe,
+		Corp:       availCorpAdapter{d.Corp},
+	}
+}
+
+// availCorpAdapter maps the store corp characters to the shared shape.
+type availCorpAdapter struct{ c store.CorpStore }
+
+func (a availCorpAdapter) UserCorpCharacters(ctx context.Context, userID, corpID int64) ([]industry.CorpMember, error) {
+	if a.c == nil {
+		return nil, nil
+	}
+	members, err := a.c.UserCorpCharacters(ctx, userID, corpID)
 	if err != nil {
 		return nil, err
 	}
-	charRows := []any{}
-	totals := map[string]map[string]int{
-		"manufacturing": {"total": 0, "active": 0, "available": 0},
-		"research":      {"total": 0, "active": 0, "available": 0},
-		"reactions":     {"total": 0, "active": 0, "available": 0},
-	}
-	var ready []any
-	for _, ch := range chars {
-		if !ch.IsEsiActive {
-			continue
-		}
-		skills, err := d.IndustryDeps.Characters.GetSkills(ctx, ch.CharacterID)
-		if err != nil {
-			continue
-		}
-		if skills == nil {
-			skills = map[int]int{}
-		}
-		jobs, err := d.IndustryDeps.Characters.GetIndustryJobs(ctx, ch.CharacterID, false)
-		if err != nil {
-			continue
-		}
-		for _, cj := range corpJobsFor(ctx, d, uid, ch) {
-			jobs = append(jobs, cj)
-		}
-		active := activeJobs(jobs)
-		mfgTotal := 1 + skills[skillMassProduction] + skills[skillAdvMassProduction]
-		resTotal := 1 + skills[skillLaboratoryOperation] + skills[skillAdvLaboratory]
-		reaTotal := 1 + skills[skillMassReactions] + skills[skillAdvMassReactions]
-		mfgJobs := detailedJobs(ctx, d, active, []int{activityManufacturing}, now)
-		resJobs := detailedJobs(ctx, d, active, researchActivities, now)
-		reaJobs := detailedJobs(ctx, d, active, []int{activityReactions}, now)
-		mfgActive := len(mfgJobs)
-		resActive := len(resJobs)
-		reaActive := len(reaJobs)
-		charRows = append(charRows, map[string]any{
-			"character_id": ch.CharacterID, "character_name": ch.Name,
-			"portrait_url": ch.PortraitURL(), "corporation_name": corpNameOf(ch),
-			"manufacturing":   slotGroup(mfgTotal, mfgActive, mfgJobs),
-			"research":        slotGroup(resTotal, resActive, resJobs),
-			"reactions":       slotGroup(reaTotal, reaActive, reaJobs),
-			"completing_soon": completingSoon(active, now),
-			"skills": map[string]any{
-				"mass_production": skills[skillMassProduction], "adv_mass_production": skills[skillAdvMassProduction],
-				"laboratory_operation": skills[skillLaboratoryOperation], "adv_laboratory_operation": skills[skillAdvLaboratory],
-				"mass_reactions": skills[skillMassReactions], "adv_mass_reactions": skills[skillAdvMassReactions],
-			},
+	out := make([]industry.CorpMember, 0, len(members))
+	for _, m := range members {
+		out = append(out, industry.CorpMember{
+			CharacterID: m.CharacterID, IsEsiActive: m.IsEsiActive,
+			Scopes: m.Scopes, IsDirectorCEO: m.IsDirectorCEO, Roles: m.Roles,
 		})
-		totals["manufacturing"]["total"] += mfgTotal
-		totals["manufacturing"]["active"] += mfgActive
-		totals["manufacturing"]["available"] += max(0, mfgTotal-mfgActive)
-		totals["research"]["total"] += resTotal
-		totals["research"]["active"] += resActive
-		totals["research"]["available"] += max(0, resTotal-resActive)
-		totals["reactions"]["total"] += reaTotal
-		totals["reactions"]["active"] += reaActive
-		totals["reactions"]["available"] += max(0, reaTotal-reaActive)
-		ready = append(ready, readyJobs(ctx, d, ch, active, now)...)
 	}
-	sort.Slice(ready, func(i, j int) bool {
-		return ready[i].(map[string]any)["end_date"].(string) < ready[j].(map[string]any)["end_date"].(string)
-	})
-	return map[string]any{
-		"characters": charRows,
-		"totals": map[string]any{
-			"manufacturing": totals["manufacturing"],
-			"research":      totals["research"],
-			"reactions":     totals["reactions"],
-		},
-		"ready_for_collection": ready,
-	}, nil
+	return out, nil
 }
 
 func corpNameOf(ch auth.Character) any {
@@ -158,246 +138,6 @@ func corpNameOf(ch auth.Character) any {
 		return *ch.CorporationName
 	}
 	return nil
-}
-
-func slotGroup(total, active int, jobs []any) map[string]any {
-	return map[string]any{
-		"total": total, "active": active,
-		"available": max(0, total-active), "jobs": jobs,
-	}
-}
-
-func activeJobs(jobs []map[string]any) []map[string]any {
-	out := []map[string]any{}
-	seen := map[int64]bool{}
-	for _, j := range jobs {
-		if strOfJob(j["status"]) != "active" {
-			continue
-		}
-		id, _ := int64OfJob(j["job_id"])
-		if seen[id] {
-			continue
-		}
-		seen[id] = true
-		out = append(out, j)
-	}
-	return out
-}
-
-func jobActivity(j map[string]any) int {
-	n, _ := int64OfJob(j["activity_id"])
-	return int(n)
-}
-
-func inActivities(a int, list []int) bool {
-	for _, v := range list {
-		if v == a {
-			return true
-		}
-	}
-	return false
-}
-
-// detailedJobs ports getDetailedJobsByActivity: full job cards sorted by
-// end date soonest first.
-func detailedJobs(ctx context.Context, d Deps, jobs []map[string]any, activities []int, now time.Time) []any {
-	out := []any{}
-	for _, j := range jobs {
-		if !inActivities(jobActivity(j), activities) {
-			continue
-		}
-		start, ok1 := parseJobTime(strOfJob(j["start_date"]))
-		end, ok2 := parseJobTime(strOfJob(j["end_date"]))
-		if !ok1 || !ok2 {
-			continue
-		}
-		total := end.Sub(start).Seconds()
-		elapsed := now.Sub(start).Seconds()
-		remaining := int64(math.Max(0, end.Sub(now).Seconds()))
-		progress := 100.0
-		if total > 0 {
-			progress = math.Min(100, math.Round(elapsed/total*100))
-		}
-		days := remaining / 86400
-		hours := (remaining % 86400) / 3600
-		minutes := (remaining % 3600) / 60
-		parts := []string{}
-		if days > 0 {
-			parts = append(parts, itoaJob(int(days))+"d")
-		}
-		if hours > 0 || days > 0 {
-			parts = append(parts, itoaJob(int(hours))+"h")
-		}
-		parts = append(parts, itoaJob(int(minutes))+"m")
-		timeRemaining := joinParts(parts)
-		productID, _ := int64OfJob(firstNonZeroJob(j, "product_type_id", "blueprint_type_id"))
-		bpID, _ := int64OfJob(j["blueprint_type_id"])
-		itemName := "Unknown Item"
-		var imageURL any
-		if productID != 0 {
-			if info, err := d.IndustryDeps.Universe.GetTypeInfo(ctx, int(productID)); err == nil && info != nil {
-				if n, ok := info["name"].(string); ok && n != "" {
-					itemName = n
-				}
-			}
-			if u := d.IndustryDeps.Universe.GetBestTypeImageUrl(ctx, int(productID), false); u != "" {
-				imageURL = u
-			}
-		}
-		var probPct any
-		var probLabel any
-		if p := inventionProbability(j); p != nil {
-			probPct = *p
-			probLabel = formatJobPct(*p) + "%"
-		}
-		runs, _ := int64OfJob(j["runs"])
-		if runs == 0 {
-			runs = 1
-		}
-		var licensed any
-		if v, ok := j["licensed_runs"]; ok && v != nil {
-			if n, ok := int64OfJob(v); ok {
-				licensed = int(n)
-			}
-		}
-		var bp, prod any
-		if bpID != 0 {
-			bp = int(bpID)
-		}
-		if productID != 0 {
-			prod = int(productID)
-		}
-		out = append(out, map[string]any{
-			"job_id": int(mustJobID(j)), "activity_id": jobActivity(j),
-			"activity_name":     heavyActivityNames[jobActivity(j)],
-			"blueprint_type_id": bp, "product_type_id": prod,
-			"item_name": itemName, "item_image_url": imageURL,
-			"runs": int(runs), "licensed_runs": licensed,
-			"start_date": start.Format(time.RFC3339), "end_date": end.Format(time.RFC3339),
-			"progress_pct": int(progress), "time_remaining": timeRemaining,
-			"seconds_remaining": int(remaining), "ready_for_delivery": remaining <= 60,
-			"status":          strOfJobDefault(j["status"], "active"),
-			"probability_pct": probPct, "probability_label": probLabel,
-		})
-	}
-	sort.Slice(out, func(i, j int) bool {
-		return out[i].(map[string]any)["seconds_remaining"].(int) < out[j].(map[string]any)["seconds_remaining"].(int)
-	})
-	return out
-}
-
-// completingSoon ports getJobsCompletingSoon: jobs ending within the hour.
-func completingSoon(jobs []map[string]any, now time.Time) []any {
-	out := []any{}
-	limit := now.Add(time.Hour)
-	for _, j := range jobs {
-		end, ok := parseJobTime(strOfJob(j["end_date"]))
-		if !ok || end.After(limit) || end.Before(now) {
-			continue
-		}
-		id, _ := int64OfJob(j["job_id"])
-		out = append(out, map[string]any{
-			"job_id": int(id), "activity_id": jobActivity(j),
-			"end_date":          end.Format(time.RFC3339),
-			"minutes_remaining": int(now.Sub(end).Minutes() * -1),
-		})
-	}
-	return out
-}
-
-// readyJobs ports getReadyForCollectionJobsForUser: active jobs ending
-// within 60 seconds, soonest... (PHP filters end <= now+60s; end in the past
-// counts since the job still awaits delivery).
-func readyJobs(ctx context.Context, d Deps, ch auth.Character, jobs []map[string]any, now time.Time) []any {
-	out := []any{}
-	cutoff := now.Add(60 * time.Second)
-	actNames := map[int]string{
-		activityManufacturing: "Manufacturing",
-		activityResearchTE:    "Research (TE)",
-		activityResearchME:    "Research (ME)",
-		activityCopying:       "Copying",
-		activityInvention:     "Invention",
-		activityReactions:     "Reactions",
-	}
-	for _, j := range jobs {
-		end, ok := parseJobTime(strOfJob(j["end_date"]))
-		if !ok || end.After(cutoff) {
-			continue
-		}
-		productID, _ := int64OfJob(firstNonZeroJob(j, "product_type_id", "blueprint_type_id"))
-		itemName := "Unknown Item"
-		var imageURL any
-		if productID != 0 {
-			if info, err := d.IndustryDeps.Universe.GetTypeInfo(ctx, int(productID)); err == nil && info != nil {
-				if n, ok := info["name"].(string); ok && n != "" {
-					itemName = n
-				}
-			}
-			if u := d.IndustryDeps.Universe.GetBestTypeImageUrl(ctx, int(productID), false); u != "" {
-				imageURL = u
-			}
-		}
-		location := "Unknown Location"
-		if sid, ok := int64OfJob(j["station_id"]); ok && sid != 0 {
-			if st, err := d.IndustryDeps.Universe.GetStation(ctx, uint64(sid)); err == nil && st != nil {
-				if n, ok := st["name"].(string); ok && n != "" {
-					location = n
-				}
-			} else if sys, ok := int64OfJob(j["solar_system_id"]); ok && sys != 0 {
-				if s, err := d.IndustryDeps.Universe.GetSystem(ctx, int(sys)); err == nil && s != nil {
-					if n, ok := s["name"].(string); ok && n != "" {
-						location = n
-					}
-				}
-			}
-		} else if sys, ok := int64OfJob(j["solar_system_id"]); ok && sys != 0 {
-			if s, err := d.IndustryDeps.Universe.GetSystem(ctx, int(sys)); err == nil && s != nil {
-				if n, ok := s["name"].(string); ok && n != "" {
-					location = n
-				}
-			}
-		}
-		var probPct any
-		var probLabel any
-		if p := inventionProbability(j); p != nil {
-			probPct = *p
-			probLabel = formatJobPct(*p) + "% Chance"
-		}
-		runs, _ := int64OfJob(j["runs"])
-		if runs == 0 {
-			runs = 1
-		}
-		id, _ := int64OfJob(j["job_id"])
-		act := jobActivity(j)
-		out = append(out, map[string]any{
-			"character_id": ch.CharacterID, "character_name": ch.Name,
-			"job_id": int(id), "activity_id": act,
-			"activity_name": firstNonEmpty(actNames[act], "Unknown"),
-			"item_name":     itemName, "item_image_url": imageURL,
-			"end_date": end.Format(time.RFC3339), "location": location,
-			"runs": int(runs), "probability_pct": probPct, "probability_label": probLabel,
-		})
-	}
-	return out
-}
-
-func inventionProbability(j map[string]any) *float64 {
-	if jobActivity(j) != activityInvention {
-		return nil
-	}
-	p, ok := numFloatJob(j["probability"])
-	if !ok {
-		return nil
-	}
-	v := math.Round(p*100*100) / 100
-	return &v
-}
-
-func formatJobPct(v float64) string {
-	if v == math.Trunc(v) {
-		return itoaJob(int(v))
-	}
-	return trimFloat(v)
 }
 
 // --- reprocessing ---
@@ -742,39 +482,6 @@ func parseJobTime(s string) (time.Time, bool) {
 	return time.Time{}, false
 }
 
-func itoaJob(i int) string {
-	if i == 0 {
-		return "0"
-	}
-	neg := i < 0
-	if neg {
-		i = -i
-	}
-	var b [20]byte
-	p := len(b)
-	for i > 0 {
-		p--
-		b[p] = byte('0' + i%10)
-		i /= 10
-	}
-	if neg {
-		p--
-		b[p] = '-'
-	}
-	return string(b[p:])
-}
-
-func joinParts(parts []string) string {
-	out := ""
-	for i, p := range parts {
-		if i > 0 {
-			out += " "
-		}
-		out += p
-	}
-	return out
-}
-
 func firstNonEmpty(vals ...string) string {
 	for _, v := range vals {
 		if v != "" {
@@ -811,4 +518,26 @@ func trimFloat(v float64) string {
 		s = "-" + s
 	}
 	return s
+}
+
+func itoaJob(i int) string {
+	if i == 0 {
+		return "0"
+	}
+	neg := i < 0
+	if neg {
+		i = -i
+	}
+	var b [20]byte
+	p := len(b)
+	for i > 0 {
+		p--
+		b[p] = byte('0' + i%10)
+		i /= 10
+	}
+	if neg {
+		p--
+		b[p] = '-'
+	}
+	return string(b[p:])
 }

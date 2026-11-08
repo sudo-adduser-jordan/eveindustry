@@ -7,6 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sudo-adduser-jordan/eveindustry/internal/assets"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/calc"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
@@ -32,7 +33,7 @@ func handleAssetMaterials(d Deps) echo.HandlerFunc {
 		if err != nil {
 			return dbError(c, err)
 		}
-		corpOK := corpDenial(chars) == nil
+		corpOK := assets.CorpDenial(chars) == nil
 		var warning any
 		if !corpOK {
 			var mainName string
@@ -48,14 +49,14 @@ func handleAssetMaterials(d Deps) echo.HandlerFunc {
 				warning = "Corporation assets are not included: main character " + mainName + " cannot fetch them."
 			}
 		}
-		all := fetchUserAssets(ctx, d, chars, corpOK)
+		all, _ := cachedOrLiveAssets(ctx, d, uid, chars, corpOK)
 		typeIDs := map[int]bool{}
 		for _, a := range all {
-			if a.typeID > 0 {
-				typeIDs[a.typeID] = true
+			if a.TypeID > 0 {
+				typeIDs[a.TypeID] = true
 			}
 		}
-		ids := keysInt(typeIDs)
+		ids := assetKeysInt(typeIDs)
 		groups, err := d.Industry.GroupsOf(ctx, ids)
 		if err != nil {
 			return dbError(c, err)
@@ -65,7 +66,7 @@ func handleAssetMaterials(d Deps) echo.HandlerFunc {
 		seenGroup := map[string]bool{}
 		typeNames := map[int]string{}
 		for _, a := range all {
-			gid := groups[a.typeID]
+			gid := groups[a.TypeID]
 			gname, ok := calc.MaterialGroups[gid]
 			if !ok {
 				continue
@@ -73,11 +74,11 @@ func handleAssetMaterials(d Deps) echo.HandlerFunc {
 			if byGroup[gname] == nil {
 				byGroup[gname] = map[int]*matAgg{}
 			}
-			if _, ok := byGroup[gname][a.typeID]; !ok {
-				byGroup[gname][a.typeID] = &matAgg{typeID: a.typeID, typeName: a.typeName}
+			if _, ok := byGroup[gname][a.TypeID]; !ok {
+				byGroup[gname][a.TypeID] = &matAgg{typeID: a.TypeID, typeName: a.TypeName}
 			}
-			byGroup[gname][a.typeID].qty += a.quantity
-			typeNames[a.typeID] = a.typeName
+			byGroup[gname][a.TypeID].qty += a.Quantity
+			typeNames[a.TypeID] = a.TypeName
 			if !seenGroup[gname] {
 				seenGroup[gname] = true
 				order = append(order, gname)
@@ -148,15 +149,15 @@ func handleAssetShips(d Deps) echo.HandlerFunc {
 		if err != nil {
 			return dbError(c, err)
 		}
-		corpOK := corpDenial(chars) == nil
-		all := fetchUserAssets(ctx, d, chars, corpOK)
+		corpOK := assets.CorpDenial(chars) == nil
+		all, _ := cachedOrLiveAssets(ctx, d, uid, chars, corpOK)
 		typeIDs := map[int]bool{}
 		for _, a := range all {
-			if a.typeID > 0 {
-				typeIDs[a.typeID] = true
+			if a.TypeID > 0 {
+				typeIDs[a.TypeID] = true
 			}
 		}
-		ids := keysInt(typeIDs)
+		ids := assetKeysInt(typeIDs)
 		groupOf, err := d.Industry.GroupsOf(ctx, ids)
 		if err != nil {
 			return dbError(c, err)
@@ -175,7 +176,7 @@ func handleAssetShips(d Deps) echo.HandlerFunc {
 				gids[g] = true
 			}
 		}
-		names, err := d.Industry.GroupNames(ctx, keysInt(gids))
+		names, err := d.Industry.GroupNames(ctx, assetKeysInt(gids))
 		if err != nil {
 			return dbError(c, err)
 		}
@@ -187,7 +188,7 @@ func handleAssetShips(d Deps) echo.HandlerFunc {
 		grouped := map[string]*shipGroup{}
 		var total int
 		for _, a := range all {
-			gid := groupOf[a.typeID]
+			gid := groupOf[a.TypeID]
 			gname, ok := names[gid]
 			if !ok {
 				continue
@@ -207,10 +208,10 @@ func handleAssetShips(d Deps) echo.HandlerFunc {
 		for _, name := range order {
 			g := grouped[name]
 			sort.SliceStable(g.ships, func(i, j int) bool {
-				if c := strings.Compare(strings.ToLower(g.ships[i].typeName), strings.ToLower(g.ships[j].typeName)); c != 0 {
+				if c := strings.Compare(strings.ToLower(g.ships[i].TypeName), strings.ToLower(g.ships[j].TypeName)); c != 0 {
 					return c < 0
 				}
-				return strings.ToLower(strOrEmpty(g.ships[i].name)) < strings.ToLower(strOrEmpty(g.ships[j].name))
+				return strings.ToLower(strOrEmpty(g.ships[i].Name)) < strings.ToLower(strOrEmpty(g.ships[j].Name))
 			})
 			ships := make([]any, 0, len(g.ships))
 			for _, s := range g.ships {
@@ -260,4 +261,12 @@ func handleStockSearch(d Deps) echo.HandlerFunc {
 		}
 		return Success(c, http.StatusOK, items, map[string]any{"limit": 20})
 	}
+}
+
+func assetKeysInt(m map[int]bool) []int {
+	out := make([]int, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
 }
