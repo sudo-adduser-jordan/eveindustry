@@ -37,61 +37,26 @@ func handlePrices(d Deps) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 
-		// 1. orders: active-sweep aggregates, else raw market_orders.
-		// Mirrors MarketService::orderSellPrices() incl. the 90-day default
-		// window and the 5% default percentile.
-		orderPrices := map[int]float64{}
-		if agg, hasSnapshot, err := d.Market.AggregateSellPrices(ctx, typeIDs, regionID); err != nil {
+		// Shared resolver: active-sweep aggregates, else raw orders, with
+		// market_prices fallback for [region, Jita].
+		resolved, err := resolvePrices(ctx, d.Market, typeIDs, regionID)
+		if err != nil {
 			return dbError(c, err)
-		} else if hasSnapshot {
-			orderPrices = agg
-		} else {
-			raw, err := d.Market.RawSellOrders(ctx, typeIDs, regionID, time.Now().AddDate(0, 0, -market.MaxOrderAgeDays))
-			if err != nil {
-				return dbError(c, err)
-			}
-			byType := map[int][]market.Order{}
-			for _, o := range raw {
-				byType[o.TypeID] = append(byType[o.TypeID], market.Order{Price: o.Price, VolumeRemain: int64(o.VolumeRemain)})
-			}
-			for _, id := range typeIDs {
-				orders := byType[id]
-				// Sort cheapest first, like the PHP sortBy('price').
-				for i := 1; i < len(orders); i++ {
-					for j := i; j > 0 && orders[j].Price < orders[j-1].Price; j-- {
-						orders[j], orders[j-1] = orders[j-1], orders[j]
-					}
-				}
-				orderPrices[id] = market.PercentileAverage(orders, market.DefaultPercentile)
-			}
 		}
-
-		// 2. fallback: market_prices for the region, then Jita.
-		fallbackRegions := []int{regionID}
-		if regionID != market.DefaultRegion {
-			fallbackRegions = append(fallbackRegions, market.DefaultRegion)
-		}
-		var fallbackRows []market.FallbackRow
-		if rows, err := d.Market.FallbackPrices(ctx, typeIDs, fallbackRegions); err != nil {
-			return dbError(c, err)
-		} else {
-			// Preserve [region, Jita] preference order for ResolveSellPrices.
-			ordered := map[int][]store.FallbackPrice{}
-			for _, r := range rows {
-				ordered[r.RegionID] = append(ordered[r.RegionID], r)
+		rows := make([]any, 0, len(typeIDs))
+		seen := map[int]bool{}
+		for _, typeID := range typeIDs {
+			if seen[typeID] {
+				continue
 			}
-			for _, region := range fallbackRegions {
-				for _, r := range ordered[region] {
-					fallbackRows = append(fallbackRows, toFallbackRow(r))
-				}
+			seen[typeID] = true
+			entry, ok := resolved[typeID]
+			price, source := 0.0, market.SourceNone
+			if ok {
+				price, source = entry.Price, entry.Source
 			}
-		}
-
-		resolved := market.ResolveSellPrices(typeIDs, orderPrices, fallbackRows)
-		rows := make([]any, 0, len(resolved))
-		for _, r := range resolved {
 			rows = append(rows, map[string]any{
-				"type_id": r.TypeID, "price": r.Price, "source": r.Source,
+				"type_id": typeID, "price": price, "source": source,
 			})
 		}
 		return Success(c, http.StatusOK, rows, map[string]any{
