@@ -117,8 +117,8 @@ func projectAnalytics(ctx context.Context, d Deps, ch *auth.Character, projects 
 		contribs := projectContributors(ctx, d, ch, id)
 		rows = append(rows, map[string]any{
 			"id": id, "name": projStr(p["name"]), "state": p["state"],
-			"last_modified": p["last_modified"],
-			"progress": map[string]any{"current": int(current), "desired": int(desired)},
+			"last_modified":  p["last_modified"],
+			"progress":       map[string]any{"current": int(current), "desired": int(desired)},
 			"completion_pct": pct, "is_complete": complete,
 			"reward": reward, "reward_earned": earned,
 			"contributors": contribs,
@@ -142,9 +142,9 @@ func projectAnalytics(ctx context.Context, d Deps, ch *auth.Character, projects 
 		"corporation_id": *ch.CorporationID, "corporation_name": corpName,
 		"total_projects": len(projects), "completed_projects": completed,
 		"in_progress_projects": inProgress,
-		"total_progress": int(totalProg), "total_desired": int(totalDesired),
+		"total_progress":       int(totalProg), "total_desired": int(totalDesired),
 		"overall_completion_pct": overall,
-		"total_reward_initial": rewardInit, "total_reward_remaining": rewardLeft,
+		"total_reward_initial":   rewardInit, "total_reward_remaining": rewardLeft,
 		"total_reward_earned": rewardEarned,
 	}
 }
@@ -250,15 +250,15 @@ func projectLeaderboard(ctx context.Context, d Deps, ch *auth.Character, project
 		return map[string]any{
 			"corporation_name": corpName, "total_attributed_isk": total,
 			"total_rewarded_projects": rewarded,
-			"date_from": fromStr, "date_to": toStr, "project_name": nameOrNil(name),
+			"date_from":               fromStr, "date_to": toStr, "project_name": nameOrNil(name),
 		}
 	}
 	type entry struct {
-		cid    *int
-		cname  string
-		count  int
-		isk    float64
-		projs  []any
+		cid   *int
+		cname string
+		count int
+		isk   float64
+		projs []any
 	}
 	byKey := map[string]*entry{}
 	var total float64
