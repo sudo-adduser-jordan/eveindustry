@@ -97,6 +97,9 @@ func main() {
 	for _, e := range jobs.PrecomputeSchedule(hd) {
 		sched.Entries = append(sched.Entries, e)
 	}
+	for _, e := range jobs.MaintenanceSchedule(hd, os.Getenv("DEMO_ENABLED") == "true", os.Getenv("DEMO_RESET_TIME")) {
+		sched.Entries = append(sched.Entries, e)
+	}
 	for _, e := range jobs.DiagSchedule(diagDeps) {
 		sched.Entries = append(sched.Entries, e)
 	}

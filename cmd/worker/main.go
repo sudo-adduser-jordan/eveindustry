@@ -95,6 +95,7 @@ func main() {
 	jobs.RegisterSweepJobs(r, hd)
 	jobs.RegisterImportJobs(r, hd)
 	jobs.RegisterPrecomputeJobs(r, hd)
+	jobs.RegisterMaintenanceJobs(r, hd)
 	diagDeps := jobs.DiagFlusherDeps{HandlerDeps: hd}
 	if rdb != nil {
 		diagDeps.Stream = &esi.RedisStream{Client: rdb}
