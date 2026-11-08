@@ -8,24 +8,24 @@ import (
 
 // EssSystem mirrors one ess_tracked_systems row.
 type EssSystem struct {
-	ID             int64          `db:"id"`
-	CorporationID  int64          `db:"corporation_id"`
-	SolarSystemID  int            `db:"solar_system_id"`
-	SolarSystemName string        `db:"solar_system_name"`
-	CycleMinutes   int            `db:"cycle_minutes"`
-	CycleAnchorAt  time.Time      `db:"cycle_anchor_at"`
-	Notes          sql.NullString `db:"notes"`
-	CreatedByUserID sql.NullInt64 `db:"created_by_user_id"`
+	ID              int64          `db:"id"`
+	CorporationID   int64          `db:"corporation_id"`
+	SolarSystemID   int            `db:"solar_system_id"`
+	SolarSystemName string         `db:"solar_system_name"`
+	CycleMinutes    int            `db:"cycle_minutes"`
+	CycleAnchorAt   time.Time      `db:"cycle_anchor_at"`
+	Notes           sql.NullString `db:"notes"`
+	CreatedByUserID sql.NullInt64  `db:"created_by_user_id"`
 }
 
 // EssPayout mirrors one ess_payout_events row.
 type EssPayout struct {
-	ID              int64           `db:"id"`
-	SystemID        int64           `db:"ess_tracked_system_id"`
-	OccurredAt      time.Time       `db:"occurred_at"`
-	AmountISK       sql.NullFloat64 `db:"amount_isk"`
-	RecordedByUserID sql.NullInt64  `db:"recorded_by_user_id"`
-	Notes           sql.NullString  `db:"notes"`
+	ID               int64           `db:"id"`
+	SystemID         int64           `db:"ess_tracked_system_id"`
+	OccurredAt       time.Time       `db:"occurred_at"`
+	AmountISK        sql.NullFloat64 `db:"amount_isk"`
+	RecordedByUserID sql.NullInt64   `db:"recorded_by_user_id"`
+	Notes            sql.NullString  `db:"notes"`
 }
 
 // EssStore covers the corporation ESS tracker, scoped by corporation.
