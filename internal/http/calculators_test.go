@@ -113,7 +113,8 @@ func TestReactionCalculate(t *testing.T) {
 	}
 }
 
-func TestQueueSummary(t *testing.T) {	d := calcTestDeps()
+func TestQueueSummary(t *testing.T) {
+	d := calcTestDeps()
 	code, body := post(t, d, "/api/v1/calculators/manufacturing/queue-summary",
 		`{"items": [{"revenue": 1000, "input_cost": 800, "fees": 40}]}`)
 	if code != http.StatusOK {

@@ -377,16 +377,16 @@ func intVal(v any, fallback int) int {
 // no materials is a 422 on formula_type_id.
 func handleReactionCalculate(d Deps) echo.HandlerFunc {
 	type input struct {
-		FormulaTypeID   *int             `json:"formula_type_id"`
-		ProductTypeID   *int             `json:"product_type_id"`
-		Runs            *int             `json:"runs"`
-		ReactionsSkill  *int             `json:"reactions_skill"`
-		RigBonus        *float64         `json:"rig_bonus"`
-		StructureTEBonus *float64        `json:"structure_te_bonus"`
-		Materials       []postedMaterial `json:"materials"`
-		BaseTime        *int             `json:"base_time"`
-		PortionSize     *int             `json:"portion_size"`
-		RegionID        *int             `json:"region_id"`
+		FormulaTypeID    *int             `json:"formula_type_id"`
+		ProductTypeID    *int             `json:"product_type_id"`
+		Runs             *int             `json:"runs"`
+		ReactionsSkill   *int             `json:"reactions_skill"`
+		RigBonus         *float64         `json:"rig_bonus"`
+		StructureTEBonus *float64         `json:"structure_te_bonus"`
+		Materials        []postedMaterial `json:"materials"`
+		BaseTime         *int             `json:"base_time"`
+		PortionSize      *int             `json:"portion_size"`
+		RegionID         *int             `json:"region_id"`
 	}
 	return func(c echo.Context) error {
 		var in input
@@ -503,9 +503,9 @@ func handleReactionCalculate(d Deps) echo.HandlerFunc {
 				"total_output": cp.TotalOutput, "total_revenue": cp.TotalRevenue,
 			},
 			"time": map[string]any{
-				"base_time_seconds": jobTime.BaseTimeSeconds,
+				"base_time_seconds":    jobTime.BaseTimeSeconds,
 				"time_per_run_seconds": jobTime.TimePerRunSeconds,
-				"total_time_seconds": jobTime.TotalTimeSeconds,
+				"total_time_seconds":   jobTime.TotalTimeSeconds,
 			},
 			"materials": mats,
 			"summary": map[string]any{
