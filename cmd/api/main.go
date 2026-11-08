@@ -1,0 +1,93 @@
+package main
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+	"github.com/redis/go-redis/v9"
+
+	gohttp "github.com/sudo-adduser-jordan/eveindustry/internal/http"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/config"
+)
+
+// Phase 0 API server: GET /up, GET /api/v1/health (DB + Redis probes with
+// 503 on failure, mirroring HealthController) and GET /api/v1/me (401 stub
+// until the Sanctum/SSO port in Phase 2). Missing DB/Redis config does not
+// crash the process; health just reports failed.
+func main() {
+	cfg := config.Load()
+	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	var db *sql.DB
+	if cfg.DBDSN != "" {
+		sqlxDB, err := sqlx.Connect("mysql", cfg.DBDSN)
+		if err != nil {
+			log.Warn("database not reachable at startup; /health will report failed", "error", err)
+		} else {
+			db = sqlxDB.DB
+			defer func() { _ = db.Close() }()
+		}
+	}
+
+	var rdb *redis.Client
+	// config.RedisAddr is ":6379" when REDIS_HOST is unset; only dial when a host is set.
+	if host := os.Getenv("REDIS_HOST"); host != "" {
+		rdb = redis.NewClient(&redis.Options{
+			Addr:     cfg.RedisAddr,
+			Password: cfg.RedisPassword,
+			DB:       cfg.RedisDB,
+		})
+		defer func() { _ = rdb.Close() }()
+	}
+
+	deps := gohttp.Deps{}
+	if db != nil {
+		deps.DBPing = gohttp.PingDB(db)
+	}
+	if rdb != nil {
+		deps.CachePing = func(ctx context.Context) bool {
+			ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			defer cancel()
+			key := "health:go:ping"
+			if err := rdb.Set(ctx, key, "1", 10*time.Second).Err(); err != nil {
+				return false
+			}
+			v, err := rdb.Get(ctx, key).Result()
+			_ = rdb.Del(ctx, key)
+			return err == nil && v == "1"
+		}
+	}
+
+	e := gohttp.New(deps)
+	e.Logger.SetOutput(os.Stdout)
+
+	addr := ":" + cfg.Port
+	srv := &http.Server{Addr: addr, Handler: e}
+
+	go func() {
+		log.Info("go api listening", "addr", addr, "env", cfg.AppEnv)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Error("server exited", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Error("graceful shutdown failed", "error", err)
+	}
+}
