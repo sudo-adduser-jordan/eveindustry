@@ -9,7 +9,7 @@ func TestAssembleJob(t *testing.T) {
 	now := time.Date(2026, 11, 8, 12, 0, 0, 0, time.UTC)
 	raw := RawJob{
 		JobID: 1, ActivityID: ActivityManufacturing, Runs: 10,
-		Status: "active",
+		Status:    "active",
 		StartDate: now.Add(-time.Hour), EndDate: now.Add(3 * time.Hour),
 	}
 	img := "http://img"

@@ -28,14 +28,14 @@ type Deps struct {
 
 	// Reference and Market are nil when no database is configured: data
 	// routes answer 503 while /up and /health keep their contracts.
-	Reference store.ReferenceStore
-	Market    store.MarketStore
-	Industry  industry.IndustryStore
-	Trading   store.TradingStore
-	Contracts store.ContractsStore
-	Corp      store.CorpStore
-	Skills    SkillsDeps
-	Stock     StockDeps
+	Reference    store.ReferenceStore
+	Market       store.MarketStore
+	Industry     industry.IndustryStore
+	Trading      store.TradingStore
+	Contracts    store.ContractsStore
+	Corp         store.CorpStore
+	Skills       SkillsDeps
+	Stock        StockDeps
 	IndustryDeps IndustryDeps
 
 	// Sessions and Users drive RequireAuth. Either nil means nobody can

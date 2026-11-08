@@ -84,9 +84,9 @@ func (s *SQL) EveTypeByID(ctx context.Context, typeID int) (*esi.LocalType, erro
 // SdeStationByID returns the sde_stations row for UniverseClient.GetStation.
 func (s *SQL) SdeStationByID(ctx context.Context, stationID uint64) (*esi.LocalStation, error) {
 	var row struct {
-		StationID     uint64         `db:"station_id"`
-		Name          string         `db:"station_name"`
-		SolarSystemID sql.NullInt64  `db:"solar_system_id"`
+		StationID     uint64        `db:"station_id"`
+		Name          string        `db:"station_name"`
+		SolarSystemID sql.NullInt64 `db:"solar_system_id"`
 	}
 	err := s.db.GetContext(ctx, &row, `
 		SELECT station_id, station_name, solar_system_id

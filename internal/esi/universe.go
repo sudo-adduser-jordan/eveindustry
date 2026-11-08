@@ -28,19 +28,19 @@ type TypeStore interface {
 
 // LocalType mirrors the eve_types columns getTypeInfo() returns.
 type LocalType struct {
-	TypeID        int
-	Name          string
-	Description   string
-	GroupID       *int64
-	MarketGroupID *int64
-	Volume        *float64
+	TypeID         int
+	Name           string
+	Description    string
+	GroupID        *int64
+	MarketGroupID  *int64
+	Volume         *float64
 	PackagedVolume *float64
-	Mass          *float64
-	Capacity      *float64
-	PortionSize   *int
-	IconID        *int
-	GraphicID     *int
-	Published     bool
+	Mass           *float64
+	Capacity       *float64
+	PortionSize    *int
+	IconID         *int
+	GraphicID      *int
+	Published      bool
 }
 
 // LocalStation mirrors the sde_stations columns getStation() returns.

@@ -30,38 +30,38 @@ var ValueActivities = map[string]bool{"Manufacturing": true, "Reactions": true}
 // RawJob is one ESI industry job row (character jobs) with the fields the
 // overview needs.
 type RawJob struct {
-	JobID          int64
-	ActivityID     int
+	JobID           int64
+	ActivityID      int
 	BlueprintTypeID *int64
-	ProductTypeID  *int64
-	Runs           int
-	Status         string
-	StartDate      time.Time
-	EndDate        time.Time
-	Probability    *float64
-	StationID      *uint64
-	FacilityID     *uint64
-	SolarSystemID  *int
+	ProductTypeID   *int64
+	Runs            int
+	Status          string
+	StartDate       time.Time
+	EndDate         time.Time
+	Probability     *float64
+	StationID       *uint64
+	FacilityID      *uint64
+	SolarSystemID   *int
 }
 
 // JobRow is one assembled overview job, mirroring buildJobsOverview rows.
 type JobRow struct {
-	JobID            int64   `json:"job_id"`
-	ActivityID       int     `json:"activity_id"`
-	ActivityName     string  `json:"activity_name"`
-	CharacterName    string  `json:"character_name"`
-	TypeID           *int    `json:"type_id"`
-	ItemName         string  `json:"item_name"`
-	ItemImageURL     *string `json:"item_image_url"`
-	Runs             int     `json:"runs"`
+	JobID            int64    `json:"job_id"`
+	ActivityID       int      `json:"activity_id"`
+	ActivityName     string   `json:"activity_name"`
+	CharacterName    string   `json:"character_name"`
+	TypeID           *int     `json:"type_id"`
+	ItemName         string   `json:"item_name"`
+	ItemImageURL     *string  `json:"item_image_url"`
+	Runs             int      `json:"runs"`
 	ProbabilityPct   *float64 `json:"probability_pct"`
-	ExpectedOutput   float64 `json:"expected_output"`
-	TimeRemaining    string  `json:"time_remaining"`
-	SecondsRemaining int64   `json:"seconds_remaining"`
-	EndDate          string  `json:"end_date"`
-	ProgressPct      float64 `json:"progress_pct"`
-	ReadyForDelivery bool    `json:"ready_for_delivery"`
-	Location         string  `json:"location"`
+	ExpectedOutput   float64  `json:"expected_output"`
+	TimeRemaining    string   `json:"time_remaining"`
+	SecondsRemaining int64    `json:"seconds_remaining"`
+	EndDate          string   `json:"end_date"`
+	ProgressPct      float64  `json:"progress_pct"`
+	ReadyForDelivery bool     `json:"ready_for_delivery"`
+	Location         string   `json:"location"`
 }
 
 // AssembleJob ports the per-job half of buildJobsOverview(): progress, time
@@ -113,7 +113,7 @@ func AssembleJob(job RawJob, characterName, itemName string, imageURL *string, o
 		TypeID: typeID, ItemName: itemName, ItemImageURL: imageURL,
 		Runs: job.Runs, ProbabilityPct: probabilityPct, ExpectedOutput: expected,
 		TimeRemaining: timeRemaining, SecondsRemaining: remaining,
-		EndDate: job.EndDate.UTC().Format("2006-01-02T15:04:05Z"),
+		EndDate:     job.EndDate.UTC().Format("2006-01-02T15:04:05Z"),
 		ProgressPct: progress, ReadyForDelivery: remaining <= 60, Location: location,
 	}
 }
@@ -145,25 +145,25 @@ type JobGroup struct {
 
 // SummaryItem mirrors one buildProductionSummary() row.
 type SummaryItem struct {
-	TypeID             *int    `json:"type_id"`
-	ItemName           string  `json:"item_name"`
-	ItemImageURL       *string `json:"item_image_url"`
-	TotalRuns          int     `json:"total_runs"`
-	TotalExpectedOutput int    `json:"total_expected_output"`
-	JobCount           int     `json:"job_count"`
-	EstimatedValue     *float64 `json:"estimated_value"`
+	TypeID              *int     `json:"type_id"`
+	ItemName            string   `json:"item_name"`
+	ItemImageURL        *string  `json:"item_image_url"`
+	TotalRuns           int      `json:"total_runs"`
+	TotalExpectedOutput int      `json:"total_expected_output"`
+	JobCount            int      `json:"job_count"`
+	EstimatedValue      *float64 `json:"estimated_value"`
 }
 
 // BuildSummary ports buildProductionSummary(): manufacturing + reaction
 // output totalled per item name, totals floored, sorted by name.
 func BuildSummary(rows []JobRow) []SummaryItem {
 	type agg struct {
-		typeID   *int
-		name     string
-		image    *string
-		output   float64
-		runs     int
-		count    int
+		typeID *int
+		name   string
+		image  *string
+		output float64
+		runs   int
+		count  int
 	}
 	byName := map[string]*agg{}
 	var order []string
