@@ -124,8 +124,8 @@ func inventionPlanShape(p store.InventionPlan) map[string]any {
 		"rig_me": p.RigME, "rig_te": p.RigTE, "system_security": p.SystemSecurity,
 		"facility_tax": p.FacilityTax, "solar_system_id": p.SolarSystemID, "station_id": p.StationID,
 		"price_region_id": p.PriceRegionID,
-		"created_at": p.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
-		"updated_at": p.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		"created_at":      p.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		"updated_at":      p.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}
 }
 
@@ -139,8 +139,8 @@ func reactionPlanShape(p store.ReactionPlan, entries []any) map[string]any {
 		"structure_type": p.StructureType, "rig_tier": p.RigTier, "security_space": p.SecuritySpace,
 		"facility_tax": p.FacilityTax, "station_id": p.StationID, "solar_system_id": p.SolarSystemID,
 		"price_region_id": p.PriceRegionID,
-		"created_at": p.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
-		"updated_at": p.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		"created_at":      p.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		"updated_at":      p.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}
 }
 

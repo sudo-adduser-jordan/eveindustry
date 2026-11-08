@@ -8,47 +8,47 @@ import (
 
 // InventionPlan mirrors one invention_plans row.
 type InventionPlan struct {
-	ID             int64     `db:"id"`
-	UserID         int64     `db:"user_id"`
-	Name           string    `db:"name"`
-	T2TypeID       int       `db:"t2_type_id"`
-	T2TypeName     string    `db:"t2_type_name"`
-	DecryptorKey   string    `db:"decryptor_key"`
-	T1ME           int       `db:"t1_me"`
-	T1TE           int       `db:"t1_te"`
-	EncryptionSkill int      `db:"encryption_skill"`
-	Science1Skill  int       `db:"science1_skill"`
-	Science2Skill  int       `db:"science2_skill"`
-	InventionRuns  int       `db:"invention_runs"`
-	StructureType  *string   `db:"structure_type"`
-	RigME          *string   `db:"rig_me"`
-	RigTE          *string   `db:"rig_te"`
-	SystemSecurity *string   `db:"system_security"`
-	FacilityTax    float64   `db:"facility_tax"`
-	SolarSystemID  *int64    `db:"solar_system_id"`
-	StationID      *int64    `db:"station_id"`
-	PriceRegionID  *int      `db:"price_region_id"`
-	CreatedAt      time.Time `db:"created_at"`
-	UpdatedAt      time.Time `db:"updated_at"`
+	ID              int64     `db:"id"`
+	UserID          int64     `db:"user_id"`
+	Name            string    `db:"name"`
+	T2TypeID        int       `db:"t2_type_id"`
+	T2TypeName      string    `db:"t2_type_name"`
+	DecryptorKey    string    `db:"decryptor_key"`
+	T1ME            int       `db:"t1_me"`
+	T1TE            int       `db:"t1_te"`
+	EncryptionSkill int       `db:"encryption_skill"`
+	Science1Skill   int       `db:"science1_skill"`
+	Science2Skill   int       `db:"science2_skill"`
+	InventionRuns   int       `db:"invention_runs"`
+	StructureType   *string   `db:"structure_type"`
+	RigME           *string   `db:"rig_me"`
+	RigTE           *string   `db:"rig_te"`
+	SystemSecurity  *string   `db:"system_security"`
+	FacilityTax     float64   `db:"facility_tax"`
+	SolarSystemID   *int64    `db:"solar_system_id"`
+	StationID       *int64    `db:"station_id"`
+	PriceRegionID   *int      `db:"price_region_id"`
+	CreatedAt       time.Time `db:"created_at"`
+	UpdatedAt       time.Time `db:"updated_at"`
 }
 
 // ReactionPlan mirrors one reaction_plans row (entries are raw JSON).
 type ReactionPlan struct {
-	ID                int64     `db:"id"`
-	UserID            int64     `db:"user_id"`
-	Name              string    `db:"name"`
-	EntriesJSON       string    `db:"entries"`
-	DefaultRunsPerSlot int      `db:"default_runs_per_slot"`
-	RigBonus          float64   `db:"rig_bonus"`
-	StructureType     string    `db:"structure_type"`
-	RigTier           string    `db:"rig_tier"`
-	SecuritySpace     string    `db:"security_space"`
-	FacilityTax       float64   `db:"facility_tax"`
-	StationID         *int64    `db:"station_id"`
-	SolarSystemID     *int      `db:"solar_system_id"`
-	PriceRegionID     *int      `db:"price_region_id"`
-	CreatedAt         time.Time `db:"created_at"`
-	UpdatedAt         time.Time `db:"updated_at"`
+	ID                 int64     `db:"id"`
+	UserID             int64     `db:"user_id"`
+	Name               string    `db:"name"`
+	EntriesJSON        string    `db:"entries"`
+	DefaultRunsPerSlot int       `db:"default_runs_per_slot"`
+	RigBonus           float64   `db:"rig_bonus"`
+	StructureType      string    `db:"structure_type"`
+	RigTier            string    `db:"rig_tier"`
+	SecuritySpace      string    `db:"security_space"`
+	FacilityTax        float64   `db:"facility_tax"`
+	StationID          *int64    `db:"station_id"`
+	SolarSystemID      *int      `db:"solar_system_id"`
+	PriceRegionID      *int      `db:"price_region_id"`
+	CreatedAt          time.Time `db:"created_at"`
+	UpdatedAt          time.Time `db:"updated_at"`
 }
 
 // PlanStore covers saved planner setups. Reads are owner-scoped (nil when
