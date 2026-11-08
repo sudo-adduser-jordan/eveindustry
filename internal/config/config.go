@@ -24,6 +24,11 @@ type Config struct {
 	SessionSecure bool
 	SessionDomain string
 	DiscordBot    bool
+
+	ESIClientID          string
+	ESIClientSecret      string
+	ESIUserAgent         string
+	ESICompatibilityDate string
 }
 
 func getenv(key, fallback string) string {
@@ -59,6 +64,11 @@ func Load() Config {
 		SessionSecure: getenv("SESSION_SECURE_COOKIE", "") == "true",
 		SessionDomain: os.Getenv("SESSION_DOMAIN"),
 		DiscordBot:    getenv("DISCORD_BOT", "") == "true",
+
+		ESIClientID:          os.Getenv("EVE_CLIENT_ID"),
+		ESIClientSecret:      os.Getenv("EVE_CLIENT_SECRET"),
+		ESIUserAgent:         getenv("ESI_USER_AGENT", "EveIndustrialist/1.0"),
+		ESICompatibilityDate: os.Getenv("ESI_COMPATIBILITY_DATE"),
 	}
 }
 

@@ -18,26 +18,14 @@ type TokenPair struct {
 	ExpiresIn    int
 }
 
-// TokenStore persists rotated credentials and deactivations. The SQL
-// implementation lands with the character store slice; tests use MemTokens.
-type TokenStore interface {
-	// Current returns the stored credential, or false when absent.
-	Current(ctx context.Context, characterID int64) (access, refresh string, expiresAt time.Time, ok bool)
-	// Rotate stores a refreshed pair with its new expiry.
-	Rotate(ctx context.Context, characterID int64, pair TokenPair) error
-	// Deactivate marks the character ESI-inactive (invalid_grant path).
-	Deactivate(ctx context.Context, characterID int64) error
-	// CooldownUntil returns when SSO retries may resume, or false.
-	CooldownUntil(ctx context.Context, characterID int64) (time.Time, bool)
-	// SetCooldown pauses SSO attempts until t.
-	SetCooldown(ctx context.Context, characterID int64, t time.Time) error
-}
-
 // Refresher ports EsiAuthClient: SSO token rotation with a per-character
 // lock (a waiting worker uses the winner's credential) and cooldowns.
+// Credential storage is the caller-provided CredentialStore (raw tokens;
+// encrypted-at-rest rows decrypt in the character client when APP_KEY is
+// configured).
 type Refresher struct {
 	store  CoordStore
-	tokens TokenStore
+	creds  CredentialStore
 	http   *http.Client
 	base   string
 	client string
@@ -45,8 +33,8 @@ type Refresher struct {
 }
 
 // NewRefresher builds a refresher against the SSO login host.
-func NewRefresher(store CoordStore, tokens TokenStore, httpClient *http.Client, clientID, clientSecret string) *Refresher {
-	return &Refresher{store: store, tokens: tokens, http: httpClient, base: LoginBase, client: clientID, secret: clientSecret}
+func NewRefresher(store CoordStore, creds CredentialStore, httpClient *http.Client, clientID, clientSecret string) *Refresher {
+	return &Refresher{store: store, creds: creds, http: httpClient, base: LoginBase, client: clientID, secret: clientSecret}
 }
 
 func (r *Refresher) request(ctx context.Context, form url.Values) (map[string]any, int, error) {
@@ -103,35 +91,61 @@ func (r *Refresher) RefreshToken(ctx context.Context, refreshToken string) (Toke
 	return TokenPair{AccessToken: access, RefreshToken: refresh, ExpiresIn: expires}, nil
 }
 
-// RefreshCharacterToken ports refreshCharacterTokenOrFail(): rotates when the
-// stored access token is stale (or differs, meaning another worker won),
-// honors SSO cooldowns, and deactivates on invalid_grant. force rotates even
-// a fresh token (the post-401 retry path).
+// RefreshCharacterToken ports refreshCharacterTokenOrFail(): rotates when
+// the stored access token is stale (or differs, meaning another worker won
+// the race), honors SSO cooldowns, and deactivates on invalid_grant. force
+// rotates even a fresh token (the post-401 retry path).
 func (r *Refresher) RefreshCharacterToken(ctx context.Context, characterID int64, priorAccess string, force bool) error {
 	key := fmt.Sprintf("esi.refresh.%d", characterID)
 	return r.store.Lock(key, 45*time.Second, 5*time.Second, func() error {
-		access, refresh, expiresAt, ok := r.tokens.Current(ctx, characterID)
-		if access != priorAccess || (!force && ok && expiresAt.After(time.Now().Add(30*time.Second))) {
-			return nil
+		cred, ok, err := r.creds.Credentials(ctx, characterID)
+		if err != nil {
+			return &RequestError{Outcome: OutcomeCoordination, RetryAfterSecs: 5}
 		}
-		if !ok || refresh == "" {
+		if !ok {
 			return &RequestError{Outcome: OutcomeCredential}
 		}
-		if until, limited := r.tokens.CooldownUntil(ctx, characterID); limited && time.Now().Before(until) {
+		if cred.AccessToken != priorAccess || (!force && cred.TokenExpiresAt.After(time.Now().Add(30*time.Second))) {
+			return nil
+		}
+		if cred.RefreshToken == "" {
+			return &RequestError{Outcome: OutcomeCredential}
+		}
+		if until, limited := r.cooldownUntil(characterID); limited {
 			return &RequestError{Outcome: OutcomeTransient, RetryAfterSecs: int(time.Until(until).Seconds()) + 1}
 		}
-		pair, err := r.RefreshToken(ctx, refresh)
+		pair, err := r.RefreshToken(ctx, cred.RefreshToken)
 		if err != nil {
 			if re, isReq := err.(*RequestError); isReq && re.Outcome == OutcomeCredential {
-				_ = r.tokens.Deactivate(ctx, characterID)
+				_ = r.creds.Deactivate(ctx, characterID)
 				return err
 			}
-			_ = r.tokens.SetCooldown(ctx, characterID, time.Now().Add(time.Minute))
+			r.setCooldown(characterID, time.Now().Add(time.Minute))
 			return err
 		}
-		if pair.RefreshToken == "" {
-			pair.RefreshToken = refresh
+		refresh := pair.RefreshToken
+		if refresh == "" {
+			refresh = cred.RefreshToken
 		}
-		return r.tokens.Rotate(ctx, characterID, pair)
+		return r.creds.SaveTokens(ctx, characterID, pair.AccessToken, refresh, time.Now().Add(time.Duration(pair.ExpiresIn)*time.Second))
 	})
+}
+
+func (r *Refresher) cooldownUntil(characterID int64) (time.Time, bool) {
+	raw, ok := r.store.Get(fmt.Sprintf("esi.sso.until.%d", characterID))
+	if !ok {
+		return time.Time{}, false
+	}
+	var unix int64
+	_, _ = fmt.Sscan(string(raw), &unix)
+	t := time.Unix(unix, 0)
+	if time.Now().Before(t) {
+		return t, true
+	}
+	return time.Time{}, false
+}
+
+func (r *Refresher) setCooldown(characterID int64, until time.Time) {
+	r.store.Put(fmt.Sprintf("esi.sso.until.%d", characterID),
+		[]byte(fmt.Sprintf("%d", until.Unix())), time.Until(until)+time.Minute)
 }

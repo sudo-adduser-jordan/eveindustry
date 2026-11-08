@@ -16,6 +16,7 @@ import (
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/config"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 	gohttp "github.com/sudo-adduser-jordan/eveindustry/internal/http"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
@@ -71,6 +72,21 @@ func main() {
 		deps.Corp = queries
 		deps.Users = queries
 		deps.Industry = industry.NewSQL(sqlxDB)
+
+		// ESI stack: shared coordination, token refresher, character client.
+		// Encrypted-at-rest tokens decrypt when APP_KEY decodes to 32 bytes.
+		coord := esi.NewMemStore()
+		limiter := esi.NewLimiter(coord, "eve-industrialist")
+		circuit := esi.NewCircuit(coord)
+		esiClient := esi.NewClient(coord, limiter, circuit, cfg.ESIUserAgent)
+		esiClient.CompatibilityDate = cfg.ESICompatibilityDate
+		ssoHTTP := &http.Client{Timeout: 30 * time.Second}
+		refresher := esi.NewRefresher(coord, queries, ssoHTTP, cfg.ESIClientID, cfg.ESIClientSecret)
+		var appKey []byte
+		if len(key) >= 32 && !ephemeral {
+			appKey = key[:32]
+		}
+		deps.Skills.Characters = esi.NewCharacterClient(esiClient, refresher, queries, nil, appKey)
 	}
 	if rdb != nil {
 		deps.CachePing = func(ctx context.Context) bool {

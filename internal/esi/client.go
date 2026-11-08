@@ -82,6 +82,12 @@ func NewClient(store CoordStore, limiter *Limiter, circuit *Circuit, userAgent s
 // Do sends one request. params go in the query for GET/HEAD/DELETE and in a
 // JSON body otherwise. auth nil means a public call.
 func (c *Client) Do(ctx context.Context, method, endpoint string, params map[string]string, headers map[string]string, auth *Auth) (*Response, error) {
+	return c.DoJSON(ctx, method, endpoint, params, nil, headers, auth)
+}
+
+// DoJSON is Do with an explicit JSON body for non-GET methods (arrays for
+// the affiliation/names endpoints, objects elsewhere).
+func (c *Client) DoJSON(ctx context.Context, method, endpoint string, query map[string]string, body any, headers map[string]string, auth *Auth) (*Response, error) {
 	method = strings.ToUpper(method)
 	if c.Circuit != nil && c.Circuit.IsLimited() {
 		reset := 1
@@ -118,7 +124,7 @@ func (c *Client) Do(ctx context.Context, method, endpoint string, params map[str
 		reservation = id
 	}
 
-	resp, err := c.sendOnce(ctx, method, endpoint, params, headers, auth)
+	resp, err := c.sendOnce(ctx, method, endpoint, query, body, headers, auth)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +141,7 @@ func (c *Client) Do(ctx context.Context, method, endpoint string, params map[str
 			return nil, &RequestError{Outcome: OutcomeTransient, RetryAfterSecs: 60, Status: resp.Status}
 		}
 		auth.AccessToken = fresh
-		retry, rerr := c.sendOnce(ctx, method, endpoint, params, headers, auth)
+		retry, rerr := c.sendOnce(ctx, method, endpoint, query, body, headers, auth)
 		if rerr != nil {
 			return nil, rerr
 		}
@@ -144,25 +150,31 @@ func (c *Client) Do(ctx context.Context, method, endpoint string, params map[str
 	return c.requireSuccess(resp)
 }
 
-func (c *Client) sendOnce(ctx context.Context, method, endpoint string, params map[string]string, headers map[string]string, auth *Auth) (*Response, error) {
+func (c *Client) sendOnce(ctx context.Context, method, endpoint string, query map[string]string, body any, headers map[string]string, auth *Auth) (*Response, error) {
 	target := endpoint
 	if !strings.HasPrefix(endpoint, "http") {
 		target = c.BaseURL + endpoint
 	}
-	var body io.Reader
+	var rdr io.Reader
 	if method == http.MethodGet || method == http.MethodHead || method == http.MethodDelete {
-		if len(params) > 0 {
+		if len(query) > 0 {
 			q := url.Values{}
-			for k, v := range params {
+			for k, v := range query {
 				q.Set(k, v)
 			}
 			target += "?" + q.Encode()
 		}
-	} else if len(params) > 0 {
-		raw, _ := json.Marshal(params)
-		body = bytes.NewReader(raw)
+	} else if body != nil {
+		raw, err := json.Marshal(body)
+		if err != nil {
+			return nil, &RequestError{Outcome: OutcomeCoordination, RetryAfterSecs: 5}
+		}
+		rdr = bytes.NewReader(raw)
+	} else if len(query) > 0 {
+		raw, _ := json.Marshal(query)
+		rdr = bytes.NewReader(raw)
 	}
-	req, err := http.NewRequestWithContext(ctx, method, target, body)
+	req, err := http.NewRequestWithContext(ctx, method, target, rdr)
 	if err != nil {
 		return nil, &RequestError{Outcome: OutcomeCoordination, RetryAfterSecs: 5}
 	}
@@ -180,7 +192,7 @@ func (c *Client) sendOnce(ctx context.Context, method, endpoint string, params m
 	if auth != nil {
 		req.Header.Set("Authorization", "Bearer "+auth.AccessToken)
 	}
-	if body != nil {
+	if rdr != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
 	started := time.Now()

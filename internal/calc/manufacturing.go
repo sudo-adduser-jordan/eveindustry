@@ -8,6 +8,14 @@ import (
 // SCCFeeRate mirrors IndustryProfitCalculator::SCC_FEE_RATE.
 const SCCFeeRate = 0.04
 
+// Skill type IDs mirror ManufacturingCalculatorService::SKILL_* and
+// ReactionsCalculatorService::SKILL_REACTIONS.
+const (
+	SkillIndustry          = 3380
+	SkillAdvancedIndustry  = 3388
+	SkillReactions         = 45746
+)
+
 // Summary ports IndustryProfitCalculator::summary(): profit after the SCC
 // fee and any other costs, margin as profit ÷ input cost.
 func Summary(outputValue, inputCost, otherCosts float64) (sccFee, profit, profitMargin float64) {
