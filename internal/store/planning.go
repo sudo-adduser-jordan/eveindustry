@@ -25,12 +25,12 @@ type StationConfig struct {
 
 // StationConfigInput mirrors the validated store/update payloads.
 type StationConfigInput struct {
-	Name          *string
-	StructureType *string
-	RigME         *string
-	RigTE         *string
+	Name           *string
+	StructureType  *string
+	RigME          *string
+	RigTE          *string
 	SystemSecurity *string
-	IsDefault     *bool
+	IsDefault      *bool
 }
 
 // PlanningStore covers the planning writes (station configs first).
@@ -66,19 +66,19 @@ func scanStationConfig(row stationConfigRow) *StationConfig {
 }
 
 type stationConfigRow struct {
-	ID             int64          `db:"id"`
-	UserID         int64          `db:"user_id"`
-	ActivityType   string         `db:"activity_type"`
-	Name           string         `db:"name"`
-	StructureType  string         `db:"structure_type"`
-	RigME          string         `db:"rig_me"`
-	RigTE          string         `db:"rig_te"`
-	SystemSecurity string         `db:"system_security"`
+	ID             int64           `db:"id"`
+	UserID         int64           `db:"user_id"`
+	ActivityType   string          `db:"activity_type"`
+	Name           string          `db:"name"`
+	StructureType  string          `db:"structure_type"`
+	RigME          string          `db:"rig_me"`
+	RigTE          string          `db:"rig_te"`
+	SystemSecurity string          `db:"system_security"`
 	SolarSystemID  sql.NullInt64   `db:"solar_system_id"`
 	TaxRate        sql.NullFloat64 `db:"tax_rate"`
-	IsDefault      bool           `db:"is_default"`
-	CreatedAt      time.Time      `db:"created_at"`
-	UpdatedAt      time.Time      `db:"updated_at"`
+	IsDefault      bool            `db:"is_default"`
+	CreatedAt      time.Time       `db:"created_at"`
+	UpdatedAt      time.Time       `db:"updated_at"`
 }
 
 func (s *SQL) StationConfigs(ctx context.Context, userID int64, limit, offset int) ([]StationConfig, int, error) {
