@@ -43,6 +43,7 @@ per the existing rule.
 - Phase 5h: progress calculator (calc.SummariseProgress) + personal/corp
   progress and asset-location endpoints.
 - Phase 5i: heavy industry availability + reprocessing reads.
+- Phase 5j: structures index (all activities + bonuses).
 
 - Phase 0 (`2335d80`): skeleton — `/up`, `/api/v1/health` (DB+cache probes,
   200/503), `/api/v1/me` 401 stub, `cmd/migrate` placeholder.
