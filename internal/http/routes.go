@@ -59,6 +59,7 @@ type Deps struct {
 	Sponsors           store.SponsorStore
 	AdminStats         store.AdminStatsStore
 	SponsorImages      SponsorStorage
+	Diag               store.DiagStore
 
 	// Sessions and Users drive RequireAuth. Either nil means nobody can
 	// authenticate, so every authed route 401s (never silently open).
@@ -135,6 +136,7 @@ func New(d Deps) *echo.Echo {
 	registerProjects(authed, d)
 	registerAdmin(authed, d)
 	registerSponsors(authed, d)
+	registerDiagnostics(authed, d)
 
 	return e
 }

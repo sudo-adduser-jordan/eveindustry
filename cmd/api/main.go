@@ -114,6 +114,7 @@ func main() {
 		deps.AdminUsers = queries
 		deps.Sponsors = queries
 		deps.AdminStats = queries
+		deps.Diag = queries
 		deps.SponsorImages = gohttp.DiskSponsorStorage{Dir: sponsorDir()}
 		deps.CorpPrograms = queries
 		deps.StockItems = queries
