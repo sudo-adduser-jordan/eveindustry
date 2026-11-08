@@ -1,0 +1,20 @@
+CREATE TABLE `characters` (
+  `character_id` BIGINT UNSIGNED NOT NULL,
+  `user_id` BIGINT UNSIGNED NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `corporation_id` BIGINT UNSIGNED NOT NULL,
+  `corporation_name` VARCHAR(255) NULL,
+  `alliance_id` BIGINT UNSIGNED NULL,
+  `alliance_name` VARCHAR(255) NULL,
+  `is_main` TINYINT(1) NOT NULL DEFAULT 0,
+  `access_token` TEXT NULL,
+  `refresh_token` TEXT NULL,
+  `token_expires_at` TIMESTAMP NULL,
+  `scopes` JSON NULL,
+  `created_at` TIMESTAMP NULL,
+  `updated_at` TIMESTAMP NULL,
+  PRIMARY KEY (`character_id`),
+  KEY (`user_id`),
+  KEY (`corporation_id`),
+  KEY (`alliance_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

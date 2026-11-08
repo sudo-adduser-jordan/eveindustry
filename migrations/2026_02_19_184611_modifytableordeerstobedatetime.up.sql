@@ -1,0 +1,1 @@
+ALTER TABLE `market_orders` MODIFY COLUMN `issued` DATETIME NULL;

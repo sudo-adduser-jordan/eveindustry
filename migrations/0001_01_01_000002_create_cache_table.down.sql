@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS `failed_jobs`;
+DROP TABLE IF EXISTS `jobs`;
+DROP TABLE IF EXISTS `cache_locks`;
+DROP TABLE IF EXISTS `cache`;

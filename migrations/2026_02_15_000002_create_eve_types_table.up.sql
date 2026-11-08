@@ -1,0 +1,22 @@
+CREATE TABLE `eve_types` (
+  `type_id` INT UNSIGNED NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `description` TEXT NULL,
+  `group_id` INT UNSIGNED NULL,
+  `market_group_id` INT UNSIGNED NULL,
+  `volume` DOUBLE NULL,
+  `packaged_volume` DOUBLE NULL,
+  `mass` DOUBLE NULL,
+  `capacity` DOUBLE NULL,
+  `portion_size` INT UNSIGNED NULL,
+  `icon_id` INT UNSIGNED NULL,
+  `graphic_id` INT UNSIGNED NULL,
+  `published` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NULL,
+  `updated_at` TIMESTAMP NULL,
+  PRIMARY KEY (`type_id`),
+  KEY (`name`),
+  KEY (`group_id`),
+  KEY (`market_group_id`),
+  KEY (`published`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
