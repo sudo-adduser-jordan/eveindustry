@@ -62,6 +62,27 @@ func (s *chainStub) CategoryNames(ctx context.Context, ids []int) (map[int]strin
 func (s *chainStub) AllReactionFormulas(ctx context.Context) ([]industry.ReactionFormula, error) {
 	return nil, nil
 }
+func (s *chainStub) AllManufacturingActivities(ctx context.Context) ([]industry.MfgActivity, error) {
+	return nil, nil
+}
+func (s *chainStub) InventedBlueprintIDs(ctx context.Context) (map[int]bool, error) {
+	return nil, nil
+}
+func (s *chainStub) MarketGroupDescendants(ctx context.Context, parentID int) ([]int, error) {
+	return nil, nil
+}
+func (s *chainStub) PublishedTypesInGroups(ctx context.Context, groupIDs []int) ([]int, error) {
+	return nil, nil
+}
+func (s *chainStub) TypeGroupMeta(ctx context.Context, typeIDs []int) ([]industry.TypeGroupMeta, error) {
+	return nil, nil
+}
+func (s *chainStub) GroupsInCategory(ctx context.Context, categoryID int) ([]int, error) {
+	return nil, nil
+}
+func (s *chainStub) PrecomputedCosts(ctx context.Context, productIDs []int, regionID, meLevel, limit, offset int) ([]industry.PrecomputedCost, int, error) {
+	return nil, 0, nil
+}
 
 func strPtr2(s string) *string { return &s }
 

@@ -73,6 +73,188 @@ func (s *SQL) AllReactionFormulas(ctx context.Context) ([]ReactionFormula, error
 	return out, nil
 }
 
+// MfgActivity is one activity-1 row with products for the browser.
+type MfgActivity struct {
+	BlueprintTypeID int
+	Materials       []map[string]any
+	Products        []map[string]any
+	Time            int
+}
+
+// AllManufacturingActivities ports the activity fetch of
+// getAllManufacturingBlueprints / getManufacturingBlueprintsForMarketGroup:
+// every activity-1 row with products (invented-BPO exclusion happens in
+// calc over InventedBlueprintIDs()).
+func (s *SQL) AllManufacturingActivities(ctx context.Context) ([]MfgActivity, error) {
+	var rows []struct {
+		BlueprintTypeID int            `db:"blueprint_type_id"`
+		Materials       sql.NullString `db:"materials"`
+		Products        sql.NullString `db:"products"`
+		Time            int            `db:"time"`
+	}
+	err := s.db.SelectContext(ctx, &rows, `
+		SELECT blueprint_type_id, materials, products, time
+		FROM blueprint_activities WHERE activity_id = 1 AND products IS NOT NULL`)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]MfgActivity, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, MfgActivity{
+			BlueprintTypeID: r.BlueprintTypeID,
+			Materials: DecodeJSONList(nullString(r.Materials)),
+			Products:  DecodeJSONList(nullString(r.Products)),
+			Time:      r.Time,
+		})
+	}
+	return out, nil
+}
+
+// InventedBlueprintIDs ports getInventedBlueprintTypeIds(): blueprint type
+// ids produced by invention activities (T2/T3 BPOs don't exist as originals).
+func (s *SQL) InventedBlueprintIDs(ctx context.Context) (map[int]bool, error) {
+	var rows []struct {
+		Products sql.NullString `db:"products"`
+	}
+	err := s.db.SelectContext(ctx, &rows, `
+		SELECT products FROM blueprint_activities WHERE activity_id = 8 AND products IS NOT NULL`)
+	if err != nil {
+		return nil, err
+	}
+	out := map[int]bool{}
+	for _, r := range rows {
+		if !r.Products.Valid {
+			continue
+		}
+		for _, p := range DecodeJSONList(nullString(r.Products)) {
+			if id := intVal(p["type_id"], 0); id != 0 {
+				out[id] = true
+			}
+		}
+	}
+	return out, nil
+}
+
+// MarketGroupDescendants ports collectDescendantGroupIds(): breadth-first
+// walk, one query per tree level.
+func (s *SQL) MarketGroupDescendants(ctx context.Context, parentID int) ([]int, error) {
+	seen := map[int]bool{parentID: true}
+	var all []int
+	level := []int{parentID}
+	for len(level) > 0 {
+		q, args, err := sqlx.In(`SELECT market_group_id FROM market_groups WHERE parent_group_id IN (?)`, level)
+		if err != nil {
+			return nil, err
+		}
+		var children []int
+		if err := s.db.SelectContext(ctx, &children, s.db.Rebind(q), args...); err != nil {
+			return nil, err
+		}
+		level = nil
+		for _, c := range children {
+			if seen[c] {
+				continue
+			}
+			seen[c] = true
+			all = append(all, c)
+			level = append(level, c)
+		}
+	}
+	return all, nil
+}
+
+// PublishedTypesInGroups ports collectMarketGroupTypeIds().
+func (s *SQL) PublishedTypesInGroups(ctx context.Context, groupIDs []int) ([]int, error) {
+	if len(groupIDs) == 0 {
+		return nil, nil
+	}
+	q, args, err := sqlx.In(`SELECT type_id FROM eve_types WHERE market_group_id IN (?) AND published = 1`, groupIDs)
+	if err != nil {
+		return nil, err
+	}
+	var out []int
+	err = s.db.SelectContext(ctx, &out, s.db.Rebind(q), args...)
+	return out, err
+}
+
+// TypeGroupMeta returns group_id + meta_group_id per type for the browser
+// exclusion and category filters.
+type TypeGroupMeta struct {
+	TypeID      int            `db:"type_id"`
+	GroupID     sql.NullInt64  `db:"group_id"`
+	MetaGroupID sql.NullInt64  `db:"meta_group_id"`
+}
+
+func (s *SQL) TypeGroupMeta(ctx context.Context, typeIDs []int) ([]TypeGroupMeta, error) {
+	if len(typeIDs) == 0 {
+		return nil, nil
+	}
+	q, args, err := sqlx.In(`SELECT type_id, group_id, meta_group_id FROM eve_types WHERE type_id IN (?)`, typeIDs)
+	if err != nil {
+		return nil, err
+	}
+	var out []TypeGroupMeta
+	err = s.db.SelectContext(ctx, &out, s.db.Rebind(q), args...)
+	return out, err
+}
+
+// GroupsInCategory resolves inv_groups for a category (category filter).
+func (s *SQL) GroupsInCategory(ctx context.Context, categoryID int) ([]int, error) {
+	var out []int
+	err := s.db.SelectContext(ctx, &out, `SELECT group_id FROM inv_groups WHERE category_id = ?`, categoryID)
+	return out, err
+}
+
+// PrecomputedCost mirrors one manufacturing_costs row.
+type PrecomputedCost struct {
+	ProductTypeID            int     `db:"product_type_id"`
+	BlueprintTypeID          int     `db:"blueprint_type_id"`
+	ProductName              string  `db:"product_name"`
+	BlueprintName            string  `db:"blueprint_name"`
+	PortionSize              int     `db:"portion_size"`
+	InputCost                float64 `db:"input_cost"`
+	OutputValue              float64 `db:"output_value"`
+	BaseProfit               float64 `db:"base_profit"`
+	ProfitMargin             float64 `db:"profit_margin"`
+	SellScore                int     `db:"sell_score"`
+	SellScoreAvgDailyVolume  float64 `db:"sell_score_avg_daily_volume"`
+	SellScoreAvgOrderCount   float64 `db:"sell_score_avg_order_count"`
+	SellScoreActiveDays      int     `db:"sell_score_active_days"`
+	SellScoreTotalDays       int     `db:"sell_score_total_days"`
+}
+
+// PrecomputedCosts ports browsePrecomputed()'s query: costs for the group's
+// products in one region/ME, ordered by base profit desc, paginated in SQL.
+func (s *SQL) PrecomputedCosts(ctx context.Context, productIDs []int, regionID, meLevel, limit, offset int) ([]PrecomputedCost, int, error) {
+	if len(productIDs) == 0 {
+		return nil, 0, nil
+	}
+	q, args, err := sqlx.In(`SELECT COUNT(*) FROM manufacturing_costs
+		WHERE product_type_id IN (?) AND region_id = ? AND me_level = ?`, productIDs, regionID, meLevel)
+	if err != nil {
+		return nil, 0, err
+	}
+	var total int
+	if err := s.db.GetContext(ctx, &total, s.db.Rebind(q), args...); err != nil {
+		return nil, 0, err
+	}
+	q2, args2, err := sqlx.In(`SELECT product_type_id, blueprint_type_id, product_name, blueprint_name,
+		portion_size, input_cost, output_value, base_profit, profit_margin,
+		sell_score, sell_score_avg_daily_volume, sell_score_avg_order_count,
+		sell_score_active_days, sell_score_total_days
+		FROM manufacturing_costs
+		WHERE product_type_id IN (?) AND region_id = ? AND me_level = ?
+		ORDER BY base_profit DESC LIMIT ? OFFSET ?`, productIDs, regionID, meLevel, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	var out []PrecomputedCost
+	if err := s.db.SelectContext(ctx, &out, s.db.Rebind(q2), args2...); err != nil {
+		return nil, 0, err
+	}
+	return out, total, nil
+}
+
 // IndustryStore covers the blueprint/invention/category reference reads.
 type IndustryStore interface {
 	SearchBlueprintTypes(ctx context.Context, like string, limit int) ([]BlueprintTypeHit, error)
@@ -83,6 +265,13 @@ type IndustryStore interface {
 	HasActivity(ctx context.Context, blueprintTypeID, activityID int) (bool, error)
 	TypeNames(ctx context.Context, typeIDs []int) (map[int]string, error)
 	AllReactionFormulas(ctx context.Context) ([]ReactionFormula, error)
+	AllManufacturingActivities(ctx context.Context) ([]MfgActivity, error)
+	InventedBlueprintIDs(ctx context.Context) (map[int]bool, error)
+	MarketGroupDescendants(ctx context.Context, parentID int) ([]int, error)
+	PublishedTypesInGroups(ctx context.Context, groupIDs []int) ([]int, error)
+	TypeGroupMeta(ctx context.Context, typeIDs []int) ([]TypeGroupMeta, error)
+	GroupsInCategory(ctx context.Context, categoryID int) ([]int, error)
+	PrecomputedCosts(ctx context.Context, productIDs []int, regionID, meLevel, limit, offset int) ([]PrecomputedCost, int, error)
 	ProductTypeIDsExcludingInvented(ctx context.Context) ([]int, error)
 	ProductGroupCounts(ctx context.Context, typeIDs []int) (map[int]int, error)
 	GroupCategories(ctx context.Context, groupIDs []int) (map[int]int, error)

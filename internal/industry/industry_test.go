@@ -82,6 +82,27 @@ func (s *stubStore) CategoryNames(ctx context.Context, ids []int) (map[int]strin
 func (s *stubStore) AllReactionFormulas(ctx context.Context) ([]ReactionFormula, error) {
 	return nil, nil
 }
+func (s *stubStore) AllManufacturingActivities(ctx context.Context) ([]MfgActivity, error) {
+	return nil, nil
+}
+func (s *stubStore) InventedBlueprintIDs(ctx context.Context) (map[int]bool, error) {
+	return nil, nil
+}
+func (s *stubStore) MarketGroupDescendants(ctx context.Context, parentID int) ([]int, error) {
+	return nil, nil
+}
+func (s *stubStore) PublishedTypesInGroups(ctx context.Context, groupIDs []int) ([]int, error) {
+	return nil, nil
+}
+func (s *stubStore) TypeGroupMeta(ctx context.Context, typeIDs []int) ([]TypeGroupMeta, error) {
+	return nil, nil
+}
+func (s *stubStore) GroupsInCategory(ctx context.Context, categoryID int) ([]int, error) {
+	return nil, nil
+}
+func (s *stubStore) PrecomputedCosts(ctx context.Context, productIDs []int, regionID, meLevel, limit, offset int) ([]PrecomputedCost, int, error) {
+	return nil, 0, nil
+}
 
 func key(bp, act int) string { return string(rune(bp)) + string(rune(act)) }
 

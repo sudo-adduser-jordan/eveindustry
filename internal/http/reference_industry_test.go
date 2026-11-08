@@ -11,10 +11,13 @@ import (
 
 // stubIndustry implements industry.IndustryStore for handler tests.
 type stubIndustry struct {
-	hits       []industry.BlueprintTypeHit
-	t2cands    []industry.BlueprintTypeHit
-	activities map[[2]int]*industry.BlueprintActivityRow
-	cats       []industry.CategoryCount
+	hits            []industry.BlueprintTypeHit
+	t2cands         []industry.BlueprintTypeHit
+	activities      map[[2]int]*industry.BlueprintActivityRow
+	cats            []industry.CategoryCount
+	mfgActs         []industry.MfgActivity
+	precomputed     []industry.PrecomputedCost
+	precomputedTotal int
 }
 
 func (s *stubIndustry) SearchBlueprintTypes(ctx context.Context, like string, limit int) ([]industry.BlueprintTypeHit, error) {
@@ -68,6 +71,27 @@ func (s *stubIndustry) AllReactionFormulas(ctx context.Context) ([]industry.Reac
 		Products:  []map[string]any{{"type_id": 587, "name": "Composite", "quantity": 5}},
 		Time:      600,
 	}}, nil
+}
+func (s *stubIndustry) AllManufacturingActivities(ctx context.Context) ([]industry.MfgActivity, error) {
+	return s.mfgActs, nil
+}
+func (s *stubIndustry) InventedBlueprintIDs(ctx context.Context) (map[int]bool, error) {
+	return map[int]bool{}, nil
+}
+func (s *stubIndustry) MarketGroupDescendants(ctx context.Context, parentID int) ([]int, error) {
+	return nil, nil
+}
+func (s *stubIndustry) PublishedTypesInGroups(ctx context.Context, groupIDs []int) ([]int, error) {
+	return []int{587}, nil
+}
+func (s *stubIndustry) TypeGroupMeta(ctx context.Context, typeIDs []int) ([]industry.TypeGroupMeta, error) {
+	return nil, nil
+}
+func (s *stubIndustry) GroupsInCategory(ctx context.Context, categoryID int) ([]int, error) {
+	return nil, nil
+}
+func (s *stubIndustry) PrecomputedCosts(ctx context.Context, productIDs []int, regionID, meLevel, limit, offset int) ([]industry.PrecomputedCost, int, error) {
+	return s.precomputed, s.precomputedTotal, nil
 }
 
 func industryTestDeps() Deps {

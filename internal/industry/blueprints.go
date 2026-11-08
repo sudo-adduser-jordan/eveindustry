@@ -33,6 +33,7 @@ const (
 const (
 	MetaGroupTechI  = 1
 	MetaGroupTechII = 2
+	MetaGroupTechIII = 14
 )
 
 // Search limits mirror the reference controllers.
