@@ -61,6 +61,8 @@ type Deps struct {
 	SponsorImages      SponsorStorage
 	Diag               store.DiagStore
 	Discord            store.DiscordStore
+	Notify             store.NotifyStore
+	NotifyPush         NotifyPush
 	DiscordBotEnabled  bool
 	Planetary          PlanetaryDeps
 
@@ -141,6 +143,9 @@ func New(d Deps) *echo.Echo {
 	registerSponsors(authed, d)
 	registerDiagnostics(authed, d)
 	registerDiscordBot(authed, d)
+	registerCharacters(authed, d)
+	registerNotifications(authed, d)
+	registerDashboard(authed, d)
 	registerPlanetary(authed, d)
 
 	return e

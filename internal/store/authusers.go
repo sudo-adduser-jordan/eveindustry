@@ -15,6 +15,9 @@ type AuthStore interface {
 	CharactersForUser(ctx context.Context, userID int64) ([]auth.Character, error)
 	DeleteUser(ctx context.Context, userID int64) error
 	UpdateCharacterLocation(ctx context.Context, userID, characterID int64, location string) error
+	CharacterOwner(ctx context.Context, characterID int64) (userID int64, isMain bool, count int, err error)
+	SetMainCharacter(ctx context.Context, userID, characterID int64) error
+	DeleteCharacter(ctx context.Context, userID, characterID int64) error
 }
 
 type authUserRow struct {
@@ -131,4 +134,62 @@ func (s *SQL) UpdateCharacterLocation(ctx context.Context, userID, characterID i
 	_, err := s.db.ExecContext(ctx, `UPDATE characters SET cached_location = ?, updated_at = NOW()
 		WHERE user_id = ? AND character_id = ?`, location, userID, characterID)
 	return err
+}
+
+// CharacterOwner loads a character's owner and main flag plus the owner's
+// character count (for the last-character guard).
+func (s *SQL) CharacterOwner(ctx context.Context, characterID int64) (userID int64, isMain bool, count int, err error) {
+	var row struct {
+		UserID int64 `db:"user_id"`
+		IsMain bool  `db:"is_main"`
+	}
+	err = s.db.GetContext(ctx, &row, `SELECT user_id, is_main FROM characters WHERE character_id = ?`, characterID)
+	if err == sql.ErrNoRows {
+		return 0, false, 0, nil
+	}
+	if err != nil {
+		return 0, false, 0, err
+	}
+	err = s.db.GetContext(ctx, &count, `SELECT COUNT(*) FROM characters WHERE user_id = ?`, row.UserID)
+	return row.UserID, row.IsMain, count, err
+}
+
+// SetMainCharacter clears the user's mains and promotes one character.
+func (s *SQL) SetMainCharacter(ctx context.Context, userID, characterID int64) error {
+	tx, err := s.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, `UPDATE characters SET is_main = 0 WHERE user_id = ?`, userID); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE characters SET is_main = 1 WHERE user_id = ? AND character_id = ?`, userID, characterID); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// DeleteCharacter removes one character, promoting the oldest remaining one
+// when it was the main.
+func (s *SQL) DeleteCharacter(ctx context.Context, userID, characterID int64) error {
+	tx, err := s.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var wasMain bool
+	if err := tx.GetContext(ctx, &wasMain, `SELECT is_main FROM characters WHERE user_id = ? AND character_id = ?`, userID, characterID); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM characters WHERE user_id = ? AND character_id = ?`, userID, characterID); err != nil {
+		return err
+	}
+	if wasMain {
+		if _, err := tx.ExecContext(ctx, `UPDATE characters SET is_main = 1 WHERE user_id = ?
+			AND character_id = (SELECT character_id FROM (SELECT character_id FROM characters WHERE user_id = ? ORDER BY created_at LIMIT 1) t)`, userID, userID); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }

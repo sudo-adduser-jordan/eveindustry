@@ -63,9 +63,22 @@ func handleAvailability(d Deps) echo.HandlerFunc {
 		uid := c.Get(string(ctxUIDKey)).(int64)
 		ctx := c.Request().Context()
 		now := time.Now().UTC()
-		chars, err := d.Users.CharactersForUser(ctx, uid)
+		data, err := availabilityData(ctx, d, uid, now)
 		if err != nil {
 			return dbError(c, err)
+		}
+		return Success(c, http.StatusOK, data, map[string]any{
+			"cached_until": now.Add(20 * time.Minute).Format(time.RFC3339),
+		})
+	}
+}
+
+// availabilityData ports the slot computation shared by /availability and
+// the dashboard industry stats.
+func availabilityData(ctx context.Context, d Deps, uid int64, now time.Time) (map[string]any, error) {
+		chars, err := d.Users.CharactersForUser(ctx, uid)
+		if err != nil {
+			return nil, err
 		}
 		charRows := []any{}
 		totals := map[string]map[string]int{
@@ -129,7 +142,7 @@ func handleAvailability(d Deps) echo.HandlerFunc {
 		sort.Slice(ready, func(i, j int) bool {
 			return ready[i].(map[string]any)["end_date"].(string) < ready[j].(map[string]any)["end_date"].(string)
 		})
-		data := map[string]any{
+		return map[string]any{
 			"characters": charRows,
 			"totals": map[string]any{
 				"manufacturing": totals["manufacturing"],
@@ -137,11 +150,7 @@ func handleAvailability(d Deps) echo.HandlerFunc {
 				"reactions":     totals["reactions"],
 			},
 			"ready_for_collection": ready,
-		}
-		return Success(c, http.StatusOK, data, map[string]any{
-			"cached_until": now.Add(20 * time.Minute).Format(time.RFC3339),
-		})
-	}
+		}, nil
 }
 
 func corpNameOf(ch auth.Character) any {

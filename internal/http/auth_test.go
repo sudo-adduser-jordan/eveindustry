@@ -181,3 +181,29 @@ func TestDemoWriteBlocked(t *testing.T) {
 func (s *stubAuth) UpdateCharacterLocation(ctx context.Context, userID, characterID int64, location string) error {
 	return nil
 }
+
+func (s *stubAuth) CharacterOwner(ctx context.Context, id int64) (int64, bool, int, error) {
+	for _, ch := range s.chars {
+		if ch.CharacterID == id {
+			// test characters belong to user 1.
+			return 1, ch.IsMain, len(s.chars), nil
+		}
+	}
+	return 0, false, 0, nil
+}
+func (s *stubAuth) SetMainCharacter(ctx context.Context, uid, id int64) error {
+	for i := range s.chars {
+		s.chars[i].IsMain = s.chars[i].CharacterID == id
+	}
+	return nil
+}
+func (s *stubAuth) DeleteCharacter(ctx context.Context, uid, id int64) error {
+	var kept []auth.Character
+	for _, ch := range s.chars {
+		if ch.CharacterID != id {
+			kept = append(kept, ch)
+		}
+	}
+	s.chars = kept
+	return nil
+}

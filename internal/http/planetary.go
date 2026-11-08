@@ -50,131 +50,156 @@ type colonyRaw struct {
 
 // GET /planetary — colonies with extractors, factories, storage, outputs,
 // alerts and capacity. ESI-active characters with the PI scope.
+// GET /planetary — colonies with extractors, factories, storage, outputs,
+// alerts and capacity. ESI-active characters with the PI scope.
 func handlePlanetaryShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
 		ctx := c.Request().Context()
-		now := time.Now().UTC()
-		chars, err := d.Users.CharactersForUser(ctx, uid)
+		dash, err := planetaryDashboardData(ctx, d, uid, time.Now().UTC())
 		if err != nil {
 			return dbError(c, err)
 		}
-		var raw []colonyRaw
-		eligible := map[int64]*auth.Character{}
-		for i := range chars {
-			ch := &chars[i]
-			if !ch.IsEsiActive || !hasScope(*ch, "esi-planets.manage_planets.v1") {
-				continue
-			}
-			eligible[ch.CharacterID] = ch
-			planets, err := d.Planetary.Characters.GetCharacterPlanets(ctx, ch.CharacterID)
-			if err != nil {
-				return dbError(c, err)
-			}
-			if planets == nil {
-				continue
-			}
-			for _, colony := range planets {
-				pid := piInt(colony["planet_id"])
-				if pid == 0 {
-					continue
-				}
-				details, err := d.Planetary.Characters.GetCharacterPlanetDetails(ctx, ch.CharacterID, pid)
-				if err != nil {
-					return dbError(c, err)
-				}
-				if details == nil {
-					return dbError(c, errColonyIncomplete)
-				}
-				raw = append(raw, colonyRaw{ch: ch, colony: colony, details: details})
-			}
-		}
-		resolver := piBatchResolver(ctx, d, raw)
-		byChar := map[int64][]any{}
-		var order []int64
-		for _, r := range raw {
-			if _, ok := byChar[r.ch.CharacterID]; !ok {
-				order = append(order, r.ch.CharacterID)
-			}
-			byChar[r.ch.CharacterID] = append(byChar[r.ch.CharacterID], planetaryAnalyze(ctx, d, r.ch, r.colony, r.details, resolver, now))
-		}
-		charOut := make([]any, 0, len(order))
-		for _, id := range order {
-			ch := eligible[id]
-			var portrait any
-			if ch.PortraitURL() != "" {
-				portrait = ch.PortraitURL()
-			}
-			charOut = append(charOut, map[string]any{
-				"character_id": ch.CharacterID, "character_name": ch.Name,
-				"portrait_url": portrait, "planets": byChar[id],
-			})
-		}
-		type outAgg struct {
-			typeID  int
-			name    string
-			perHour float64
-			planets int
-		}
-		agg := map[int]*outAgg{}
-		var alerts []any
-		var totalPlanets, totalExt, totalFac int
-		var planetsFlat []map[string]any
-		for _, c := range charOut {
-			cm := c.(map[string]any)
-			for _, pv := range cm["planets"].([]any) {
-				pm := pv.(map[string]any)
-				planetsFlat = append(planetsFlat, map[string]any{
-					"character_name": cm["character_name"], "planet_name": pm["planet_name"],
-					"planet_type": pm["planet_type"], "summary": pm["summary"],
-				})
-				totalPlanets++
-				sum := pm["summary"].(map[string]any)
-				totalExt += sum["extractor_count"].(int)
-				totalFac += sum["factory_count"].(int)
-				for _, ov := range pm["outputs"].([]any) {
-					o := ov.(map[string]any)
-					tid := o["type_id"].(int)
-					a := agg[tid]
-					if a == nil {
-						a = &outAgg{typeID: tid, name: o["name"].(string)}
-						agg[tid] = a
-					}
-					a.perHour += o["per_hour"].(float64)
-					a.planets++
-				}
-				for _, av := range pm["alerts"].([]any) {
-					a := av.(map[string]any)
-					a["character_name"] = cm["character_name"]
-					a["planet_name"] = pm["planet_name"]
-					alerts = append(alerts, a)
-				}
-			}
-		}
-		if alerts == nil {
-			alerts = []any{}
-		}
-		outputs := make([]any, 0, len(agg))
-		for _, a := range agg {
-			outputs = append(outputs, map[string]any{
-				"type_id": a.typeID, "name": a.name,
-				"icon_url": "https://images.evetech.net/types/" + itoaProg(a.typeID) + "/icon?size=32",
-				"per_hour": a.perHour, "planets": a.planets,
-			})
-		}
-		sort.Slice(outputs, func(i, j int) bool {
-			return outputs[i].(map[string]any)["per_hour"].(float64) > outputs[j].(map[string]any)["per_hour"].(float64)
-		})
-		return Success(c, http.StatusOK, map[string]any{
-			"summary": map[string]any{
-				"characters": len(charOut), "planets": totalPlanets,
-				"extractors": totalExt, "factories": totalFac,
-			},
-			"outputs": outputs, "alerts": alerts,
-			"capacity":   pi.BuildCapacityAnalysis(planetsFlat),
-			"characters": charOut,
-		}, nil)
+		return Success(c, http.StatusOK, dash, nil)
 	}
+}
+
+// planetaryChar is one dashboard character with analyzed planets.
+type planetaryChar struct {
+	ch      *auth.Character
+	planets []any
+}
+
+// collectPlanetary fetches and analyzes every eligible colony.
+func collectPlanetary(ctx context.Context, d Deps, uid int64, now time.Time) ([]planetaryChar, error) {
+	chars, err := d.Users.CharactersForUser(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	var raw []colonyRaw
+	for i := range chars {
+		ch := &chars[i]
+		if !ch.IsEsiActive || !hasScope(*ch, "esi-planets.manage_planets.v1") {
+			continue
+		}
+		planets, err := d.Planetary.Characters.GetCharacterPlanets(ctx, ch.CharacterID)
+		if err != nil {
+			return nil, err
+		}
+		if planets == nil {
+			continue
+		}
+		for _, colony := range planets {
+			pid := piInt(colony["planet_id"])
+			if pid == 0 {
+				continue
+			}
+			details, err := d.Planetary.Characters.GetCharacterPlanetDetails(ctx, ch.CharacterID, pid)
+			if err != nil {
+				return nil, err
+			}
+			if details == nil {
+				return nil, errColonyIncomplete
+			}
+			raw = append(raw, colonyRaw{ch: ch, colony: colony, details: details})
+		}
+	}
+	resolver := piBatchResolver(ctx, d, raw)
+	out := []planetaryChar{}
+	byChar := map[int64]int{}
+	for _, r := range raw {
+		i, ok := byChar[r.ch.CharacterID]
+		if !ok {
+			i = len(out)
+			byChar[r.ch.CharacterID] = i
+			out = append(out, planetaryChar{ch: r.ch})
+		}
+		out[i].planets = append(out[i].planets, planetaryAnalyze(ctx, d, r.ch, r.colony, r.details, resolver, now))
+	}
+	return out, nil
+}
+
+// planetaryDashboardData ports the dashboard + PI-show aggregation.
+func planetaryDashboardData(ctx context.Context, d Deps, uid int64, now time.Time) (map[string]any, error) {
+	chars, err := collectPlanetary(ctx, d, uid, now)
+	if err != nil {
+		return nil, err
+	}
+	charOut := make([]any, 0, len(chars))
+	for _, pc := range chars {
+		var portrait any
+		if pc.ch.PortraitURL() != "" {
+			portrait = pc.ch.PortraitURL()
+		}
+		charOut = append(charOut, map[string]any{
+			"character_id": pc.ch.CharacterID, "character_name": pc.ch.Name,
+			"portrait_url": portrait, "planets": pc.planets,
+		})
+	}
+	type outAgg struct {
+		typeID  int
+		name    string
+		perHour float64
+		planets int
+	}
+	agg := map[int]*outAgg{}
+	var alerts []any
+	var totalPlanets, totalExt, totalFac int
+	var planetsFlat []map[string]any
+	for _, c := range charOut {
+		cm := c.(map[string]any)
+		for _, pv := range cm["planets"].([]any) {
+			pm := pv.(map[string]any)
+			planetsFlat = append(planetsFlat, map[string]any{
+				"character_name": cm["character_name"], "planet_name": pm["planet_name"],
+				"planet_type": pm["planet_type"], "summary": pm["summary"],
+			})
+			totalPlanets++
+			sum := pm["summary"].(map[string]any)
+			totalExt += sum["extractor_count"].(int)
+			totalFac += sum["factory_count"].(int)
+			for _, ov := range pm["outputs"].([]any) {
+				o := ov.(map[string]any)
+				tid := o["type_id"].(int)
+				a := agg[tid]
+				if a == nil {
+					a = &outAgg{typeID: tid, name: o["name"].(string)}
+					agg[tid] = a
+				}
+				a.perHour += o["per_hour"].(float64)
+				a.planets++
+			}
+			for _, av := range pm["alerts"].([]any) {
+				a := av.(map[string]any)
+				a["character_name"] = cm["character_name"]
+				a["planet_name"] = pm["planet_name"]
+				alerts = append(alerts, a)
+			}
+		}
+	}
+	if alerts == nil {
+		alerts = []any{}
+	}
+	outputs := make([]any, 0, len(agg))
+	for _, a := range agg {
+		outputs = append(outputs, map[string]any{
+			"type_id": a.typeID, "name": a.name,
+			"icon_url": "https://images.evetech.net/types/" + itoaProg(a.typeID) + "/icon?size=32",
+			"per_hour": a.perHour, "planets": a.planets,
+		})
+	}
+	sort.Slice(outputs, func(i, j int) bool {
+		return outputs[i].(map[string]any)["per_hour"].(float64) > outputs[j].(map[string]any)["per_hour"].(float64)
+	})
+	return map[string]any{
+		"summary": map[string]any{
+			"characters": len(charOut), "planets": totalPlanets,
+			"extractors": totalExt, "factories": totalFac,
+		},
+		"outputs": outputs, "alerts": alerts,
+		"capacity": pi.BuildCapacityAnalysis(planetsFlat),
+		"characters": charOut,
+	}, nil
 }
 
 // planetaryAnalyze ports fetchCharacterPlanetaryData's per-planet block.
