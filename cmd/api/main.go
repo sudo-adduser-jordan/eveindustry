@@ -66,6 +66,8 @@ func main() {
 		log.Warn("no SESSION_KEY or APP_KEY: using an ephemeral session key; logins die on restart")
 	}
 	deps.Sessions = auth.NewCookieSessions(key, 0, cfg.SessionSecure, cfg.SessionDomain)
+	deps.DemoEnabled = os.Getenv("DEMO_ENABLED") == "true"
+	deps.SSOConfigured = cfg.ESIClientID != "" && cfg.ESIClientSecret != ""
 	if sqlxDB != nil {
 		deps.DBPing = gohttp.PingDB(sqlxDB.DB)
 		queries := store.NewSQL(sqlxDB)
@@ -183,6 +185,7 @@ func main() {
 		deps.SponsorImages = gohttp.DiskSponsorStorage{Dir: sponsorDir()}
 		deps.CorpPrograms = queries
 		deps.StockItems = queries
+		deps.DemoUsers = queries
 		deps.Plans = queries
 		deps.MoonScans = queries
 		deps.Wholemap = queries

@@ -71,6 +71,14 @@ type Deps struct {
 	DiscordBotEnabled  bool
 	Planetary          PlanetaryDeps
 
+	// Login surface: GET /login and /welcome render the public sign-in
+	// pages the SPA redirects to (401 -> /login, logout -> /welcome).
+	// SSOConfigured reports EVE_CLIENT_ID/SECRET presence; DemoEnabled
+	// gates POST /demo/login (404 when off, like the PHP route).
+	SSOConfigured bool
+	DemoEnabled   bool
+	DemoUsers     DemoUsers
+
 	// Sessions and Users drive RequireAuth. Either nil means nobody can
 	// authenticate, so every authed route 401s (never silently open).
 	Sessions auth.Sessions
@@ -109,6 +117,11 @@ func New(d Deps) *echo.Echo {
 
 	v1 := e.Group("/api/v1")
 	v1.GET("/health", handleHealth(d))
+
+	// Public login surface (HTML, not the /api/v1 JSON envelope).
+	e.GET("/login", handleLogin(d))
+	e.GET("/welcome", handleWelcome(d))
+	e.POST("/demo/login", handleDemoLogin(d))
 
 	// Everything else needs a session, like the PHP auth:sanctum group.
 	// Demo accounts are read-mostly, like the PHP demo-guard group.

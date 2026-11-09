@@ -2,8 +2,10 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,6 +20,7 @@ type stubAuth struct {
 	user    *auth.User
 	chars   []auth.Character
 	deleted int64
+	issued  int64
 }
 
 func testAuth() *stubAuth {
@@ -28,7 +31,7 @@ func testAuth() *stubAuth {
 }
 
 func (s *stubAuth) UserID(r *http.Request) (int64, bool)           { return s.uid, s.uid > 0 }
-func (s *stubAuth) Issue(w http.ResponseWriter, userID int64)      {}
+func (s *stubAuth) Issue(w http.ResponseWriter, userID int64)      { s.issued = userID }
 func (s *stubAuth) Destroy(w http.ResponseWriter, r *http.Request) {}
 func (s *stubAuth) UserByID(ctx context.Context, userID int64) (*auth.User, error) {
 	if s.user != nil && userID == s.uid {
@@ -109,6 +112,124 @@ func TestLogoutAndAccountDelete(t *testing.T) {
 	e.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNoContent || stub.deleted != 1 {
 		t.Fatalf("delete = %d deleted=%d", rec.Code, stub.deleted)
+	}
+}
+
+// stubDemo implements DemoUsers for handler tests.
+type stubDemo struct {
+	id      int64
+	email   string
+	touched int64
+}
+
+func (s *stubDemo) EnsureDemoUser(ctx context.Context, email string) (int64, error) {
+	s.email = email
+	return s.id, nil
+}
+
+func (s *stubDemo) TouchDemoUser(ctx context.Context, id int64) error {
+	s.touched = id
+	return nil
+}
+
+func getRaw(t *testing.T, d Deps, method, path string) *httptest.ResponseRecorder {
+	t.Helper()
+	e := New(d)
+	req := httptest.NewRequest(method, path, nil)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	return rec
+}
+
+func TestLoginPageAnonymous(t *testing.T) {
+	rec := getRaw(t, Deps{}, "GET", "/login")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET /login = %d, want 200", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "text/html; charset=UTF-8" {
+		t.Fatalf("content-type = %q, want html", ct)
+	}
+	if body := rec.Body.String(); !strings.Contains(body, "Eve Industrialist") {
+		t.Fatalf("login page does not mention the app: %q", body)
+	}
+}
+
+func TestLoginRedirectsWhenAuthenticated(t *testing.T) {
+	stub := testAuth()
+	rec := getRaw(t, Deps{Sessions: stub, Users: stub}, "GET", "/login")
+	if rec.Code != http.StatusFound {
+		t.Fatalf("GET /login authed = %d, want 302", rec.Code)
+	}
+	if loc := rec.Header().Get("Location"); loc != "/app/dashboard" {
+		t.Fatalf("location = %q, want /app/dashboard", loc)
+	}
+	// Unknown user id renders the page instead of redirecting.
+	rec = getRaw(t, Deps{Sessions: &stubAuth{uid: 99}, Users: stub}, "GET", "/login")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET /login unknown user = %d, want 200", rec.Code)
+	}
+}
+
+func TestWelcomePage(t *testing.T) {
+	rec := getRaw(t, Deps{}, "GET", "/welcome")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET /welcome = %d, want 200", rec.Code)
+	}
+	if body := rec.Body.String(); !strings.Contains(body, "/login") {
+		t.Fatalf("welcome page does not link to login: %q", body)
+	}
+	stub := testAuth()
+	rec = getRaw(t, Deps{Sessions: stub, Users: stub}, "GET", "/welcome")
+	if rec.Code != http.StatusFound {
+		t.Fatalf("GET /welcome authed = %d, want 302", rec.Code)
+	}
+}
+
+func TestDemoLoginDisabledIs404(t *testing.T) {
+	// Flag off: 404 like the PHP route.
+	e := New(Deps{})
+	req := httptest.NewRequest(http.MethodPost, "/demo/login", nil)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("POST /demo/login disabled = %d, want 404", rec.Code)
+	}
+	var body map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("body is not JSON: %v", err)
+	}
+	if body["code"] != "not_found" {
+		t.Fatalf("code = %v, want not_found", body)
+	}
+	// Flag on but no stores: still 404, never 500.
+	e = New(Deps{DemoEnabled: true})
+	req = httptest.NewRequest(http.MethodPost, "/demo/login", nil)
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("POST /demo/login without stores = %d, want 404", rec.Code)
+	}
+}
+
+func TestDemoLoginEnabledIssuesSession(t *testing.T) {
+	authStub := testAuth()
+	demo := &stubDemo{id: 7}
+	d := Deps{Sessions: authStub, Users: authStub, DemoUsers: demo, DemoEnabled: true}
+	e := New(d)
+	req := httptest.NewRequest(http.MethodPost, "/demo/login", nil)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("POST /demo/login = %d, want 302", rec.Code)
+	}
+	if loc := rec.Header().Get("Location"); loc != "/app/dashboard" {
+		t.Fatalf("location = %q, want /app/dashboard", loc)
+	}
+	if demo.email != DemoEmail || demo.touched != 7 {
+		t.Fatalf("demo store calls: email=%q touched=%d", demo.email, demo.touched)
+	}
+	if authStub.issued != 7 {
+		t.Fatalf("issued session uid = %d, want 7", authStub.issued)
 	}
 }
 
