@@ -70,7 +70,9 @@ tasks:
       - go run ./cmd/scheduler
 
   start:
-    desc: Kill leftovers, build and start api + worker + scheduler + web UI (.run/)
+    desc: Install frontend deps, build and start api + worker + scheduler + web UI (.run/)
+    deps:
+      - frontend:install
     cmds:
       - |
         set -e
@@ -134,7 +136,7 @@ tasks:
             if [ "$i" = "30" ]; then echo "ui did not answer (see .run/log/ui.log)"; fi
           done
         else
-          echo "web ui skipped (npm or frontend/node_modules/.bin/vite missing)"
+          echo "web ui missing (frontend/node_modules/.bin/vite not found after frontend:install)"; exit 1
         fi
 
   stop:
@@ -175,6 +177,11 @@ tasks:
   frontend:install:
     desc: Install frontend dependencies
     dir: frontend
+    sources:
+      - package.json
+      - package-lock.json
+    generates:
+      - node_modules/.bin/vite
     cmds:
       - npm ci
 
