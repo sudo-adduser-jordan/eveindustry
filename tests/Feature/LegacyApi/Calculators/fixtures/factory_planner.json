@@ -1,1 +1,0 @@
-{"tier":"p1_to_p2","tier_label":"P1 \u2192 P2 (Buy P1 materials)","factory_slots":18,"tax_rate":12.5,"results":[{"output_name":"P3 p1_to_p2 10000043","daily_input_cost_planet":1000,"daily_output_sell_planet":3000,"daily_profit_sell_planet":2000,"daily_import_tax":125,"daily_export_tax":375,"daily_tax_total":500,"daily_profit_after_tax":1500}]}

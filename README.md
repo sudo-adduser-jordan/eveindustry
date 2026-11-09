@@ -1,41 +1,47 @@
-# Eve Industrialist
+# Eve Industrialist — Go API
 
-Hosted Version: [EVE Industry Hosted](https://eveindustry.app)
+Go (Echo + sqlx) API for the EVE Online industry tracker. Serves the JSON
+API at `/api/v1` consumed by `frontend/` (React, Vite, TypeScript).
 
-Self-hostable planning and tracking tools for [EVE Online](https://www.eveonline.com) industrialists.
-Sign in with EVE SSO, link your characters, and use calculators and trackers built on your ESI
-data plus public market data:
+## Layout
 
-* manufacturing, reaction and invention calculators, build programs
-* assets, blueprints, industry jobs, stock
-* planetary industry, market trading, contract appraisal
-* wormhole mapper, moon scans
-* corporation tools: donations, projects, ESS tracker, structure timers
-* installable web app (PWA) with optional push notifications
+| Path | Contents |
+|------|----------|
+| `cmd/api` | API server (`GET /up`, `/api/v1/*`) |
+| `cmd/worker` | Background job runner (Redis queues) |
+| `cmd/scheduler` | Cron tick table (scheduled dispatch) |
+| `cmd/migrate` | DB migrations runner (`migrations/*.up/down.sql`) |
+| `internal/http` | Echo router, handlers, `{data, meta}` envelope |
+| `internal/config` | Env-based config |
+| `internal/store` | sqlx data layer (`migrations/*.sql`) |
+| `internal/auth` | Session cookies, `/me` shaping, demo-guard |
+| `internal/market` | Pricing maths, freshness, trading scanners |
+| `internal/calc` | Calculator maths (manufacturing, reactions, invention, planners, browsers) |
+| `internal/industry` | Blueprints, invention chains, jobs overview, production |
+| `internal/pi` | Factory-planet planner |
+| `internal/esi` | ESI transport (rate limiter, circuit, token refresh, clients) |
+| `frontend/` | React SPA (typed from `docs/openapi.json`) |
+| `migrations/` | SQL schema (one `.up.sql`/`.down.sql` pair per version) |
+| `plan.md` | Port phases, conventions, remaining work |
 
-> **Unofficial fan project, provided as is.** No warranty, no support obligation. EVE Online and
-> its logos are trademarks of CCP hf., which has not endorsed this project.
+## Run
 
-## Customise
-
-* Colours, fonts and layout tokens: switch looks with `APP_THEME` and write your own theme without
-  rebuilding anything. See the [styling guide](docs/styling.md).
-* Community link and source link: `DISCORD_INVITE_URL`, `APP_SOURCE_URL`.
-
-## Develop
-
-Requirements: PHP 8.2+, Composer, Node 22.
-
-```bash
-cp .env.example .env
-composer install
-php artisan key:generate
-php artisan migrate
-php artisan db:seed
+```sh
+go build ./...
+go test ./...        # or: go test -count=1 ./...
+gofmt -l .           # must print nothing
+go vet ./...
 ```
 
-Tests: `php artisan test` (SQLite in memory, no MySQL or Redis needed) and `npm test` in
-[`frontend/`](frontend/). Start with [AGENTS.md](AGENTS.md)
-(architecture, services, scheduled tasks, queues).
+Config is all environment (`PORT`, `DB_HOST`, `DB_DATABASE`,
+`DB_USERNAME`, `DB_PASSWORD`, `REDIS_HOST`, `EVE_CLIENT_ID`,
+`EVE_CLIENT_SECRET`, `SESSION_KEY` or `APP_KEY`). Missing DB/Redis does not
+crash the server: `/api/v1/health` reports `failed` and data routes 503.
 
-Stack: Laravel 12, PHP 8.5, MySQL 8, Redis, Horizon; React 19 + TypeScript (Vite) served at `/app`.
+## Conventions
+
+- Handlers stay thin; logic lives in `internal/<domain>` with unit tests.
+- New endpoints need a handler test with stubbed stores (`internal/http`).
+- Error envelope `{message, code, errors?}` matches the PHP
+  `ApiResponse::codeForStatus` vocabulary.
+- Validation 422s mirror the PHP FormRequest rules field for field.
