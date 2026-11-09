@@ -54,7 +54,7 @@ func (s *SQL) SponsorByID(ctx context.Context, id int64) (*Sponsor, error) {
 func (s *SQL) CreateSponsor(ctx context.Context, sp Sponsor) (*Sponsor, error) {
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO sponsors (name, url, image_path, is_active, sort_order, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+		VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		sp.Name, sp.URL, sp.ImagePath, sp.IsActive, sp.SortOrder)
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func (s *SQL) CreateSponsor(ctx context.Context, sp Sponsor) (*Sponsor, error) {
 // UpdateSponsor applies the sponsor edit.
 func (s *SQL) UpdateSponsor(ctx context.Context, sp Sponsor) (*Sponsor, error) {
 	if _, err := s.db.ExecContext(ctx, `UPDATE sponsors SET name = ?, url = ?,
-		image_path = ?, is_active = ?, sort_order = ?, updated_at = NOW() WHERE id = ?`,
+		image_path = ?, is_active = ?, sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 		sp.Name, sp.URL, sp.ImagePath, sp.IsActive, sp.SortOrder, sp.ID); err != nil {
 		return nil, err
 	}
@@ -106,10 +106,10 @@ func (s *SQL) AdminStats(ctx context.Context) (*AdminStats, error) {
 			(SELECT COUNT(*) FROM users) AS users,
 			(SELECT COUNT(*) FROM characters) AS characters,
 			(SELECT COUNT(*) FROM users WHERE is_active = 1) AS active_users,
-			(SELECT COUNT(*) FROM users WHERE last_login_at IS NOT NULL AND last_login_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)) AS recent_logins,
-			(SELECT COUNT(*) FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)) AS new_users_week,
-			(SELECT COUNT(*) FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)) AS new_users_month,
-			(SELECT COUNT(*) FROM users WHERE last_login_at IS NOT NULL AND last_login_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)) AS logged_in_24h`)
+			(SELECT COUNT(*) FROM users WHERE last_login_at IS NOT NULL AND last_login_at >= datetime('now', '-7 days')) AS recent_logins,
+			(SELECT COUNT(*) FROM users WHERE created_at >= datetime('now', '-7 days')) AS new_users_week,
+			(SELECT COUNT(*) FROM users WHERE created_at >= datetime('now', '-30 days')) AS new_users_month,
+			(SELECT COUNT(*) FROM users WHERE last_login_at IS NOT NULL AND last_login_at >= datetime('now', '-1 days')) AS logged_in_24h`)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (s *SQL) AdminRegistrationSeries(ctx context.Context) ([]AdminSeriesPoint, 
 	var out []AdminSeriesPoint
 	err := s.db.SelectContext(ctx, &out, `
 		SELECT DATE(created_at) AS date, COUNT(*) AS count FROM users
-		WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+		WHERE created_at >= datetime('now', '-30 days')
 		GROUP BY date ORDER BY date`)
 	if out == nil {
 		out = []AdminSeriesPoint{}
@@ -134,7 +134,7 @@ func (s *SQL) AdminLoginSeries(ctx context.Context) ([]AdminSeriesPoint, error) 
 	var out []AdminSeriesPoint
 	err := s.db.SelectContext(ctx, &out, `
 		SELECT DATE(last_login_at) AS date, COUNT(*) AS count FROM users
-		WHERE last_login_at IS NOT NULL AND last_login_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+		WHERE last_login_at IS NOT NULL AND last_login_at >= datetime('now', '-30 days')
 		GROUP BY date ORDER BY date`)
 	if out == nil {
 		out = []AdminSeriesPoint{}

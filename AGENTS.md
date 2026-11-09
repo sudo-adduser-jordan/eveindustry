@@ -9,11 +9,11 @@ EVE SSO, link characters, and use planning and tracking tools built on their
 ESI data plus public market data. The Go API serves `/api/v1` consumed by
 `frontend/` (Vite, TypeScript).
 
-Stack: Go 1.24+, Echo, sqlx (raw SQL, MySQL 8), Redis (cache, sessions).
+Stack: Go 1.24+, Echo, sqlx (raw SQL, embedded SQLite via modernc.org/sqlite, no CGO).
 
 Request flow: route → handler (`internal/http`, thin) → domain package
-(`internal/<area>`, pure logic + tests) → `internal/store` (sqlx) → MySQL /
-Redis, or `internal/esi` for live EVE calls.
+(`internal/<area>`, pure logic + tests) → `internal/store` (sqlx) → SQLite
+(`DB_PATH`, default `storage/eveindustry.sqlite`), or `internal/esi` for live EVE calls.
 
 ## Layout (Go tree)
 
@@ -27,7 +27,7 @@ Redis, or `internal/esi` for live EVE calls.
 | `internal/auth`, `internal/market`, `internal/calc`, `internal/industry`, `internal/pi` | Domain logic, all with unit tests |
 | `frontend/` | React app (installable PWA, see `docs/pwa.md`; Vite, React 19, strict TypeScript, React Router, TanStack Query). Builds to `public/app` (gitignored), served at `/app/{path?}` behind auth. Its API client is typed from `docs/openapi.json`: after regenerating the spec run `npm run gen:api` and commit `src/api/schema.d.ts`. CI runs type check, build, Vitest and size-limit. |
 
-Request flow: route → handler → domain package → sqlx store / Redis / `internal/esi`. Background work (jobs phase) fills tables and cache keys that the request path reads.
+Request flow: route → handler → domain package → sqlx store / SQLite / `internal/esi`. Background work (jobs phase) fills tables and cache keys that the request path reads.
 
 ### Feature → service map
 
@@ -75,7 +75,7 @@ Dispatched by `cmd/scheduler` (one tick loop, run every minute). Times are UTC. 
 | `market:fetch-region-orders --region=10000002` | every 15 min, gated | on | Jita sweep: `FetchRegionOrders` → `FetchRegionOrderPages` batch → `CompleteMarketOrderSweep` (`market`). Runs every 15 min while the last complete sweep took < 10 min, else every 30 (`MarketOrderSweepService::isDue`). | `market_orders`, `market_order_sweeps`, `market_aggregates` |
 | `market:fetch-region-orders --exclude=10000002` | hourly | on | Same sweep for Amarr, Dodixie, Rens and Hek. | same |
 | `manufacturing:precompute-costs` | every 4 h | on | Safety net: `PrecomputeManufacturingCostsChunk` (`updates`) per trade region, ME 0–10. A completed sweep also queues it for its region (at most every 30 min). | `manufacturing_costs` |
-| `esi:diagnostics-flush` | every minute | on, no-op unless `ESI_DIAGNOSTICS_ENABLED` or `ESI_DIAGNOSTICS_SINK=redis` | Queues `FlushEsiDiagnostics` (`default`): drains the Redis stream (`esi:diag:stream`, non-evicting Redis) in 200-event checkpointed transactions, bounded to 45 s; re-queues itself only while a backlog remains. Gaps (stream reset, cap eviction) are recorded in the checkpoint. | `esi_diagnostic_events`, `esi_endpoint_metrics`, `esi_budget_metrics`, `esi_telemetry_checkpoints` |
+| `esi:diagnostics-flush` | every minute | on, no-op unless `ESI_DIAGNOSTICS_ENABLED` | Queues `FlushEsiDiagnostics` (`default`): drains the `go_diag_stream` table in 200-event checkpointed transactions, bounded to 45 s; re-queues itself only while a backlog remains. Gaps are recorded in the checkpoint. | `esi_diagnostic_events`, `esi_endpoint_metrics`, `esi_budget_metrics`, `esi_telemetry_checkpoints` |
 | `esi:diagnostics-prune` | daily 06:30 | on | Deletes expired diagnostics rows in 500-row batches (events 14 d, endpoint metrics 90 d, budget minute rows 7 d, hourly 90 d). | same |
 | `demo:reset` | daily 03:30 | on, no-op unless `DEMO_ENABLED` | Regenerates the demo account with three new characters and warms its caches. See `docs/demo-mode.md`. | demo user rows, `characters`, asset snapshots |
 | `notifications:dispatch` | every 5 min | on | Prunes `notification_log` (14 d), then queues `DispatchUserNotifications` (`default`) for active users with a push subscription; no-op until VAPID keys are set. See `docs/pwa.md`. | `notification_log`, `push_subscriptions` |
@@ -84,16 +84,16 @@ Dispatched by `cmd/scheduler` (one tick loop, run every minute). Times are UTC. 
 
 ## Queues and workers
 
-- `cmd/worker` drains three Redis queues: `default`, `updates` and `market`. Each job registration sets its own queue, `MaxTries` and `Timeout`.
+- `cmd/worker` drains three SQLite queues (`go_jobs`): `default`, `updates` and `market`. Each job registration sets its own queue, `MaxTries` and `Timeout`.
 - Per-user refresh jobs use `default`. Region order sweeps use `market`. Imports and manufacturing precompute use `updates`.
-- Redis has two roles: non-evicting for queues, sessions and cache locks, and a disposable `allkeys-lru` cache (uses `REDIS_CACHE_HOST` when set, otherwise database 1 on `REDIS_HOST`).
-- Sessions use the non-evicting Redis (database 2 by default). See `docs/operations/esi-scaling.md` for rollout and encryption requirements.
+- SQLite has one file for everything: tables, the `go_jobs` queue, the `go_locks` overlap/unique locks, the `go_cache` shared cache and the `go_diag_stream` diagnostics buffer (WAL mode, 5 s busy timeout). Scheduler and worker share it across processes; `MemoryQueue` is tests-only.
+- Sessions are stateless HMAC cookies (`eve_auth_session`, 120 min); no server storage. See `docs/operations/esi-scaling.md` for the legacy rollout notes.
 - ESI-calling jobs check the error limiter and back off until the error window resets.
 - Discord bot (work in progress): off unless `FEATURE_DISCORD_BOT=true` and enabled in Admin → Discord Bot.
 
 ## ESI diagnostics
 
-Passive, flag-gated capture of ESI traffic (`app/Services/Esi/Diagnostics`), buffered on a Redis stream, drained to MySQL by `esi:diagnostics-flush`, reported at Admin → ESI Diagnostics (`/api/v1/admin/esi-diagnostics/*`). Any code that calls ESI outside `EsiHttpClient` must report its attempts through `EsiDiagnosticsRecorder`; wrap batch calls in `EsiDiagnosticsContext::with()` for dataset, page and batch fingerprint. Rollout, flags and interpretation: `docs/operations/esi-diagnostics.md`.
+Passive, flag-gated capture of ESI traffic (`app/Services/Esi/Diagnostics`), buffered in the `go_diag_stream` table, drained to SQLite by `esi:diagnostics-flush`, reported at Admin → ESI Diagnostics (`/api/v1/admin/esi-diagnostics/*`). Any code that calls ESI outside `EsiHttpClient` must report its attempts through `EsiDiagnosticsRecorder`; wrap batch calls in `EsiDiagnosticsContext::with()` for dataset, page and batch fingerprint. Rollout, flags and interpretation: `docs/operations/esi-diagnostics.md`.
 
 ## Known issues
 

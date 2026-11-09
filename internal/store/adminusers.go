@@ -118,7 +118,7 @@ func (s *SQL) UpdateAdminUserFlags(ctx context.Context, id int64, active, admin,
 	}
 	if set != "" {
 		args = append(args, id)
-		if _, err := s.db.ExecContext(ctx, `UPDATE users SET `+set+`updated_at = NOW() WHERE id = ?`, args...); err != nil {
+		if _, err := s.db.ExecContext(ctx, `UPDATE users SET `+set+`updated_at = CURRENT_TIMESTAMP WHERE id = ?`, args...); err != nil {
 			return nil, err
 		}
 	}
@@ -141,13 +141,13 @@ func (s *SQL) AdminUserEmailTaken(ctx context.Context, email string, exceptID in
 // UpdateAdminAccount changes email and optionally the password hash.
 func (s *SQL) UpdateAdminAccount(ctx context.Context, id int64, email string, passwordHash *string) (*AdminUser, error) {
 	if passwordHash != nil {
-		_, err := s.db.ExecContext(ctx, `UPDATE users SET email = ?, password = ?, updated_at = NOW() WHERE id = ?`,
+		_, err := s.db.ExecContext(ctx, `UPDATE users SET email = ?, password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 			email, *passwordHash, id)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		_, err := s.db.ExecContext(ctx, `UPDATE users SET email = ?, updated_at = NOW() WHERE id = ?`, email, id)
+		_, err := s.db.ExecContext(ctx, `UPDATE users SET email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, email, id)
 		if err != nil {
 			return nil, err
 		}

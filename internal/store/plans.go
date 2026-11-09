@@ -107,7 +107,7 @@ func (s *SQL) CreateInventionPlan(ctx context.Context, p InventionPlan) (*Invent
 			 encryption_skill, science1_skill, science2_skill, invention_runs,
 			 structure_type, rig_me, rig_te, system_security, facility_tax,
 			 solar_system_id, station_id, price_region_id, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		p.UserID, p.Name, p.T2TypeID, p.T2TypeName, p.DecryptorKey, p.T1ME, p.T1TE,
 		p.EncryptionSkill, p.Science1Skill, p.Science2Skill, p.InventionRuns,
 		p.StructureType, p.RigME, p.RigTE, p.SystemSecurity, p.FacilityTax,
@@ -127,7 +127,7 @@ func (s *SQL) UpdateInventionPlan(ctx context.Context, p InventionPlan) (*Invent
 		UPDATE invention_plans SET name = ?, t2_type_id = ?, t2_type_name = ?, decryptor_key = ?,
 			t1_me = ?, t1_te = ?, encryption_skill = ?, science1_skill = ?, science2_skill = ?,
 			invention_runs = ?, structure_type = ?, rig_me = ?, rig_te = ?, system_security = ?,
-			facility_tax = ?, solar_system_id = ?, station_id = ?, price_region_id = ?, updated_at = NOW()
+			facility_tax = ?, solar_system_id = ?, station_id = ?, price_region_id = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND user_id = ?`,
 		p.Name, p.T2TypeID, p.T2TypeName, p.DecryptorKey, p.T1ME, p.T1TE,
 		p.EncryptionSkill, p.Science1Skill, p.Science2Skill, p.InventionRuns,
@@ -177,7 +177,7 @@ func (s *SQL) CreateReactionPlan(ctx context.Context, p ReactionPlan) (*Reaction
 			(user_id, name, entries, default_runs_per_slot, rig_bonus, structure_type,
 			 rig_tier, security_space, facility_tax, station_id, solar_system_id,
 			 price_region_id, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		p.UserID, p.Name, p.EntriesJSON, p.DefaultRunsPerSlot, p.RigBonus, p.StructureType,
 		p.RigTier, p.SecuritySpace, p.FacilityTax, p.StationID, p.SolarSystemID, p.PriceRegionID)
 	if err != nil {
@@ -194,7 +194,7 @@ func (s *SQL) UpdateReactionPlan(ctx context.Context, p ReactionPlan) (*Reaction
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE reaction_plans SET name = ?, entries = ?, default_runs_per_slot = ?, rig_bonus = ?,
 			structure_type = ?, rig_tier = ?, security_space = ?, facility_tax = ?,
-			station_id = ?, solar_system_id = ?, price_region_id = ?, updated_at = NOW()
+			station_id = ?, solar_system_id = ?, price_region_id = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND user_id = ?`,
 		p.Name, p.EntriesJSON, p.DefaultRunsPerSlot, p.RigBonus, p.StructureType,
 		p.RigTier, p.SecuritySpace, p.FacilityTax, p.StationID, p.SolarSystemID,

@@ -5,8 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/redis/go-redis/v9"
-
 	"github.com/sudo-adduser-jordan/eveindustry/internal/assets"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/cache"
@@ -20,7 +18,6 @@ import (
 // HandlerDeps carries everything job bodies need.
 type HandlerDeps struct {
 	Log         *slog.Logger
-	Redis       *redis.Client
 	Cache       *cache.Cache
 	DB          *store.SQL
 	Industry    *industry.SQL

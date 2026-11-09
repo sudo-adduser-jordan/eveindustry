@@ -124,14 +124,14 @@ func (s *SQL) UpsertEveTypes(ctx context.Context, rows []SdeType) error {
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, r.TypeID, r.Name, r.Description, r.GroupID, r.MarketGroupID, r.Volume,
 				r.PackagedVolume, r.Mass, r.Capacity, r.PortionSize, r.IconID, r.GraphicID, r.MetaGroupID, r.Published)
 		}
-		q += ` ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description), group_id = VALUES(group_id),
-			market_group_id = VALUES(market_group_id), volume = VALUES(volume), packaged_volume = VALUES(packaged_volume),
-			mass = VALUES(mass), capacity = VALUES(capacity), portion_size = VALUES(portion_size), icon_id = VALUES(icon_id),
-			graphic_id = VALUES(graphic_id), meta_group_id = VALUES(meta_group_id), published = VALUES(published), updated_at = NOW()`
+		q += ` ON CONFLICT(type_id) DO UPDATE SET name = excluded.name, description = excluded.description, group_id = excluded.group_id,
+			market_group_id = excluded.market_group_id, volume = excluded.volume, packaged_volume = excluded.packaged_volume,
+			mass = excluded.mass, capacity = excluded.capacity, portion_size = excluded.portion_size, icon_id = excluded.icon_id,
+			graphic_id = excluded.graphic_id, meta_group_id = excluded.meta_group_id, published = excluded.published, updated_at = CURRENT_TIMESTAMP`
 		if err := execChunks(ctx, s.db.DB, q, args); err != nil {
 			return err
 		}
@@ -161,14 +161,14 @@ func (s *SQL) UpsertStations(ctx context.Context, rows []SdeStation) error {
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, r.StationID, r.Name, r.SolarSystemID, r.ConstellationID, r.RegionID,
 				r.TypeID, r.CorporationID, r.Reprocessing, r.Security)
 		}
-		q += ` ON DUPLICATE KEY UPDATE station_name = VALUES(station_name), solar_system_id = VALUES(solar_system_id),
-			constellation_id = VALUES(constellation_id), region_id = VALUES(region_id), station_type_id = VALUES(station_type_id),
-			corporation_id = VALUES(corporation_id), reprocessing_efficiency = VALUES(reprocessing_efficiency),
-			security = VALUES(security), updated_at = NOW()`
+		q += ` ON CONFLICT(station_id) DO UPDATE SET station_name = excluded.station_name, solar_system_id = excluded.solar_system_id,
+			constellation_id = excluded.constellation_id, region_id = excluded.region_id, station_type_id = excluded.station_type_id,
+			corporation_id = excluded.corporation_id, reprocessing_efficiency = excluded.reprocessing_efficiency,
+			security = excluded.security, updated_at = CURRENT_TIMESTAMP`
 		if err := execChunks(ctx, s.db.DB, q, args); err != nil {
 			return err
 		}
@@ -198,12 +198,12 @@ func (s *SQL) UpsertSolarSystems(ctx context.Context, rows []SdeSystem) error {
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, r.SystemID, r.Name, r.ConstellationID, r.RegionID, r.Security, r.SecurityClass)
 		}
-		q += ` ON DUPLICATE KEY UPDATE solar_system_name = VALUES(solar_system_name),
-			constellation_id = VALUES(constellation_id), region_id = VALUES(region_id),
-			security = VALUES(security), security_class = VALUES(security_class), updated_at = NOW()`
+		q += ` ON CONFLICT(solar_system_id) DO UPDATE SET solar_system_name = excluded.solar_system_name,
+			constellation_id = excluded.constellation_id, region_id = excluded.region_id,
+			security = excluded.security, security_class = excluded.security_class, updated_at = CURRENT_TIMESTAMP`
 		if err := execChunks(ctx, s.db.DB, q, args); err != nil {
 			return err
 		}
@@ -232,11 +232,11 @@ func (s *SQL) UpsertStargates(ctx context.Context, rows []SdeStargate) error {
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, r.GateID, r.SystemID, r.DestGateID, r.TypeID)
 		}
-		q += ` ON DUPLICATE KEY UPDATE solar_system_id = VALUES(solar_system_id),
-			destination_stargate_id = VALUES(destination_stargate_id), type_id = VALUES(type_id), updated_at = NOW()`
+		q += ` ON CONFLICT(stargate_id) DO UPDATE SET solar_system_id = excluded.solar_system_id,
+			destination_stargate_id = excluded.destination_stargate_id, type_id = excluded.type_id, updated_at = CURRENT_TIMESTAMP`
 		if err := execChunks(ctx, s.db.DB, q, args); err != nil {
 			return err
 		}
@@ -265,10 +265,10 @@ func (s *SQL) UpsertTypeMaterials(ctx context.Context, rows []SdeMaterial) error
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, r.TypeID, r.MaterialTypeID, r.Quantity)
 		}
-		q += ` ON DUPLICATE KEY UPDATE quantity = VALUES(quantity), updated_at = NOW()`
+		q += ` ON CONFLICT(type_id, material_type_id) DO UPDATE SET quantity = excluded.quantity, updated_at = CURRENT_TIMESTAMP`
 		if err := execChunks(ctx, s.db.DB, q, args); err != nil {
 			return err
 		}
@@ -297,11 +297,11 @@ func (s *SQL) UpsertBlueprintActivities(ctx context.Context, rows []SdeBlueprint
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, r.BlueprintTypeID, r.ActivityID, r.MaterialsJSON, r.ProductsJSON, r.Time)
 		}
-		q += ` ON DUPLICATE KEY UPDATE materials = VALUES(materials), products = VALUES(products),
-			time = VALUES(time), updated_at = NOW()`
+		q += ` ON CONFLICT(blueprint_type_id, activity_id) DO UPDATE SET materials = excluded.materials, products = excluded.products,
+			time = excluded.time, updated_at = CURRENT_TIMESTAMP`
 		if err := execChunks(ctx, s.db.DB, q, args); err != nil {
 			return err
 		}
@@ -330,11 +330,11 @@ func (s *SQL) UpsertMarketGroups(ctx context.Context, rows []SdeMarketGroup) err
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, r.GroupID, r.Name, r.Description, r.ParentGroupID, r.IconID, r.HasTypes)
 		}
-		q += ` ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description),
-			parent_group_id = VALUES(parent_group_id), icon_id = VALUES(icon_id), has_types = VALUES(has_types), updated_at = NOW()`
+		q += ` ON CONFLICT(market_group_id) DO UPDATE SET name = excluded.name, description = excluded.description,
+			parent_group_id = excluded.parent_group_id, icon_id = excluded.icon_id, has_types = excluded.has_types, updated_at = CURRENT_TIMESTAMP`
 		if err := execChunks(ctx, s.db.DB, q, args); err != nil {
 			return err
 		}
@@ -363,11 +363,11 @@ func (s *SQL) UpsertInvGroups(ctx context.Context, rows []SdeGroup) error {
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, r.GroupID, r.Name, r.CategoryID, r.Published)
 		}
-		q += ` ON DUPLICATE KEY UPDATE name = VALUES(name), category_id = VALUES(category_id),
-			published = VALUES(published), updated_at = NOW()`
+		q += ` ON CONFLICT(group_id) DO UPDATE SET name = excluded.name, category_id = excluded.category_id,
+			published = excluded.published, updated_at = CURRENT_TIMESTAMP`
 		if err := execChunks(ctx, s.db.DB, q, args); err != nil {
 			return err
 		}
@@ -396,10 +396,10 @@ func (s *SQL) UpsertInvCategories(ctx context.Context, rows []SdeCategory) error
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, r.CategoryID, r.Name, r.Published)
 		}
-		q += ` ON DUPLICATE KEY UPDATE name = VALUES(name), published = VALUES(published), updated_at = NOW()`
+		q += ` ON CONFLICT(category_id) DO UPDATE SET name = excluded.name, published = excluded.published, updated_at = CURRENT_TIMESTAMP`
 		if err := execChunks(ctx, s.db.DB, q, args); err != nil {
 			return err
 		}

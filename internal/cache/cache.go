@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/jmoiron/sqlx"
 )
 
-// Cache is a JSON-over-Redis helper mirroring the Cache::remember/forever
-// shapes the refresh jobs and warm reads use. A nil client disables caching
-// (every read misses, writes drop) so tests and DB-only runs stay live.
+// Cache is a JSON-over-SQLite helper mirroring the Cache::remember/forever
+// shapes the refresh jobs and warm reads use. A nil DB disables caching
+// (every read misses, writes drop) so tests and DB-less runs stay live.
+// Rows live in the go_cache table created by the baseline migration.
 type Cache struct {
-	Client *redis.Client
+	DB     *sqlx.DB
 	Prefix string
 }
 
@@ -23,62 +24,75 @@ func (c *Cache) key(k string) string {
 	return c.Prefix + ":" + k
 }
 
-func (c *Cache) client() *redis.Client {
+func (c *Cache) db() *sqlx.DB {
 	if c == nil {
 		return nil
 	}
-	return c.Client
+	return c.DB
 }
 
 // GetJSON loads and decodes a key. False on miss/expiry/decoding failure.
 func (c *Cache) GetJSON(ctx context.Context, k string, v any) bool {
-	cl := c.client()
-	if cl == nil {
+	db := c.db()
+	if db == nil {
 		return false
 	}
-	raw, err := cl.Get(ctx, c.key(k)).Bytes()
-	if err != nil || json.Unmarshal(raw, v) != nil {
+	var raw string
+	err := db.GetContext(ctx, &raw, `SELECT value FROM go_cache
+		WHERE key = ? AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)`, c.key(k))
+	if err != nil || json.Unmarshal([]byte(raw), v) != nil {
 		return false
 	}
 	return true
 }
 
-// SetJSON stores a key with TTL (<=0 means keep forever, like Cache::forever).
+// SetJSON stores a key with TTL (<=0 means keep forever).
 func (c *Cache) SetJSON(ctx context.Context, k string, v any, ttl time.Duration) {
-	cl := c.client()
-	if cl == nil {
+	db := c.db()
+	if db == nil {
 		return
 	}
 	raw, err := json.Marshal(v)
 	if err != nil {
 		return
 	}
-	if ttl <= 0 {
-		_ = cl.Set(ctx, c.key(k), raw, 0).Err()
-		return
+	var expires any
+	if ttl > 0 {
+		expires = time.Now().UTC().Add(ttl).Format("2006-01-02 15:04:05")
+	} else {
+		expires = nil
 	}
-	_ = cl.Set(ctx, c.key(k), raw, ttl).Err()
+	_, _ = db.ExecContext(ctx, `INSERT INTO go_cache (key, value, expires_at)
+		VALUES (?, ?, ?)
+		ON CONFLICT(key) DO UPDATE SET value = excluded.value, expires_at = excluded.expires_at`,
+		c.key(k), string(raw), expires)
 }
 
 // Del drops keys.
 func (c *Cache) Del(ctx context.Context, keys ...string) {
-	cl := c.client()
-	if cl == nil {
+	db := c.db()
+	if db == nil || len(keys) == 0 {
 		return
 	}
 	ks := make([]string, 0, len(keys))
 	for _, k := range keys {
 		ks = append(ks, c.key(k))
 	}
-	_ = cl.Del(ctx, ks...).Err()
+	q, args, err := sqlx.In(`DELETE FROM go_cache WHERE key IN (?)`, ks)
+	if err != nil {
+		return
+	}
+	_, _ = db.ExecContext(ctx, db.Rebind(q), args...)
 }
 
-// Has reports key existence.
+// Has reports key existence (unexpired).
 func (c *Cache) Has(ctx context.Context, k string) bool {
-	cl := c.client()
-	if cl == nil {
+	db := c.db()
+	if db == nil {
 		return false
 	}
-	n, err := cl.Exists(ctx, c.key(k)).Result()
-	return err == nil && n > 0
+	var one int
+	err := db.GetContext(ctx, &one, `SELECT 1 FROM go_cache
+		WHERE key = ? AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)`, c.key(k))
+	return err == nil
 }

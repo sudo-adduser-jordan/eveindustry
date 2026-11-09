@@ -138,7 +138,7 @@ func (s *SQL) DeleteUser(ctx context.Context, userID int64) error {
 
 // UpdateCharacterLocation stores the ESI-resolved system name on the character.
 func (s *SQL) UpdateCharacterLocation(ctx context.Context, userID, characterID int64, location string) error {
-	_, err := s.db.ExecContext(ctx, `UPDATE characters SET cached_location = ?, updated_at = NOW()
+	_, err := s.db.ExecContext(ctx, `UPDATE characters SET cached_location = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE user_id = ? AND character_id = ?`, location, userID, characterID)
 	return err
 }
@@ -292,7 +292,7 @@ func (s *SQL) UpdateCharacterRefresh(ctx context.Context, characterID int64, r C
 	if set == "" {
 		return nil
 	}
-	set += "updated_at = NOW()"
+	set += "updated_at = CURRENT_TIMESTAMP"
 	args = append(args, characterID)
 	_, err := s.db.ExecContext(ctx, `UPDATE characters SET `+set+` WHERE character_id = ?`, args...)
 	return err
@@ -321,7 +321,7 @@ func (s *SQL) EsiActiveCharacters(ctx context.Context, userID *int64) ([]auth.Ch
 func (s *SQL) ActiveUserIDs(ctx context.Context) ([]int64, error) {
 	var out []int64
 	err := s.db.SelectContext(ctx, &out, `SELECT id FROM users
-		WHERE is_active = 1 AND last_login_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+		WHERE is_active = 1 AND last_login_at >= datetime('now', '-7 days')
 		ORDER BY id`)
 	if out == nil {
 		out = []int64{}

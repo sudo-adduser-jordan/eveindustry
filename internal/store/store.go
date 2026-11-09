@@ -1,14 +1,17 @@
 // Package store is the sqlx data layer for the Go API. Table and column
 // names mirror database/migrations/*.php exactly; every query has an
-// interface so handlers stay testable without MySQL.
+// interface so handlers stay testable without a database.
 package store
 
 import (
 	"context"
 	"database/sql"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	_ "modernc.org/sqlite"
 )
 
 // DB wraps sqlx for dependency injection. Nil *DB means "database not
@@ -18,10 +21,19 @@ type DB struct {
 	*sqlx.DB
 }
 
-// Connect opens MySQL with parseTime so DATETIME scans into time.Time,
-// matching the DSN built by internal/config.
-func Connect(dsn string) (*DB, error) {
-	db, err := sqlx.Connect("mysql", dsn)
+// Connect opens the SQLite database at path, creating the parent directory.
+// WAL mode keeps readers unblocked during writer commits; the busy timeout
+// absorbs queue/cache contention instead of failing fast. Time columns
+// round-trip as UTC SQLite timestrs (_time_format + _timezone + _texttotime)
+// so date functions and ordering work on them.
+func Connect(path string) (*DB, error) {
+	if dir := filepath.Dir(path); dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return nil, err
+		}
+	}
+	dsn := path + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)&_pragma=synchronous(NORMAL)&_time_format=sqlite&_timezone=UTC&_texttotime=1"
+	db, err := sqlx.Connect("sqlite", dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -273,10 +285,10 @@ func (s *SQL) ManufacturableGroupIDs(ctx context.Context) (map[int]bool, error) 
 		return nil, err
 	}
 
-	// NOTE: products is JSON; MySQL JSON_TABLE expansion keeps this in SQL.
+	// NOTE: products is JSON; json_each expansion keeps this in SQL.
 	// When products is NULL-heavy this degrades gracefully to an empty set.
 	query := `SELECT DISTINCT t.market_group_id FROM eve_types t
-		JOIN blueprint_activities b ON JSON_CONTAINS(b.products, CAST(t.type_id AS JSON), '$[*].type_id')
+		JOIN blueprint_activities b ON EXISTS (SELECT 1 FROM json_each(b.products) WHERE json_extract(value, '$.type_id') = t.type_id)
 		WHERE b.activity_id = 1 AND b.products IS NOT NULL
 		  AND t.published = 1 AND t.market_group_id IS NOT NULL`
 	if len(invented) > 0 {

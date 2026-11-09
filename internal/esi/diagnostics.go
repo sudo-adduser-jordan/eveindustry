@@ -37,8 +37,8 @@ type DiagEvent struct {
 	OccurredAt  time.Time
 }
 
-// DiagSink receives events. The Redis-stream sink and the flush worker land
-// with the jobs phase; until then the recorder drops (no-op when disabled).
+// DiagSink receives events. The SQL-stream sink buffers into go_diag_stream
+// for the flush worker; until then the recorder drops (no-op when disabled).
 type DiagSink interface {
 	Emit(ctx context.Context, e DiagEvent)
 }

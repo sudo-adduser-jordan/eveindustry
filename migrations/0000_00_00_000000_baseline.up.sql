@@ -1,1030 +1,1060 @@
 CREATE TABLE `users` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `email` VARCHAR(255) NOT NULL,
+  `id` INTEGER NOT NULL,
+  `name` TEXT NOT NULL,
+  `email` TEXT NOT NULL,
   `email_verified_at` TIMESTAMP NULL,
-  `password` VARCHAR(255) NULL,
-  `is_admin` TINYINT(1) NOT NULL DEFAULT 0,
-  `is_super_admin` TINYINT(1) NOT NULL DEFAULT 0,
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_stock_manager_enabled` TINYINT(1) NOT NULL DEFAULT 0,
-  `is_demo` TINYINT(1) NOT NULL DEFAULT 0,
+  `password` TEXT NULL,
+  `is_admin` INTEGER NOT NULL DEFAULT 0,
+  `is_super_admin` INTEGER NOT NULL DEFAULT 0,
+  `is_active` INTEGER NOT NULL DEFAULT 1,
+  `is_stock_manager_enabled` INTEGER NOT NULL DEFAULT 0,
+  `is_demo` INTEGER NOT NULL DEFAULT 0,
   `last_login_at` TIMESTAMP NULL,
-  `remember_token` VARCHAR(100) NULL,
+  `remember_token` TEXT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`email`),
-  KEY (`is_demo`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`email`)
+);
+CREATE INDEX `idx_users_is_demo` ON `users` (`is_demo`);
 CREATE TABLE `password_reset_tokens` (
-  `email` VARCHAR(255) NOT NULL,
-  `token` VARCHAR(255) NOT NULL,
+  `email` TEXT NOT NULL,
+  `token` TEXT NOT NULL,
   `created_at` TIMESTAMP NULL,
   PRIMARY KEY (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 CREATE TABLE `sessions` (
-  `id` VARCHAR(255) NOT NULL,
-  `user_id` BIGINT UNSIGNED NULL,
-  `ip_address` VARCHAR(45) NULL,
+  `id` TEXT NOT NULL,
+  `user_id` INTEGER NULL,
+  `ip_address` TEXT NULL,
   `user_agent` TEXT NULL,
-  `payload` LONGTEXT NOT NULL,
-  `last_activity` INT NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY (`user_id`),
-  KEY (`last_activity`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `payload` TEXT NOT NULL,
+  `last_activity` INTEGER NOT NULL,
+  PRIMARY KEY (`id`)
+);
+CREATE INDEX `idx_sessions_user_id` ON `sessions` (`user_id`);
+CREATE INDEX `idx_sessions_last_activity` ON `sessions` (`last_activity`);
 CREATE TABLE `characters` (
-  `character_id` BIGINT UNSIGNED NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `corporation_id` BIGINT UNSIGNED NOT NULL,
-  `corporation_name` VARCHAR(255) NULL,
-  `alliance_id` BIGINT UNSIGNED NULL,
-  `alliance_name` VARCHAR(255) NULL,
-  `cached_location` VARCHAR(255) NULL,
-  `cached_training` VARCHAR(255) NULL,
-  `is_main` TINYINT(1) NOT NULL DEFAULT 0,
+  `character_id` INTEGER NOT NULL,
+  `user_id` INTEGER NOT NULL,
+  `name` TEXT NOT NULL,
+  `corporation_id` INTEGER NOT NULL,
+  `corporation_name` TEXT NULL,
+  `alliance_id` INTEGER NULL,
+  `alliance_name` TEXT NULL,
+  `cached_location` TEXT NULL,
+  `cached_training` TEXT NULL,
+  `is_main` INTEGER NOT NULL DEFAULT 0,
   `access_token` TEXT NULL,
   `refresh_token` TEXT NULL,
   `token_expires_at` TIMESTAMP NULL,
-  `scopes` JSON NULL,
-  `is_esi_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_director_ceo` TINYINT(1) NOT NULL DEFAULT 0,
-  `roles` JSON NULL,
+  `scopes` TEXT NULL,
+  `is_esi_active` INTEGER NOT NULL DEFAULT 1,
+  `is_director_ceo` INTEGER NOT NULL DEFAULT 0,
+  `roles` TEXT NULL,
   `affiliation_updated_at` TIMESTAMP NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`character_id`),
-  KEY (`user_id`),
-  KEY (`corporation_id`),
-  KEY (`alliance_id`),
-  KEY `characters_user_esi_active_idx` (`user_id`,`is_esi_active`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`character_id`)
+);
+CREATE INDEX `idx_characters_user_id` ON `characters` (`user_id`);
+CREATE INDEX `idx_characters_corporation_id` ON `characters` (`corporation_id`);
+CREATE INDEX `idx_characters_alliance_id` ON `characters` (`alliance_id`);
+CREATE INDEX `characters_user_esi_active_idx` ON `characters` (`user_id`,`is_esi_active`);
 CREATE TABLE `cache` (
-  `key` VARCHAR(255) NOT NULL,
-  `value` MEDIUMTEXT NOT NULL,
-  `expiration` INT NOT NULL,
+  `key` TEXT NOT NULL,
+  `value` TEXT NOT NULL,
+  `expiration` INTEGER NOT NULL,
   PRIMARY KEY (`key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 CREATE TABLE `cache_locks` (
-  `key` VARCHAR(255) NOT NULL,
-  `owner` VARCHAR(255) NOT NULL,
-  `expiration` INT NOT NULL,
+  `key` TEXT NOT NULL,
+  `owner` TEXT NOT NULL,
+  `expiration` INTEGER NOT NULL,
   PRIMARY KEY (`key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 CREATE TABLE `jobs` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `queue` VARCHAR(255) NOT NULL,
-  `payload` LONGTEXT NOT NULL,
-  `attempts` TINYINT UNSIGNED NOT NULL,
-  `reserved_at` INT UNSIGNED NULL,
-  `available_at` INT UNSIGNED NOT NULL,
-  `created_at` INT UNSIGNED NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY (`queue`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `id` INTEGER NOT NULL,
+  `queue` TEXT NOT NULL,
+  `payload` TEXT NOT NULL,
+  `attempts` INTEGER NOT NULL,
+  `reserved_at` INTEGER NULL,
+  `available_at` INTEGER NOT NULL,
+  `created_at` INTEGER NOT NULL,
+  PRIMARY KEY (`id`)
+);
+CREATE INDEX `idx_jobs_queue` ON `jobs` (`queue`);
 CREATE TABLE `failed_jobs` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `uuid` VARCHAR(255) NOT NULL,
+  `id` INTEGER NOT NULL,
+  `uuid` TEXT NOT NULL,
   `connection` TEXT NOT NULL,
   `queue` TEXT NOT NULL,
-  `payload` LONGTEXT NOT NULL,
-  `exception` LONGTEXT NOT NULL,
+  `payload` TEXT NOT NULL,
+  `exception` TEXT NOT NULL,
   `failed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`uuid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`uuid`)
+);
 CREATE TABLE `market_prices` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `type_id` INT NOT NULL,
-  `region_id` INT NOT NULL DEFAULT 10000002,
-  `average_price` DECIMAL(20,2) NULL,
-  `adjusted_price` DECIMAL(20,2) NULL,
-  `sell_min` DECIMAL(20,2) NULL,
-  `buy_max` DECIMAL(20,2) NULL,
-  `sell_volume` BIGINT NULL,
-  `buy_volume` BIGINT NULL,
-  `daily_volume` BIGINT NULL,
+  `id` INTEGER NOT NULL,
+  `type_id` INTEGER NOT NULL,
+  `region_id` INTEGER NOT NULL DEFAULT 10000002,
+  `average_price` REAL NULL,
+  `adjusted_price` REAL NULL,
+  `sell_min` REAL NULL,
+  `buy_max` REAL NULL,
+  `sell_volume` INTEGER NULL,
+  `buy_volume` INTEGER NULL,
+  `daily_volume` INTEGER NULL,
   `fetched_at` TIMESTAMP NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`type_id`,`region_id`),
-  KEY (`type_id`),
-  KEY (`region_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`type_id`,`region_id`)
+);
+CREATE INDEX `idx_market_prices_type_id` ON `market_prices` (`type_id`);
+CREATE INDEX `idx_market_prices_region_id` ON `market_prices` (`region_id`);
 CREATE TABLE `eve_types` (
-  `type_id` INT UNSIGNED NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
+  `type_id` INTEGER NOT NULL,
+  `name` TEXT NOT NULL,
   `description` TEXT NULL,
-  `group_id` INT UNSIGNED NULL,
-  `market_group_id` INT UNSIGNED NULL,
-  `volume` DOUBLE NULL,
-  `packaged_volume` DOUBLE NULL,
-  `mass` DOUBLE NULL,
-  `capacity` DOUBLE NULL,
-  `portion_size` INT UNSIGNED NULL,
-  `icon_id` INT UNSIGNED NULL,
-  `graphic_id` INT UNSIGNED NULL,
-  `meta_group_id` SMALLINT UNSIGNED NULL,
-  `published` TINYINT(1) NOT NULL DEFAULT 0,
+  `group_id` INTEGER NULL,
+  `market_group_id` INTEGER NULL,
+  `volume` REAL NULL,
+  `packaged_volume` REAL NULL,
+  `mass` REAL NULL,
+  `capacity` REAL NULL,
+  `portion_size` INTEGER NULL,
+  `icon_id` INTEGER NULL,
+  `graphic_id` INTEGER NULL,
+  `meta_group_id` INTEGER NULL,
+  `published` INTEGER NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`type_id`),
-  KEY (`name`),
-  KEY (`group_id`),
-  KEY (`market_group_id`),
-  KEY (`published`),
-  KEY (`meta_group_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`type_id`)
+);
+CREATE INDEX `idx_eve_types_name` ON `eve_types` (`name`);
+CREATE INDEX `idx_eve_types_group_id` ON `eve_types` (`group_id`);
+CREATE INDEX `idx_eve_types_market_group_id` ON `eve_types` (`market_group_id`);
+CREATE INDEX `idx_eve_types_published` ON `eve_types` (`published`);
+CREATE INDEX `idx_eve_types_meta_group_id` ON `eve_types` (`meta_group_id`);
 CREATE TABLE `blueprint_activities` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `blueprint_type_id` INT UNSIGNED NOT NULL,
-  `activity_id` TINYINT UNSIGNED NOT NULL,
-  `time` INT UNSIGNED NOT NULL DEFAULT 0,
-  `materials` JSON NULL,
-  `products` JSON NULL,
-  `skills` JSON NULL,
+  `id` INTEGER NOT NULL,
+  `blueprint_type_id` INTEGER NOT NULL,
+  `activity_id` INTEGER NOT NULL,
+  `time` INTEGER NOT NULL DEFAULT 0,
+  `materials` TEXT NULL,
+  `products` TEXT NULL,
+  `skills` TEXT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`blueprint_type_id`,`activity_id`),
-  KEY (`blueprint_type_id`),
-  KEY (`activity_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`blueprint_type_id`,`activity_id`)
+);
+CREATE INDEX `idx_blueprint_activities_blueprint_type_id` ON `blueprint_activities` (`blueprint_type_id`);
+CREATE INDEX `idx_blueprint_activities_activity_id` ON `blueprint_activities` (`activity_id`);
 CREATE TABLE `type_materials` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `type_id` INT UNSIGNED NOT NULL,
-  `material_type_id` INT UNSIGNED NOT NULL,
-  `quantity` INT UNSIGNED NOT NULL,
+  `id` INTEGER NOT NULL,
+  `type_id` INTEGER NOT NULL,
+  `material_type_id` INTEGER NOT NULL,
+  `quantity` INTEGER NOT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`type_id`,`material_type_id`),
-  KEY (`material_type_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`type_id`,`material_type_id`)
+);
+CREATE INDEX `idx_type_materials_material_type_id` ON `type_materials` (`material_type_id`);
 CREATE TABLE `station_configs` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `activity_type` VARCHAR(255) NOT NULL DEFAULT 'manufacturing',
-  `name` VARCHAR(255) NOT NULL,
-  `structure_type` VARCHAR(255) NOT NULL DEFAULT 'none',
-  `rig_me` VARCHAR(255) NOT NULL DEFAULT 'none',
-  `rig_te` VARCHAR(255) NOT NULL DEFAULT 'none',
-  `system_security` VARCHAR(255) NOT NULL DEFAULT 'highsec',
-  `solar_system_id` INT UNSIGNED NULL,
-  `tax_rate` DECIMAL(5,2) NOT NULL DEFAULT 0,
-  `is_default` TINYINT(1) NOT NULL DEFAULT 0,
+  `id` INTEGER NOT NULL,
+  `user_id` INTEGER NOT NULL,
+  `activity_type` TEXT NOT NULL DEFAULT 'manufacturing',
+  `name` TEXT NOT NULL,
+  `structure_type` TEXT NOT NULL DEFAULT 'none',
+  `rig_me` TEXT NOT NULL DEFAULT 'none',
+  `rig_te` TEXT NOT NULL DEFAULT 'none',
+  `system_security` TEXT NOT NULL DEFAULT 'highsec',
+  `solar_system_id` INTEGER NULL,
+  `tax_rate` REAL NOT NULL DEFAULT 0,
+  `is_default` INTEGER NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  KEY (`user_id`,`is_default`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`id`)
+);
+CREATE INDEX `idx_station_configs_user_id_is_default` ON `station_configs` (`user_id`,`is_default`);
 CREATE TABLE `sponsors` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `url` VARCHAR(255) NOT NULL,
-  `image_path` VARCHAR(255) NOT NULL,
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `sort_order` INT UNSIGNED NOT NULL DEFAULT 0,
+  `id` INTEGER NOT NULL,
+  `name` TEXT NOT NULL,
+  `url` TEXT NOT NULL,
+  `image_path` TEXT NOT NULL,
+  `is_active` INTEGER NOT NULL DEFAULT 1,
+  `sort_order` INTEGER NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 CREATE TABLE `reaction_plans` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `entries` JSON NOT NULL,
-  `default_runs_per_slot` INT NOT NULL DEFAULT 240,
-  `rig_bonus` DECIMAL(5,2) NOT NULL DEFAULT 0,
-  `structure_type` VARCHAR(255) NOT NULL DEFAULT 'athanor',
-  `rig_tier` VARCHAR(255) NOT NULL DEFAULT 'none',
-  `security_space` VARCHAR(255) NOT NULL DEFAULT 'lowsec',
-  `facility_tax` DECIMAL(5,2) NOT NULL DEFAULT 0,
-  `station_id` BIGINT UNSIGNED NULL,
-  `solar_system_id` INT UNSIGNED NULL,
-  `price_region_id` INT NULL,
+  `id` INTEGER NOT NULL,
+  `user_id` INTEGER NOT NULL,
+  `name` TEXT NOT NULL,
+  `entries` TEXT NOT NULL,
+  `default_runs_per_slot` INTEGER NOT NULL DEFAULT 240,
+  `rig_bonus` REAL NOT NULL DEFAULT 0,
+  `structure_type` TEXT NOT NULL DEFAULT 'athanor',
+  `rig_tier` TEXT NOT NULL DEFAULT 'none',
+  `security_space` TEXT NOT NULL DEFAULT 'lowsec',
+  `facility_tax` REAL NOT NULL DEFAULT 0,
+  `station_id` INTEGER NULL,
+  `solar_system_id` INTEGER NULL,
+  `price_region_id` INTEGER NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  KEY (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE `sde_stations` (
-  `station_id` BIGINT UNSIGNED NOT NULL,
-  `station_name` VARCHAR(255) NOT NULL,
-  `solar_system_id` INT UNSIGNED NULL,
-  `constellation_id` INT UNSIGNED NULL,
-  `region_id` INT UNSIGNED NULL,
-  `station_type_id` INT UNSIGNED NULL,
-  `corporation_id` INT UNSIGNED NULL,
-  `reprocessing_efficiency` FLOAT NULL,
-  `security` FLOAT NULL,
-  `created_at` TIMESTAMP NULL,
-  `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`station_id`),
-  KEY (`station_name`),
-  KEY (`solar_system_id`),
-  KEY (`constellation_id`),
-  KEY (`region_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE `sde_solar_systems` (
-  `solar_system_id` INT UNSIGNED NOT NULL,
-  `solar_system_name` VARCHAR(255) NOT NULL,
-  `constellation_id` INT UNSIGNED NULL,
-  `region_id` INT UNSIGNED NULL,
-  `security` FLOAT NULL,
-  `security_class` VARCHAR(8) NULL,
-  `created_at` TIMESTAMP NULL,
-  `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`solar_system_id`),
-  KEY (`solar_system_name`),
-  KEY (`constellation_id`),
-  KEY (`region_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE `sde_stargates` (
-  `stargate_id` INT UNSIGNED NOT NULL,
-  `solar_system_id` INT UNSIGNED NULL,
-  `destination_stargate_id` INT UNSIGNED NULL,
-  `type_id` INT UNSIGNED NULL,
-  `created_at` TIMESTAMP NULL,
-  `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`stargate_id`),
-  KEY (`solar_system_id`),
-  KEY (`destination_stargate_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE `job_batches` (
-  `id` VARCHAR(255) NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `total_jobs` INT NOT NULL,
-  `pending_jobs` INT NOT NULL,
-  `failed_jobs` INT NOT NULL,
-  `failed_job_ids` LONGTEXT NOT NULL,
-  `options` MEDIUMTEXT NULL,
-  `cancelled_at` INT NULL,
-  `created_at` INT NOT NULL,
-  `finished_at` INT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
+CREATE INDEX `idx_reaction_plans_user_id` ON `reaction_plans` (`user_id`);
+CREATE TABLE `sde_stations` (
+  `station_id` INTEGER NOT NULL,
+  `station_name` TEXT NOT NULL,
+  `solar_system_id` INTEGER NULL,
+  `constellation_id` INTEGER NULL,
+  `region_id` INTEGER NULL,
+  `station_type_id` INTEGER NULL,
+  `corporation_id` INTEGER NULL,
+  `reprocessing_efficiency` REAL NULL,
+  `security` REAL NULL,
+  `created_at` TIMESTAMP NULL,
+  `updated_at` TIMESTAMP NULL,
+  PRIMARY KEY (`station_id`)
+);
+CREATE INDEX `idx_sde_stations_station_name` ON `sde_stations` (`station_name`);
+CREATE INDEX `idx_sde_stations_solar_system_id` ON `sde_stations` (`solar_system_id`);
+CREATE INDEX `idx_sde_stations_constellation_id` ON `sde_stations` (`constellation_id`);
+CREATE INDEX `idx_sde_stations_region_id` ON `sde_stations` (`region_id`);
+CREATE TABLE `sde_solar_systems` (
+  `solar_system_id` INTEGER NOT NULL,
+  `solar_system_name` TEXT NOT NULL,
+  `constellation_id` INTEGER NULL,
+  `region_id` INTEGER NULL,
+  `security` REAL NULL,
+  `security_class` TEXT NULL,
+  `created_at` TIMESTAMP NULL,
+  `updated_at` TIMESTAMP NULL,
+  PRIMARY KEY (`solar_system_id`)
+);
+CREATE INDEX `idx_sde_solar_systems_solar_system_name` ON `sde_solar_systems` (`solar_system_name`);
+CREATE INDEX `idx_sde_solar_systems_constellation_id` ON `sde_solar_systems` (`constellation_id`);
+CREATE INDEX `idx_sde_solar_systems_region_id` ON `sde_solar_systems` (`region_id`);
+CREATE TABLE `sde_stargates` (
+  `stargate_id` INTEGER NOT NULL,
+  `solar_system_id` INTEGER NULL,
+  `destination_stargate_id` INTEGER NULL,
+  `type_id` INTEGER NULL,
+  `created_at` TIMESTAMP NULL,
+  `updated_at` TIMESTAMP NULL,
+  PRIMARY KEY (`stargate_id`)
+);
+CREATE INDEX `idx_sde_stargates_solar_system_id` ON `sde_stargates` (`solar_system_id`);
+CREATE INDEX `idx_sde_stargates_destination_stargate_id` ON `sde_stargates` (`destination_stargate_id`);
+CREATE TABLE `job_batches` (
+  `id` TEXT NOT NULL,
+  `name` TEXT NOT NULL,
+  `total_jobs` INTEGER NOT NULL,
+  `pending_jobs` INTEGER NOT NULL,
+  `failed_jobs` INTEGER NOT NULL,
+  `failed_job_ids` TEXT NOT NULL,
+  `options` TEXT NULL,
+  `cancelled_at` INTEGER NULL,
+  `created_at` INTEGER NOT NULL,
+  `finished_at` INTEGER NULL,
+  PRIMARY KEY (`id`)
+);
 CREATE TABLE `market_orders` (
-  `order_id` BIGINT UNSIGNED NOT NULL,
-  `region_id` INT UNSIGNED NOT NULL,
-  `type_id` INT UNSIGNED NOT NULL,
-  `is_buy_order` TINYINT(1) NOT NULL DEFAULT 0,
-  `price` DOUBLE NOT NULL,
-  `volume_remain` BIGINT UNSIGNED NOT NULL,
-  `volume_total` BIGINT UNSIGNED NOT NULL,
-  `min_volume` BIGINT UNSIGNED NOT NULL DEFAULT 1,
-  `location_id` BIGINT UNSIGNED NULL,
-  `duration` INT UNSIGNED NULL,
-  `range` VARCHAR(20) NULL,
+  `order_id` INTEGER NOT NULL,
+  `region_id` INTEGER NOT NULL,
+  `type_id` INTEGER NOT NULL,
+  `is_buy_order` INTEGER NOT NULL DEFAULT 0,
+  `price` REAL NOT NULL,
+  `volume_remain` INTEGER NOT NULL,
+  `volume_total` INTEGER NOT NULL,
+  `min_volume` INTEGER NOT NULL DEFAULT 1,
+  `location_id` INTEGER NULL,
+  `duration` INTEGER NULL,
+  `range` TEXT NULL,
   `issued` DATETIME NULL,
-  `batch_id` VARCHAR(36) NULL,
+  `batch_id` TEXT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`order_id`),
-  KEY (`region_id`),
-  KEY (`type_id`),
-  KEY (`batch_id`),
-  KEY (`region_id`,`type_id`),
-  KEY `market_orders_region_buy_type_idx` (`region_id`,`is_buy_order`,`type_id`),
-  KEY `market_orders_region_type_buy_price_idx` (`region_id`,`type_id`,`is_buy_order`,`price`),
-  KEY `market_orders_region_updated_idx` (`region_id`,`updated_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`order_id`)
+);
+CREATE INDEX `idx_market_orders_region_id` ON `market_orders` (`region_id`);
+CREATE INDEX `idx_market_orders_type_id` ON `market_orders` (`type_id`);
+CREATE INDEX `idx_market_orders_batch_id` ON `market_orders` (`batch_id`);
+CREATE INDEX `idx_market_orders_region_id_type_id` ON `market_orders` (`region_id`,`type_id`);
+CREATE INDEX `market_orders_region_buy_type_idx` ON `market_orders` (`region_id`,`is_buy_order`,`type_id`);
+CREATE INDEX `market_orders_region_type_buy_price_idx` ON `market_orders` (`region_id`,`type_id`,`is_buy_order`,`price`);
+CREATE INDEX `market_orders_region_updated_idx` ON `market_orders` (`region_id`,`updated_at`);
 CREATE TABLE `corporate_donation_configs` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `corporation_id` BIGINT UNSIGNED NOT NULL,
-  `corporation_name` VARCHAR(255) NULL,
-  `character_id` BIGINT UNSIGNED NOT NULL COMMENT 'Character providing wallet access',
-  `enabled_by_user_id` BIGINT UNSIGNED NOT NULL,
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `id` INTEGER NOT NULL,
+  `corporation_id` INTEGER NOT NULL,
+  `corporation_name` TEXT NULL,
+  `character_id` INTEGER NOT NULL,
+  `enabled_by_user_id` INTEGER NOT NULL,
+  `is_active` INTEGER NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`corporation_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`corporation_id`)
+);
 CREATE TABLE `market_history` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `region_id` INT UNSIGNED NOT NULL,
-  `type_id` INT UNSIGNED NOT NULL,
+  `id` INTEGER NOT NULL,
+  `region_id` INTEGER NOT NULL,
+  `type_id` INTEGER NOT NULL,
   `date` DATE NOT NULL,
-  `average` DOUBLE NOT NULL,
-  `highest` DOUBLE NOT NULL,
-  `lowest` DOUBLE NOT NULL,
-  `volume` BIGINT UNSIGNED NOT NULL,
-  `order_count` BIGINT UNSIGNED NOT NULL,
+  `average` REAL NOT NULL,
+  `highest` REAL NOT NULL,
+  `lowest` REAL NOT NULL,
+  `volume` INTEGER NOT NULL,
+  `order_count` INTEGER NOT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`region_id`,`type_id`,`date`),
-  KEY (`region_id`,`type_id`),
-  KEY (`type_id`),
-  KEY `market_history_region_date_idx` (`region_id`,`date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`region_id`,`type_id`,`date`)
+);
+CREATE INDEX `idx_market_history_region_id_type_id` ON `market_history` (`region_id`,`type_id`);
+CREATE INDEX `idx_market_history_type_id` ON `market_history` (`type_id`);
+CREATE INDEX `market_history_region_date_idx` ON `market_history` (`region_id`,`date`);
 CREATE TABLE `public_contracts` (
-  `contract_id` BIGINT UNSIGNED NOT NULL,
-  `region_id` INT UNSIGNED NOT NULL,
-  `type` VARCHAR(30) NOT NULL,
-  `title` VARCHAR(255) NULL,
-  `for_corporation` TINYINT(1) NOT NULL DEFAULT 0,
-  `issuer_corporation_id` BIGINT UNSIGNED NULL,
-  `issuer_id` BIGINT UNSIGNED NULL,
+  `contract_id` INTEGER NOT NULL,
+  `region_id` INTEGER NOT NULL,
+  `type` TEXT NOT NULL,
+  `title` TEXT NULL,
+  `for_corporation` INTEGER NOT NULL DEFAULT 0,
+  `issuer_corporation_id` INTEGER NULL,
+  `issuer_id` INTEGER NULL,
   `date_issued` TIMESTAMP NULL,
   `date_expired` TIMESTAMP NULL,
-  `days_to_complete` INT UNSIGNED NOT NULL DEFAULT 0,
-  `start_location_id` BIGINT UNSIGNED NULL,
-  `end_location_id` BIGINT UNSIGNED NULL,
-  `station_id` BIGINT UNSIGNED NULL,
-  `system_id` INT UNSIGNED NULL,
-  `constellation_id` INT UNSIGNED NULL,
-  `price` DOUBLE NOT NULL DEFAULT 0,
-  `buyout` DOUBLE NULL,
-  `reward` DOUBLE NULL,
-  `collateral` DOUBLE NULL,
-  `volume` DOUBLE NOT NULL DEFAULT 0,
+  `days_to_complete` INTEGER NOT NULL DEFAULT 0,
+  `start_location_id` INTEGER NULL,
+  `end_location_id` INTEGER NULL,
+  `station_id` INTEGER NULL,
+  `system_id` INTEGER NULL,
+  `constellation_id` INTEGER NULL,
+  `price` REAL NOT NULL DEFAULT 0,
+  `buyout` REAL NULL,
+  `reward` REAL NULL,
+  `collateral` REAL NULL,
+  `volume` REAL NOT NULL DEFAULT 0,
   `http_last_modified` TIMESTAMP NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`contract_id`),
-  KEY (`region_id`),
-  KEY (`type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`contract_id`)
+);
+CREATE INDEX `idx_public_contracts_region_id` ON `public_contracts` (`region_id`);
+CREATE INDEX `idx_public_contracts_type` ON `public_contracts` (`type`);
 CREATE TABLE `public_contract_items` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `contract_id` BIGINT UNSIGNED NOT NULL,
-  `type_id` INT UNSIGNED NOT NULL,
-  `quantity` INT UNSIGNED NOT NULL DEFAULT 1,
-  `is_included` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_blueprint_copy` TINYINT(1) NULL,
-  `material_efficiency` SMALLINT UNSIGNED NULL,
-  `time_efficiency` SMALLINT UNSIGNED NULL,
-  `runs` INT NULL,
-  `record_id` BIGINT UNSIGNED NULL,
-  `item_id` BIGINT UNSIGNED NULL,
+  `id` INTEGER NOT NULL,
+  `contract_id` INTEGER NOT NULL,
+  `type_id` INTEGER NOT NULL,
+  `quantity` INTEGER NOT NULL DEFAULT 1,
+  `is_included` INTEGER NOT NULL DEFAULT 1,
+  `is_blueprint_copy` INTEGER NULL,
+  `material_efficiency` INTEGER NULL,
+  `time_efficiency` INTEGER NULL,
+  `runs` INTEGER NULL,
+  `record_id` INTEGER NULL,
+  `item_id` INTEGER NULL,
   `http_last_modified` TIMESTAMP NULL,
-  `created_at` TIMESTAMP NULL,
-  `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  KEY (`contract_id`),
-  KEY (`type_id`),
-  KEY (`contract_id`,`type_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE `invention_plans` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `t2_type_id` INT UNSIGNED NOT NULL,
-  `t2_type_name` VARCHAR(255) NOT NULL,
-  `decryptor_key` VARCHAR(50) NOT NULL DEFAULT 'none',
-  `t1_me` TINYINT UNSIGNED NOT NULL DEFAULT 0,
-  `t1_te` TINYINT UNSIGNED NOT NULL DEFAULT 0,
-  `encryption_skill` TINYINT UNSIGNED NOT NULL DEFAULT 0,
-  `science1_skill` TINYINT UNSIGNED NOT NULL DEFAULT 0,
-  `science2_skill` TINYINT UNSIGNED NOT NULL DEFAULT 0,
-  `invention_runs` INT UNSIGNED NOT NULL DEFAULT 1,
-  `structure_type` VARCHAR(20) NULL,
-  `rig_me` VARCHAR(10) NULL,
-  `rig_te` VARCHAR(10) NULL,
-  `system_security` VARCHAR(10) NULL,
-  `facility_tax` DECIMAL(5,2) NOT NULL DEFAULT 0,
-  `solar_system_id` BIGINT UNSIGNED NULL,
-  `station_id` BIGINT UNSIGNED NULL,
-  `price_region_id` INT UNSIGNED NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
+CREATE INDEX `idx_public_contract_items_contract_id` ON `public_contract_items` (`contract_id`);
+CREATE INDEX `idx_public_contract_items_type_id` ON `public_contract_items` (`type_id`);
+CREATE INDEX `idx_public_contract_items_contract_id_type_id` ON `public_contract_items` (`contract_id`,`type_id`);
+CREATE TABLE `invention_plans` (
+  `id` INTEGER NOT NULL,
+  `user_id` INTEGER NOT NULL,
+  `name` TEXT NOT NULL,
+  `t2_type_id` INTEGER NOT NULL,
+  `t2_type_name` TEXT NOT NULL,
+  `decryptor_key` TEXT NOT NULL DEFAULT 'none',
+  `t1_me` INTEGER NOT NULL DEFAULT 0,
+  `t1_te` INTEGER NOT NULL DEFAULT 0,
+  `encryption_skill` INTEGER NOT NULL DEFAULT 0,
+  `science1_skill` INTEGER NOT NULL DEFAULT 0,
+  `science2_skill` INTEGER NOT NULL DEFAULT 0,
+  `invention_runs` INTEGER NOT NULL DEFAULT 1,
+  `structure_type` TEXT NULL,
+  `rig_me` TEXT NULL,
+  `rig_te` TEXT NULL,
+  `system_security` TEXT NULL,
+  `facility_tax` REAL NOT NULL DEFAULT 0,
+  `solar_system_id` INTEGER NULL,
+  `station_id` INTEGER NULL,
+  `price_region_id` INTEGER NULL,
+  `created_at` TIMESTAMP NULL,
+  `updated_at` TIMESTAMP NULL,
+  PRIMARY KEY (`id`)
+);
 CREATE TABLE `build_programs` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `program_type` VARCHAR(255) NOT NULL DEFAULT 'manufacturing',
-  `t2_type_id` INT NULL,
-  `t2_type_name` VARCHAR(255) NULL,
-  `steps` JSON NOT NULL,
-  `settings` JSON NOT NULL,
+  `id` INTEGER NOT NULL,
+  `user_id` INTEGER NOT NULL,
+  `name` TEXT NOT NULL,
+  `program_type` TEXT NOT NULL DEFAULT 'manufacturing',
+  `t2_type_id` INTEGER NULL,
+  `t2_type_name` TEXT NULL,
+  `steps` TEXT NOT NULL,
+  `settings` TEXT NOT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  KEY (`user_id`),
-  KEY `build_programs_user_updated_idx` (`user_id`,`updated_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`id`)
+);
+CREATE INDEX `idx_build_programs_user_id` ON `build_programs` (`user_id`);
+CREATE INDEX `build_programs_user_updated_idx` ON `build_programs` (`user_id`,`updated_at`);
 CREATE TABLE `wholemap_signatures` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `signature_id` VARCHAR(7) NULL,
-  `system_id` INT UNSIGNED NOT NULL,
-  `system_name` VARCHAR(255) NULL,
-  `type` ENUM('unknown','combat','data','relic','ore','gas','wormhole','ghost') NOT NULL DEFAULT 'unknown',
-  `name` VARCHAR(100) NULL,
-  `bookmark` VARCHAR(100) NULL,
+  `id` INTEGER NOT NULL,
+  `user_id` INTEGER NOT NULL,
+  `signature_id` TEXT NULL,
+  `system_id` INTEGER NOT NULL,
+  `system_name` TEXT NULL,
+  `type` TEXT NOT NULL DEFAULT 'unknown',
+  `name` TEXT NULL,
+  `bookmark` TEXT NULL,
   `description` TEXT NULL,
-  `locked` TINYINT(1) NOT NULL DEFAULT 0,
-  `created_by` VARCHAR(100) NULL,
-  `updated_by` VARCHAR(100) NULL,
+  `locked` INTEGER NOT NULL DEFAULT 0,
+  `created_by` TEXT NULL,
+  `updated_by` TEXT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  KEY (`user_id`,`system_id`),
-  KEY (`system_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`id`)
+);
+CREATE INDEX `idx_wholemap_signatures_user_id_system_id` ON `wholemap_signatures` (`user_id`,`system_id`);
+CREATE INDEX `idx_wholemap_signatures_system_id` ON `wholemap_signatures` (`system_id`);
 CREATE TABLE `wormhole_connections` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `signature_id` BIGINT UNSIGNED NOT NULL,
-  `from_system_id` INT UNSIGNED NOT NULL,
-  `from_system_name` VARCHAR(255) NULL,
-  `to_system_id` INT UNSIGNED NULL,
-  `to_system_name` VARCHAR(255) NULL,
-  `wormhole_type` VARCHAR(10) NULL,
-  `size` ENUM('small','medium','large','xlarge') NOT NULL DEFAULT 'large',
-  `life` ENUM('stable','critical') NOT NULL DEFAULT 'stable',
-  `mass` ENUM('stable','destab','critical') NOT NULL DEFAULT 'stable',
+  `id` INTEGER NOT NULL,
+  `user_id` INTEGER NOT NULL,
+  `signature_id` INTEGER NOT NULL,
+  `from_system_id` INTEGER NOT NULL,
+  `from_system_name` TEXT NULL,
+  `to_system_id` INTEGER NULL,
+  `to_system_name` TEXT NULL,
+  `wormhole_type` TEXT NULL,
+  `size` TEXT NOT NULL DEFAULT 'large',
+  `life` TEXT NOT NULL DEFAULT 'stable',
+  `mass` TEXT NOT NULL DEFAULT 'stable',
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  KEY (`user_id`,`from_system_id`),
-  KEY (`from_system_id`),
-  KEY (`to_system_id`),
-  FOREIGN KEY (`signature_id`) REFERENCES `wholemap_signatures` (`None`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`id`)
+);
+CREATE INDEX `idx_wormhole_connections_user_id_from_system_id` ON `wormhole_connections` (`user_id`,`from_system_id`);
+CREATE INDEX `idx_wormhole_connections_from_system_id` ON `wormhole_connections` (`from_system_id`);
+CREATE INDEX `idx_wormhole_connections_to_system_id` ON `wormhole_connections` (`to_system_id`);
 CREATE TABLE `wholemap_system_notes` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `system_id` INT UNSIGNED NOT NULL,
-  `system_name` VARCHAR(255) NULL,
-  `status` ENUM('unknown','friendly','occupied','hostile') NOT NULL DEFAULT 'unknown',
-  `comment` VARCHAR(255) NULL,
+  `id` INTEGER NOT NULL,
+  `user_id` INTEGER NOT NULL,
+  `system_id` INTEGER NOT NULL,
+  `system_name` TEXT NULL,
+  `status` TEXT NOT NULL DEFAULT 'unknown',
+  `comment` TEXT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`user_id`,`system_id`),
-  KEY (`system_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`user_id`,`system_id`)
+);
+CREATE INDEX `idx_wholemap_system_notes_system_id` ON `wholemap_system_notes` (`system_id`);
 CREATE TABLE `wormhole_jump_logs` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `connection_id` BIGINT UNSIGNED NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `character_id` INT UNSIGNED NULL,
-  `character_name` VARCHAR(100) NULL,
-  `ship_type_id` INT UNSIGNED NULL,
-  `ship_type_name` VARCHAR(100) NULL,
-  `ship_mass` FLOAT NULL,
+  `id` INTEGER NOT NULL,
+  `connection_id` INTEGER NOT NULL,
+  `user_id` INTEGER NOT NULL,
+  `character_id` INTEGER NULL,
+  `character_name` TEXT NULL,
+  `ship_type_id` INTEGER NULL,
+  `ship_type_name` TEXT NULL,
+  `ship_mass` REAL NULL,
   `jumped_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  KEY (`connection_id`,`jumped_at`),
-  KEY (`user_id`),
-  FOREIGN KEY (`connection_id`) REFERENCES `wormhole_connections` (`None`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`id`)
+);
+CREATE INDEX `idx_wormhole_jump_logs_connection_id_jumped_at` ON `wormhole_jump_logs` (`connection_id`,`jumped_at`);
+CREATE INDEX `idx_wormhole_jump_logs_user_id` ON `wormhole_jump_logs` (`user_id`);
 CREATE TABLE `market_groups` (
-  `market_group_id` INT UNSIGNED NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
+  `market_group_id` INTEGER NOT NULL,
+  `name` TEXT NOT NULL,
   `description` TEXT NULL,
-  `parent_group_id` INT UNSIGNED NULL,
-  `icon_id` INT UNSIGNED NULL,
-  `has_types` TINYINT(1) NOT NULL DEFAULT 0,
+  `parent_group_id` INTEGER NULL,
+  `icon_id` INTEGER NULL,
+  `has_types` INTEGER NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`market_group_id`),
-  KEY (`parent_group_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`market_group_id`)
+);
+CREATE INDEX `idx_market_groups_parent_group_id` ON `market_groups` (`parent_group_id`);
 CREATE TABLE `manufacturing_costs` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `product_type_id` INT UNSIGNED NOT NULL,
-  `blueprint_type_id` INT UNSIGNED NOT NULL,
-  `region_id` INT UNSIGNED NOT NULL,
-  `me_level` TINYINT UNSIGNED NOT NULL,
-  `product_name` VARCHAR(255) NOT NULL,
-  `blueprint_name` VARCHAR(255) NOT NULL,
-  `portion_size` INT UNSIGNED NOT NULL DEFAULT 1,
-  `input_cost` DOUBLE NOT NULL,
-  `output_value` DOUBLE NOT NULL,
-  `base_profit` DOUBLE NOT NULL,
-  `profit_margin` DOUBLE NOT NULL,
-  `sell_score` TINYINT UNSIGNED NOT NULL DEFAULT 0,
-  `sell_score_avg_daily_volume` DOUBLE NOT NULL DEFAULT 0,
-  `sell_score_avg_order_count` DOUBLE NOT NULL DEFAULT 0,
-  `sell_score_active_days` INT UNSIGNED NOT NULL DEFAULT 0,
-  `sell_score_total_days` INT UNSIGNED NOT NULL DEFAULT 0,
+  `id` INTEGER NOT NULL,
+  `product_type_id` INTEGER NOT NULL,
+  `blueprint_type_id` INTEGER NOT NULL,
+  `region_id` INTEGER NOT NULL,
+  `me_level` INTEGER NOT NULL,
+  `product_name` TEXT NOT NULL,
+  `blueprint_name` TEXT NOT NULL,
+  `portion_size` INTEGER NOT NULL DEFAULT 1,
+  `input_cost` REAL NOT NULL,
+  `output_value` REAL NOT NULL,
+  `base_profit` REAL NOT NULL,
+  `profit_margin` REAL NOT NULL,
+  `sell_score` INTEGER NOT NULL DEFAULT 0,
+  `sell_score_avg_daily_volume` REAL NOT NULL DEFAULT 0,
+  `sell_score_avg_order_count` REAL NOT NULL DEFAULT 0,
+  `sell_score_active_days` INTEGER NOT NULL DEFAULT 0,
+  `sell_score_total_days` INTEGER NOT NULL DEFAULT 0,
   `prices_as_of` TIMESTAMP NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `mfg_cost_unique` (`product_type_id`,`region_id`,`me_level`),
-  KEY (`region_id`),
-  KEY (`me_level`),
-  KEY `mfg_cost_region_me_product_idx` (`region_id`,`me_level`,`product_type_id`),
-  KEY `mfg_cost_region_me_profit_idx` (`region_id`,`me_level`,`base_profit`),
-  KEY `mfg_cost_region_updated_idx` (`region_id`,`updated_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `mfg_cost_unique` UNIQUE (`product_type_id`,`region_id`,`me_level`)
+);
+CREATE INDEX `idx_manufacturing_costs_region_id` ON `manufacturing_costs` (`region_id`);
+CREATE INDEX `idx_manufacturing_costs_me_level` ON `manufacturing_costs` (`me_level`);
+CREATE INDEX `mfg_cost_region_me_product_idx` ON `manufacturing_costs` (`region_id`,`me_level`,`product_type_id`);
+CREATE INDEX `mfg_cost_region_me_profit_idx` ON `manufacturing_costs` (`region_id`,`me_level`,`base_profit`);
+CREATE INDEX `mfg_cost_region_updated_idx` ON `manufacturing_costs` (`region_id`,`updated_at`);
 CREATE TABLE `inv_groups` (
-  `group_id` INT UNSIGNED NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `category_id` INT UNSIGNED NULL,
-  `published` TINYINT(1) NOT NULL DEFAULT 0,
+  `group_id` INTEGER NOT NULL,
+  `name` TEXT NOT NULL,
+  `category_id` INTEGER NULL,
+  `published` INTEGER NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`group_id`),
-  KEY (`name`),
-  KEY (`category_id`),
-  KEY (`published`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`group_id`)
+);
+CREATE INDEX `idx_inv_groups_name` ON `inv_groups` (`name`);
+CREATE INDEX `idx_inv_groups_category_id` ON `inv_groups` (`category_id`);
+CREATE INDEX `idx_inv_groups_published` ON `inv_groups` (`published`);
 CREATE TABLE `inv_categories` (
-  `category_id` INT UNSIGNED NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `published` TINYINT(1) NOT NULL DEFAULT 0,
+  `category_id` INTEGER NOT NULL,
+  `name` TEXT NOT NULL,
+  `published` INTEGER NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`category_id`),
-  KEY (`name`),
-  KEY (`published`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`category_id`)
+);
+CREATE INDEX `idx_inv_categories_name` ON `inv_categories` (`name`);
+CREATE INDEX `idx_inv_categories_published` ON `inv_categories` (`published`);
 CREATE TABLE `discord_bot_settings` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
+  `id` INTEGER NOT NULL,
   `bot_token` TEXT NULL,
-  `bot_name` VARCHAR(255) NOT NULL DEFAULT 'EVE Industrialist Bot',
-  `bot_avatar_url` VARCHAR(512) NULL,
-  `welcome_channel_id` VARCHAR(30) NULL,
+  `bot_name` TEXT NOT NULL DEFAULT 'EVE Industrialist Bot',
+  `bot_avatar_url` TEXT NULL,
+  `welcome_channel_id` TEXT NULL,
   `welcome_message` TEXT NULL,
-  `is_enabled` TINYINT(1) NOT NULL DEFAULT 0,
+  `is_enabled` INTEGER NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 CREATE TABLE `moon_scan_results` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `system_id` BIGINT UNSIGNED NULL,
-  `moon_name` VARCHAR(255) NOT NULL,
-  `planet_name` VARCHAR(255) NULL,
-  `grade` VARCHAR(2) NOT NULL DEFAULT 'D',
-  `ores` JSON NOT NULL,
-  `total_value` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  `id` INTEGER NOT NULL,
+  `system_id` INTEGER NULL,
+  `moon_name` TEXT NOT NULL,
+  `planet_name` TEXT NULL,
+  `grade` TEXT NOT NULL DEFAULT 'D',
+  `ores` TEXT NOT NULL,
+  `total_value` INTEGER NOT NULL DEFAULT 0,
   `scanned_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `occupied` TINYINT(1) NOT NULL DEFAULT 0,
-  `occupying_corporation_id` BIGINT UNSIGNED NULL,
-  `occupying_corporation_name` VARCHAR(255) NULL,
+  `occupied` INTEGER NOT NULL DEFAULT 0,
+  `occupying_corporation_id` INTEGER NULL,
+  `occupying_corporation_name` TEXT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  KEY (`scanned_at`),
   CONSTRAINT `moon_scan_results_system_id_foreign` FOREIGN KEY (`system_id`) REFERENCES `moon_scan_systems` (`id`) ON DELETE CASCADE,
-  KEY (`system_id`),
-  UNIQUE KEY `moon_scan_results_system_id_moon_name_unique` (`system_id`,`moon_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `moon_scan_results_system_id_moon_name_unique` UNIQUE (`system_id`,`moon_name`)
+);
+CREATE INDEX `idx_moon_scan_results_scanned_at` ON `moon_scan_results` (`scanned_at`);
+CREATE INDEX `idx_moon_scan_results_system_id` ON `moon_scan_results` (`system_id`);
 CREATE TABLE `moon_scan_systems` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `system_name` VARCHAR(255) NOT NULL,
-  `corporation_id` BIGINT UNSIGNED NULL,
-  `region_id` BIGINT UNSIGNED NOT NULL,
-  `pricing_mode` VARCHAR(16) NOT NULL DEFAULT 'raw',
+  `id` INTEGER NOT NULL,
+  `system_name` TEXT NOT NULL,
+  `corporation_id` INTEGER NULL,
+  `region_id` INTEGER NOT NULL,
+  `pricing_mode` TEXT NOT NULL DEFAULT 'raw',
   `last_scanned_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`system_name`,`corporation_id`),
-  KEY (`corporation_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`system_name`,`corporation_id`)
+);
+CREATE INDEX `idx_moon_scan_systems_corporation_id` ON `moon_scan_systems` (`corporation_id`);
 CREATE TABLE `player_owned_structures` (
-  `structure_id` BIGINT UNSIGNED NOT NULL,
-  `name` VARCHAR(255) NULL,
-  `owner_id` BIGINT UNSIGNED NULL,
-  `solar_system_id` INT UNSIGNED NULL,
-  `type_id` INT UNSIGNED NULL,
-  `position_x` DOUBLE NULL,
-  `position_y` DOUBLE NULL,
-  `position_z` DOUBLE NULL,
+  `structure_id` INTEGER NOT NULL,
+  `name` TEXT NULL,
+  `owner_id` INTEGER NULL,
+  `solar_system_id` INTEGER NULL,
+  `type_id` INTEGER NULL,
+  `position_x` REAL NULL,
+  `position_y` REAL NULL,
+  `position_z` REAL NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`structure_id`),
-  KEY (`owner_id`),
-  KEY (`solar_system_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`structure_id`)
+);
+CREATE INDEX `idx_player_owned_structures_owner_id` ON `player_owned_structures` (`owner_id`);
+CREATE INDEX `idx_player_owned_structures_solar_system_id` ON `player_owned_structures` (`solar_system_id`);
 CREATE TABLE `structure_character_access` (
-  `structure_id` BIGINT UNSIGNED NOT NULL,
-  `character_id` BIGINT UNSIGNED NOT NULL,
+  `structure_id` INTEGER NOT NULL,
+  `character_id` INTEGER NOT NULL,
   `access_denied_at` TIMESTAMP NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`structure_id`,`character_id`),
-  KEY (`character_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`structure_id`,`character_id`)
+);
+CREATE INDEX `idx_structure_character_access_character_id` ON `structure_character_access` (`character_id`);
 CREATE TABLE `corporation_build_program_configs` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `corporation_id` BIGINT UNSIGNED NOT NULL,
-  `corporation_name` VARCHAR(255) NULL,
-  `character_id` BIGINT UNSIGNED NOT NULL COMMENT 'Director/CEO character providing asset access',
-  `enabled_by_user_id` BIGINT UNSIGNED NOT NULL,
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `id` INTEGER NOT NULL,
+  `corporation_id` INTEGER NOT NULL,
+  `corporation_name` TEXT NULL,
+  `character_id` INTEGER NOT NULL,
+  `enabled_by_user_id` INTEGER NOT NULL,
+  `is_active` INTEGER NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`corporation_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`corporation_id`)
+);
 CREATE TABLE `corporation_build_programs` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `corporation_id` BIGINT UNSIGNED NOT NULL,
-  `created_by_user_id` BIGINT UNSIGNED NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `program_type` VARCHAR(255) NOT NULL DEFAULT 'manufacturing' COMMENT 'manufacturing or reaction',
-  `t2_type_id` BIGINT UNSIGNED NULL,
-  `t2_type_name` VARCHAR(255) NULL,
-  `steps` JSON NOT NULL,
-  `settings` JSON NULL,
+  `id` INTEGER NOT NULL,
+  `corporation_id` INTEGER NOT NULL,
+  `created_by_user_id` INTEGER NOT NULL,
+  `name` TEXT NOT NULL,
+  `program_type` TEXT NOT NULL DEFAULT 'manufacturing',
+  `t2_type_id` INTEGER NULL,
+  `t2_type_name` TEXT NULL,
+  `steps` TEXT NOT NULL,
+  `settings` TEXT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  KEY (`corporation_id`),
-  KEY `corp_build_programs_corp_updated_idx` (`corporation_id`,`updated_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`id`)
+);
+CREATE INDEX `idx_corporation_build_programs_corporation_id` ON `corporation_build_programs` (`corporation_id`);
+CREATE INDEX `corp_build_programs_corp_updated_idx` ON `corporation_build_programs` (`corporation_id`,`updated_at`);
 CREATE TABLE `industry_stock_items` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `type_id` BIGINT UNSIGNED NOT NULL,
-  `type_name` VARCHAR(255) NOT NULL,
-  `desired_quantity` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  `id` INTEGER NOT NULL,
+  `user_id` INTEGER NOT NULL,
+  `type_id` INTEGER NOT NULL,
+  `type_name` TEXT NOT NULL,
+  `desired_quantity` INTEGER NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`user_id`,`type_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`user_id`,`type_id`)
+);
 CREATE TABLE `ess_tracked_systems` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `corporation_id` INT NOT NULL,
-  `solar_system_id` INT NOT NULL,
-  `solar_system_name` VARCHAR(255) NOT NULL,
-  `cycle_minutes` SMALLINT UNSIGNED NOT NULL DEFAULT 165,
+  `id` INTEGER NOT NULL,
+  `corporation_id` INTEGER NOT NULL,
+  `solar_system_id` INTEGER NOT NULL,
+  `solar_system_name` TEXT NOT NULL,
+  `cycle_minutes` INTEGER NOT NULL DEFAULT 165,
   `cycle_anchor_at` TIMESTAMP NOT NULL,
   `notes` TEXT NULL,
-  `created_by_user_id` BIGINT UNSIGNED NULL,
+  `created_by_user_id` INTEGER NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`corporation_id`,`solar_system_id`),
-  KEY (`corporation_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`corporation_id`,`solar_system_id`)
+);
+CREATE INDEX `idx_ess_tracked_systems_corporation_id` ON `ess_tracked_systems` (`corporation_id`);
 CREATE TABLE `ess_payout_events` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `ess_tracked_system_id` BIGINT UNSIGNED NOT NULL,
+  `id` INTEGER NOT NULL,
+  `ess_tracked_system_id` INTEGER NOT NULL,
   `occurred_at` TIMESTAMP NOT NULL,
-  `amount_isk` DECIMAL(20,2) NULL,
-  `recorded_by_user_id` BIGINT UNSIGNED NULL,
+  `amount_isk` REAL NULL,
+  `recorded_by_user_id` INTEGER NULL,
   `notes` TEXT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  KEY (`ess_tracked_system_id`,`occurred_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`id`)
+);
+CREATE INDEX `idx_ess_payout_events_ess_tracked_system_id_occurred_at` ON `ess_payout_events` (`ess_tracked_system_id`,`occurred_at`);
 CREATE TABLE `structure_vulnerability_windows` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `corporation_id` INT NOT NULL,
-  `solar_system_id` INT NOT NULL,
-  `solar_system_name` VARCHAR(255) NOT NULL,
-  `structure_type` VARCHAR(16) NOT NULL,
-  `structure_name` VARCHAR(255) NOT NULL,
-  `day_of_week` TINYINT UNSIGNED NULL,
+  `id` INTEGER NOT NULL,
+  `corporation_id` INTEGER NOT NULL,
+  `solar_system_id` INTEGER NOT NULL,
+  `solar_system_name` TEXT NOT NULL,
+  `structure_type` TEXT NOT NULL,
+  `structure_name` TEXT NOT NULL,
+  `day_of_week` INTEGER NULL,
   `start_time_utc` TIME NOT NULL,
-  `duration_minutes` SMALLINT UNSIGNED NOT NULL DEFAULT 60,
+  `duration_minutes` INTEGER NOT NULL DEFAULT 60,
   `reinforce_exit_at` TIMESTAMP NULL,
   `notes` TEXT NULL,
-  `created_by_user_id` BIGINT UNSIGNED NULL,
+  `created_by_user_id` INTEGER NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  KEY `svw_corp_system_idx` (`corporation_id`,`solar_system_id`),
-  KEY `svw_corp_idx` (`corporation_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`id`)
+);
+CREATE INDEX `svw_corp_system_idx` ON `structure_vulnerability_windows` (`corporation_id`,`solar_system_id`);
+CREATE INDEX `svw_corp_idx` ON `structure_vulnerability_windows` (`corporation_id`);
 CREATE TABLE `market_order_sweeps` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `sweep_id` CHAR(36) NOT NULL,
-  `region_id` INT UNSIGNED NOT NULL,
-  `generation` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `status` VARCHAR(16) NOT NULL DEFAULT 'running',
+  `id` INTEGER NOT NULL,
+  `sweep_id` TEXT NOT NULL,
+  `region_id` INTEGER NOT NULL,
+  `generation` INTEGER NOT NULL DEFAULT 0,
+  `status` TEXT NOT NULL DEFAULT 'running',
   `started_at` TIMESTAMP NOT NULL,
   `finished_at` TIMESTAMP NULL,
-  `duration_seconds` INT UNSIGNED NULL,
-  `pages_total` INT UNSIGNED NOT NULL DEFAULT 0,
-  `pages_fetched` INT UNSIGNED NOT NULL DEFAULT 0,
-  `pages_not_modified` INT UNSIGNED NOT NULL DEFAULT 0,
-  `orders_seen` INT UNSIGNED NOT NULL DEFAULT 0,
-  `orders_deleted` INT UNSIGNED NOT NULL DEFAULT 0,
-  `types_aggregated` INT UNSIGNED NOT NULL DEFAULT 0,
-  `error` VARCHAR(500) NULL,
+  `duration_seconds` INTEGER NULL,
+  `pages_total` INTEGER NOT NULL DEFAULT 0,
+  `pages_fetched` INTEGER NOT NULL DEFAULT 0,
+  `pages_not_modified` INTEGER NOT NULL DEFAULT 0,
+  `orders_seen` INTEGER NOT NULL DEFAULT 0,
+  `orders_deleted` INTEGER NOT NULL DEFAULT 0,
+  `types_aggregated` INTEGER NOT NULL DEFAULT 0,
+  `error` TEXT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`sweep_id`),
-  KEY `market_order_sweeps_region_status_started_idx` (`region_id`,`status`,`started_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`sweep_id`)
+);
+CREATE INDEX `market_order_sweeps_region_status_started_idx` ON `market_order_sweeps` (`region_id`,`status`,`started_at`);
 CREATE TABLE `market_aggregates` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `region_id` INT UNSIGNED NOT NULL,
-  `type_id` INT UNSIGNED NOT NULL,
-  `sweep_id` CHAR(36) NOT NULL,
+  `id` INTEGER NOT NULL,
+  `region_id` INTEGER NOT NULL,
+  `type_id` INTEGER NOT NULL,
+  `sweep_id` TEXT NOT NULL,
   `snapshot_at` TIMESTAMP NOT NULL,
-  `best_bid` DOUBLE NULL,
-  `best_ask` DOUBLE NULL,
-  `sell_price_p5` DOUBLE NULL,
-  `sell_volume` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `buy_volume` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `sell_orders` INT UNSIGNED NOT NULL DEFAULT 0,
-  `buy_orders` INT UNSIGNED NOT NULL DEFAULT 0,
+  `best_bid` REAL NULL,
+  `best_ask` REAL NULL,
+  `sell_price_p5` REAL NULL,
+  `sell_volume` INTEGER NOT NULL DEFAULT 0,
+  `buy_volume` INTEGER NOT NULL DEFAULT 0,
+  `sell_orders` INTEGER NOT NULL DEFAULT 0,
+  `buy_orders` INTEGER NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  KEY `market_aggregates_region_snapshot_idx` (`region_id`,`snapshot_at`),
-  UNIQUE KEY `market_aggregates_region_sweep_type_unique` (`region_id`,`sweep_id`,`type_id`),
-  KEY `market_aggregates_region_sweep_idx` (`region_id`,`sweep_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `market_aggregates_region_sweep_type_unique` UNIQUE (`region_id`,`sweep_id`,`type_id`)
+);
+CREATE INDEX `market_aggregates_region_snapshot_idx` ON `market_aggregates` (`region_id`,`snapshot_at`);
+CREATE INDEX `market_aggregates_region_sweep_idx` ON `market_aggregates` (`region_id`,`sweep_id`);
 CREATE TABLE `asset_snapshot_owners` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `owner_type` VARCHAR(16) NOT NULL,
-  `owner_id` BIGINT UNSIGNED NOT NULL,
-  `generation` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `active_snapshot_id` BIGINT UNSIGNED NULL,
+  `id` INTEGER NOT NULL,
+  `owner_type` TEXT NOT NULL,
+  `owner_id` INTEGER NOT NULL,
+  `generation` INTEGER NOT NULL DEFAULT 0,
+  `active_snapshot_id` INTEGER NULL,
   `last_checked_at` TIMESTAMP NULL,
   `last_succeeded_at` TIMESTAMP NULL,
   `next_due_at` TIMESTAMP NULL,
-  `failure_reason` VARCHAR(64) NULL,
+  `failure_reason` TEXT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`owner_type`,`owner_id`),
-  KEY (`next_due_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`owner_type`,`owner_id`)
+);
+CREATE INDEX `idx_asset_snapshot_owners_next_due_at` ON `asset_snapshot_owners` (`next_due_at`);
 CREATE TABLE `asset_snapshots` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `owner_id` BIGINT UNSIGNED NOT NULL,
-  `generation` BIGINT UNSIGNED NOT NULL,
-  `status` VARCHAR(16) NOT NULL DEFAULT 'building',
-  `item_count` INT UNSIGNED NOT NULL DEFAULT 0,
-  `enrichment_pending` TINYINT(1) NOT NULL DEFAULT 0,
+  `id` INTEGER NOT NULL,
+  `owner_id` INTEGER NOT NULL,
+  `generation` INTEGER NOT NULL,
+  `status` TEXT NOT NULL DEFAULT 'building',
+  `item_count` INTEGER NOT NULL DEFAULT 0,
+  `enrichment_pending` INTEGER NOT NULL DEFAULT 0,
   `source_updated_at` TIMESTAMP NULL,
   `source_expires_at` TIMESTAMP NULL,
   `published_at` TIMESTAMP NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`owner_id`,`generation`),
-  KEY (`owner_id`,`status`),
-  FOREIGN KEY (`owner_id`) REFERENCES `asset_snapshot_owners` (`None`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`owner_id`,`generation`)
+);
+CREATE INDEX `idx_asset_snapshots_owner_id_status` ON `asset_snapshots` (`owner_id`,`status`);
 CREATE TABLE `asset_snapshot_items` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `snapshot_id` BIGINT UNSIGNED NOT NULL,
-  `item_id` BIGINT UNSIGNED NOT NULL,
-  `type_id` INT UNSIGNED NOT NULL,
-  `quantity` BIGINT NOT NULL,
-  `location_id` BIGINT UNSIGNED NOT NULL,
-  `parent_item_id` BIGINT UNSIGNED NULL,
-  `root_item_id` BIGINT UNSIGNED NOT NULL,
-  `root_location_id` BIGINT UNSIGNED NOT NULL,
-  `solar_system_id` BIGINT UNSIGNED NULL,
-  `solar_system_name` VARCHAR(255) NOT NULL,
-  `type_name` VARCHAR(255) NOT NULL,
-  `name` VARCHAR(255) NULL,
-  `location_name` VARCHAR(255) NOT NULL,
-  `character_name` VARCHAR(255) NOT NULL,
-  `owner_type` VARCHAR(16) NOT NULL,
-  `payload` JSON NOT NULL,
-  `raw_payload` JSON NOT NULL,
+  `id` INTEGER NOT NULL,
+  `snapshot_id` INTEGER NOT NULL,
+  `item_id` INTEGER NOT NULL,
+  `type_id` INTEGER NOT NULL,
+  `quantity` INTEGER NOT NULL,
+  `location_id` INTEGER NOT NULL,
+  `parent_item_id` INTEGER NULL,
+  `root_item_id` INTEGER NOT NULL,
+  `root_location_id` INTEGER NOT NULL,
+  `solar_system_id` INTEGER NULL,
+  `solar_system_name` TEXT NOT NULL,
+  `type_name` TEXT NOT NULL,
+  `name` TEXT NULL,
+  `location_name` TEXT NOT NULL,
+  `character_name` TEXT NOT NULL,
+  `owner_type` TEXT NOT NULL,
+  `payload` TEXT NOT NULL,
+  `raw_payload` TEXT NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`snapshot_id`,`item_id`),
-  KEY (`snapshot_id`,`parent_item_id`),
-  KEY (`snapshot_id`,`root_item_id`),
-  KEY `asset_items_snapshot_location_parent_idx` (`snapshot_id`,`root_location_id`,`parent_item_id`),
-  KEY (`snapshot_id`,`type_name`),
-  KEY (`snapshot_id`,`quantity`),
-  FOREIGN KEY (`snapshot_id`) REFERENCES `asset_snapshots` (`None`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`snapshot_id`,`item_id`)
+);
+CREATE INDEX `idx_asset_snapshot_items_snapshot_id_parent_item_id` ON `asset_snapshot_items` (`snapshot_id`,`parent_item_id`);
+CREATE INDEX `idx_asset_snapshot_items_snapshot_id_root_item_id` ON `asset_snapshot_items` (`snapshot_id`,`root_item_id`);
+CREATE INDEX `asset_items_snapshot_location_parent_idx` ON `asset_snapshot_items` (`snapshot_id`,`root_location_id`,`parent_item_id`);
+CREATE INDEX `idx_asset_snapshot_items_snapshot_id_type_name` ON `asset_snapshot_items` (`snapshot_id`,`type_name`);
+CREATE INDEX `idx_asset_snapshot_items_snapshot_id_quantity` ON `asset_snapshot_items` (`snapshot_id`,`quantity`);
 CREATE TABLE `market_region_states` (
-  `region_id` INT UNSIGNED NOT NULL,
-  `latest_generation` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `latest_sweep_id` CHAR(36) NULL,
+  `region_id` INTEGER NOT NULL,
+  `latest_generation` INTEGER NOT NULL DEFAULT 0,
+  `latest_sweep_id` TEXT NULL,
   `latest_started_at` TIMESTAMP NULL,
-  `active_generation` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `active_sweep_id` CHAR(36) NULL,
+  `active_generation` INTEGER NOT NULL DEFAULT 0,
+  `active_sweep_id` TEXT NULL,
   `active_snapshot_at` TIMESTAMP NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`region_id`),
-  KEY `market_region_states_active_sweep_idx` (`active_sweep_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`region_id`)
+);
+CREATE INDEX `market_region_states_active_sweep_idx` ON `market_region_states` (`active_sweep_id`);
 CREATE TABLE `public_contract_generations` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `status` VARCHAR(16) NOT NULL,
-  `contract_count` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `item_count` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  `id` INTEGER NOT NULL,
+  `status` TEXT NOT NULL,
+  `contract_count` INTEGER NOT NULL DEFAULT 0,
+  `item_count` INTEGER NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `published_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`),
-  KEY (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`id`)
+);
+CREATE INDEX `idx_public_contract_generations_status` ON `public_contract_generations` (`status`);
 CREATE TABLE `public_contract_snapshot_state` (
-  `id` TINYINT UNSIGNED NOT NULL,
-  `active_generation_id` BIGINT UNSIGNED NULL,
+  `id` INTEGER NOT NULL,
+  `active_generation_id` INTEGER NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`active_generation_id`) REFERENCES `public_contract_generations` (`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 CREATE TABLE `public_contract_snapshot_contracts` (
-  `generation_id` BIGINT UNSIGNED NOT NULL,
-  `contract_id` BIGINT UNSIGNED NOT NULL,
-  `region_id` INT UNSIGNED NOT NULL,
-  `type` VARCHAR(30) NOT NULL,
-  `title` VARCHAR(255) NULL,
-  `for_corporation` TINYINT(1) NOT NULL DEFAULT 0,
-  `issuer_corporation_id` BIGINT UNSIGNED NULL,
-  `issuer_id` BIGINT UNSIGNED NULL,
+  `generation_id` INTEGER NOT NULL,
+  `contract_id` INTEGER NOT NULL,
+  `region_id` INTEGER NOT NULL,
+  `type` TEXT NOT NULL,
+  `title` TEXT NULL,
+  `for_corporation` INTEGER NOT NULL DEFAULT 0,
+  `issuer_corporation_id` INTEGER NULL,
+  `issuer_id` INTEGER NULL,
   `date_issued` TIMESTAMP NULL,
   `date_expired` TIMESTAMP NULL,
-  `days_to_complete` INT UNSIGNED NOT NULL DEFAULT 0,
-  `start_location_id` BIGINT UNSIGNED NULL,
-  `end_location_id` BIGINT UNSIGNED NULL,
-  `station_id` BIGINT UNSIGNED NULL,
-  `system_id` INT UNSIGNED NULL,
-  `constellation_id` INT UNSIGNED NULL,
-  `price` DOUBLE NOT NULL DEFAULT 0,
-  `buyout` DOUBLE NULL,
-  `reward` DOUBLE NULL,
-  `collateral` DOUBLE NULL,
-  `volume` DOUBLE NOT NULL DEFAULT 0,
+  `days_to_complete` INTEGER NOT NULL DEFAULT 0,
+  `start_location_id` INTEGER NULL,
+  `end_location_id` INTEGER NULL,
+  `station_id` INTEGER NULL,
+  `system_id` INTEGER NULL,
+  `constellation_id` INTEGER NULL,
+  `price` REAL NOT NULL DEFAULT 0,
+  `buyout` REAL NULL,
+  `reward` REAL NULL,
+  `collateral` REAL NULL,
+  `volume` REAL NOT NULL DEFAULT 0,
   `http_last_modified` TIMESTAMP NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`generation_id`,`contract_id`),
-  KEY (`region_id`),
-  KEY (`type`),
   FOREIGN KEY (`generation_id`) REFERENCES `public_contract_generations` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
+CREATE INDEX `idx_public_contract_snapshot_contracts_region_id` ON `public_contract_snapshot_contracts` (`region_id`);
+CREATE INDEX `idx_public_contract_snapshot_contracts_type` ON `public_contract_snapshot_contracts` (`type`);
 CREATE TABLE `public_contract_snapshot_items` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `generation_id` BIGINT UNSIGNED NOT NULL,
-  `contract_id` BIGINT UNSIGNED NOT NULL,
-  `type_id` INT UNSIGNED NOT NULL,
-  `quantity` INT UNSIGNED NOT NULL DEFAULT 1,
-  `is_included` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_blueprint_copy` TINYINT(1) NULL,
-  `material_efficiency` SMALLINT UNSIGNED NULL,
-  `time_efficiency` SMALLINT UNSIGNED NULL,
-  `runs` INT NULL,
-  `record_id` BIGINT UNSIGNED NULL,
-  `item_id` BIGINT UNSIGNED NULL,
+  `id` INTEGER NOT NULL,
+  `generation_id` INTEGER NOT NULL,
+  `contract_id` INTEGER NOT NULL,
+  `type_id` INTEGER NOT NULL,
+  `quantity` INTEGER NOT NULL DEFAULT 1,
+  `is_included` INTEGER NOT NULL DEFAULT 1,
+  `is_blueprint_copy` INTEGER NULL,
+  `material_efficiency` INTEGER NULL,
+  `time_efficiency` INTEGER NULL,
+  `runs` INTEGER NULL,
+  `record_id` INTEGER NULL,
+  `item_id` INTEGER NULL,
   `http_last_modified` TIMESTAMP NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  KEY (`contract_id`),
-  KEY (`type_id`),
-  KEY `pc_items_generation_contract_type_idx` (`generation_id`,`contract_id`,`type_id`),
   FOREIGN KEY (`generation_id`) REFERENCES `public_contract_generations` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
+CREATE INDEX `idx_public_contract_snapshot_items_contract_id` ON `public_contract_snapshot_items` (`contract_id`);
+CREATE INDEX `idx_public_contract_snapshot_items_type_id` ON `public_contract_snapshot_items` (`type_id`);
+CREATE INDEX `pc_items_generation_contract_type_idx` ON `public_contract_snapshot_items` (`generation_id`,`contract_id`,`type_id`);
 CREATE TABLE `esi_diagnostic_events` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `event_id` VARCHAR(26) NOT NULL,
-  `occurred_at` TIMESTAMP(6) NOT NULL,
-  `kind` VARCHAR(24) NOT NULL,
-  `method` VARCHAR(7) NULL,
-  `operation_key` VARCHAR(160) NOT NULL DEFAULT '',
-  `compatibility_date` VARCHAR(10) NULL,
-  `dataset` VARCHAR(48) NULL,
-  `job_class` VARCHAR(96) NULL,
-  `correlation_id` VARCHAR(64) NULL,
-  `source_identity` VARCHAR(48) NOT NULL DEFAULT '',
-  `application_id` VARCHAR(48) NOT NULL DEFAULT '',
-  `character_id` BIGINT UNSIGNED NULL,
-  `corporation_id` BIGINT UNSIGNED NULL,
-  `resource_id` BIGINT UNSIGNED NULL,
-  `page` SMALLINT UNSIGNED NULL,
-  `batch_size` SMALLINT UNSIGNED NULL,
-  `http_status` SMALLINT UNSIGNED NULL,
-  `reason` VARCHAR(32) NOT NULL DEFAULT 'unknown',
-  `duration_ms` INT UNSIGNED NULL,
-  `response_received` TINYINT(1) NOT NULL DEFAULT 0,
-  `legacy_remaining` SMALLINT NULL,
-  `legacy_reset_seconds` INT UNSIGNED NULL,
+  `id` INTEGER NOT NULL,
+  `event_id` TEXT NOT NULL,
+  `occurred_at` TIMESTAMP NOT NULL,
+  `kind` TEXT NOT NULL,
+  `method` TEXT NULL,
+  `operation_key` TEXT NOT NULL DEFAULT '',
+  `compatibility_date` TEXT NULL,
+  `dataset` TEXT NULL,
+  `job_class` TEXT NULL,
+  `correlation_id` TEXT NULL,
+  `source_identity` TEXT NOT NULL DEFAULT '',
+  `application_id` TEXT NOT NULL DEFAULT '',
+  `character_id` INTEGER NULL,
+  `corporation_id` INTEGER NULL,
+  `resource_id` INTEGER NULL,
+  `page` INTEGER NULL,
+  `batch_size` INTEGER NULL,
+  `http_status` INTEGER NULL,
+  `reason` TEXT NOT NULL DEFAULT 'unknown',
+  `duration_ms` INTEGER NULL,
+  `response_received` INTEGER NOT NULL DEFAULT 0,
+  `legacy_remaining` INTEGER NULL,
+  `legacy_reset_seconds` INTEGER NULL,
   `legacy_reset_at` TIMESTAMP NULL,
-  `limiter_group` VARCHAR(64) NULL,
-  `token_limit` VARCHAR(32) NULL,
-  `token_used` INT UNSIGNED NULL,
-  `token_remaining` INT NULL,
-  `retry_after_seconds` INT UNSIGNED NULL,
-  `upstream_request_id` VARCHAR(64) NULL,
-  `batch_fingerprint` VARCHAR(64) NULL,
-  `release` VARCHAR(40) NULL,
+  `limiter_group` TEXT NULL,
+  `token_limit` TEXT NULL,
+  `token_used` INTEGER NULL,
+  `token_remaining` INTEGER NULL,
+  `retry_after_seconds` INTEGER NULL,
+  `upstream_request_id` TEXT NULL,
+  `batch_fingerprint` TEXT NULL,
+  `release` TEXT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`event_id`),
-  KEY (`occurred_at`,`id`),
-  KEY `esi_events_operation_status_idx` (`operation_key`,`http_status`,`occurred_at`),
-  KEY (`character_id`,`occurred_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`event_id`)
+);
+CREATE INDEX `idx_esi_diagnostic_events_occurred_at_id` ON `esi_diagnostic_events` (`occurred_at`,`id`);
+CREATE INDEX `esi_events_operation_status_idx` ON `esi_diagnostic_events` (`operation_key`,`http_status`,`occurred_at`);
+CREATE INDEX `idx_esi_diagnostic_events_character_id_occurred_at` ON `esi_diagnostic_events` (`character_id`,`occurred_at`);
 CREATE TABLE `esi_endpoint_metrics` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `dimension_hash` VARCHAR(64) NOT NULL,
+  `id` INTEGER NOT NULL,
+  `dimension_hash` TEXT NOT NULL,
   `bucket_at` TIMESTAMP NOT NULL,
-  `operation_key` VARCHAR(160) NOT NULL DEFAULT '',
-  `event_kind` VARCHAR(24) NOT NULL,
-  `http_status` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-  `reason` VARCHAR(32) NOT NULL DEFAULT 'unknown',
-  `dataset` VARCHAR(48) NOT NULL DEFAULT '',
-  `source_identity` VARCHAR(48) NOT NULL DEFAULT '',
-  `limiter_group` VARCHAR(64) NOT NULL DEFAULT '',
-  `request_count` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `success_count` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `error_count` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `duration_sum_ms` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `duration_count` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `duration_max_ms` INT UNSIGNED NOT NULL DEFAULT 0,
-  `first_observed_at` TIMESTAMP(6) NULL,
-  `last_observed_at` TIMESTAMP(6) NULL,
+  `operation_key` TEXT NOT NULL DEFAULT '',
+  `event_kind` TEXT NOT NULL,
+  `http_status` INTEGER NOT NULL DEFAULT 0,
+  `reason` TEXT NOT NULL DEFAULT 'unknown',
+  `dataset` TEXT NOT NULL DEFAULT '',
+  `source_identity` TEXT NOT NULL DEFAULT '',
+  `limiter_group` TEXT NOT NULL DEFAULT '',
+  `request_count` INTEGER NOT NULL DEFAULT 0,
+  `success_count` INTEGER NOT NULL DEFAULT 0,
+  `error_count` INTEGER NOT NULL DEFAULT 0,
+  `duration_sum_ms` INTEGER NOT NULL DEFAULT 0,
+  `duration_count` INTEGER NOT NULL DEFAULT 0,
+  `duration_max_ms` INTEGER NOT NULL DEFAULT 0,
+  `first_observed_at` TIMESTAMP NULL,
+  `last_observed_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `esi_endpoint_metrics_unique` (`dimension_hash`,`bucket_at`),
-  KEY (`bucket_at`),
-  KEY (`operation_key`,`bucket_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `esi_endpoint_metrics_unique` UNIQUE (`dimension_hash`,`bucket_at`)
+);
+CREATE INDEX `idx_esi_endpoint_metrics_bucket_at` ON `esi_endpoint_metrics` (`bucket_at`);
+CREATE INDEX `idx_esi_endpoint_metrics_operation_key_bucket_at` ON `esi_endpoint_metrics` (`operation_key`,`bucket_at`);
 CREATE TABLE `esi_budget_metrics` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `dimension_hash` VARCHAR(64) NOT NULL,
+  `id` INTEGER NOT NULL,
+  `dimension_hash` TEXT NOT NULL,
   `bucket_at` TIMESTAMP NOT NULL,
-  `granularity` VARCHAR(6) NOT NULL,
-  `source_identity` VARCHAR(48) NOT NULL DEFAULT '',
-  `application_id` VARCHAR(48) NOT NULL DEFAULT '',
-  `mechanism` VARCHAR(8) NOT NULL,
-  `limiter_group` VARCHAR(64) NOT NULL DEFAULT '',
-  `observations` INT UNSIGNED NOT NULL DEFAULT 0,
-  `remaining_min` INT NULL,
-  `remaining_max` INT NULL,
-  `remaining_first` INT NULL,
-  `remaining_last` INT NULL,
-  `used_sum` BIGINT UNSIGNED NULL,
+  `granularity` TEXT NOT NULL,
+  `source_identity` TEXT NOT NULL DEFAULT '',
+  `application_id` TEXT NOT NULL DEFAULT '',
+  `mechanism` TEXT NOT NULL,
+  `limiter_group` TEXT NOT NULL DEFAULT '',
+  `observations` INTEGER NOT NULL DEFAULT 0,
+  `remaining_min` INTEGER NULL,
+  `remaining_max` INTEGER NULL,
+  `remaining_first` INTEGER NULL,
+  `remaining_last` INTEGER NULL,
+  `used_sum` INTEGER NULL,
   `reset_at_min` TIMESTAMP NULL,
   `reset_at_max` TIMESTAMP NULL,
-  `circuit_opened_count` INT UNSIGNED NOT NULL DEFAULT 0,
-  `circuit_closed_count` INT UNSIGNED NOT NULL DEFAULT 0,
-  `pause_seconds` INT UNSIGNED NOT NULL DEFAULT 0,
+  `circuit_opened_count` INTEGER NOT NULL DEFAULT 0,
+  `circuit_closed_count` INTEGER NOT NULL DEFAULT 0,
+  `pause_seconds` INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `esi_budget_metrics_unique` (`dimension_hash`,`bucket_at`),
-  KEY (`granularity`,`bucket_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `esi_budget_metrics_unique` UNIQUE (`dimension_hash`,`bucket_at`)
+);
+CREATE INDEX `idx_esi_budget_metrics_granularity_bucket_at` ON `esi_budget_metrics` (`granularity`,`bucket_at`);
 CREATE TABLE `esi_telemetry_checkpoints` (
-  `name` VARCHAR(32) NOT NULL,
-  `stream_epoch` VARCHAR(64) NULL,
-  `last_stream_id` VARCHAR(32) NULL,
-  `entries_consumed` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `last_flushed_at` TIMESTAMP(6) NULL,
-  `gap_count` INT UNSIGNED NOT NULL DEFAULT 0,
-  `last_gap_at` TIMESTAMP(6) NULL,
-  `last_gap_reason` VARCHAR(48) NULL,
-  `dropped_events` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `expired_rows` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  `name` TEXT NOT NULL,
+  `stream_epoch` TEXT NULL,
+  `last_stream_id` TEXT NULL,
+  `entries_consumed` INTEGER NOT NULL DEFAULT 0,
+  `last_flushed_at` TIMESTAMP NULL,
+  `gap_count` INTEGER NOT NULL DEFAULT 0,
+  `last_gap_at` TIMESTAMP NULL,
+  `last_gap_reason` TEXT NULL,
+  `dropped_events` INTEGER NOT NULL DEFAULT 0,
+  `expired_rows` INTEGER NOT NULL DEFAULT 0,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 CREATE TABLE `push_subscriptions` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
+  `id` INTEGER NOT NULL,
+  `user_id` INTEGER NOT NULL,
   `endpoint` TEXT NOT NULL,
-  `endpoint_hash` VARCHAR(64) NOT NULL,
-  `public_key` VARCHAR(255) NOT NULL,
-  `auth_token` VARCHAR(255) NOT NULL,
-  `content_encoding` VARCHAR(20) NOT NULL DEFAULT 'aes128gcm',
-  `user_agent` VARCHAR(255) NULL,
+  `endpoint_hash` TEXT NOT NULL,
+  `public_key` TEXT NOT NULL,
+  `auth_token` TEXT NOT NULL,
+  `content_encoding` TEXT NOT NULL DEFAULT 'aes128gcm',
+  `user_agent` TEXT NULL,
   `subscribed_at` TIMESTAMP NOT NULL,
   `last_used_at` TIMESTAMP NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`endpoint_hash`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`endpoint_hash`)
+);
 CREATE TABLE `notification_preferences` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `type` VARCHAR(64) NOT NULL,
-  `enabled` TINYINT(1) NOT NULL,
-  `lead_minutes` SMALLINT UNSIGNED NULL,
-  `character_ids` JSON NULL,
+  `id` INTEGER NOT NULL,
+  `user_id` INTEGER NOT NULL,
+  `type` TEXT NOT NULL,
+  `enabled` INTEGER NOT NULL,
+  `lead_minutes` INTEGER NULL,
+  `character_ids` TEXT NULL,
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`user_id`,`type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`user_id`,`type`)
+);
 CREATE TABLE `notification_settings` (
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `quiet_start` VARCHAR(5) NULL,
-  `quiet_end` VARCHAR(5) NULL,
-  `timezone` VARCHAR(64) NOT NULL DEFAULT 'UTC',
+  `user_id` INTEGER NOT NULL,
+  `quiet_start` TEXT NULL,
+  `quiet_end` TEXT NULL,
+  `timezone` TEXT NOT NULL DEFAULT 'UTC',
   `created_at` TIMESTAMP NULL,
   `updated_at` TIMESTAMP NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 CREATE TABLE `notification_log` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
-  `type` VARCHAR(64) NOT NULL,
-  `dedupe_key` VARCHAR(191) NOT NULL,
+  `id` INTEGER NOT NULL,
+  `user_id` INTEGER NOT NULL,
+  `type` TEXT NOT NULL,
+  `dedupe_key` TEXT NOT NULL,
   `sent_at` TIMESTAMP NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`user_id`,`dedupe_key`),
-  KEY (`sent_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE (`user_id`,`dedupe_key`)
+);
+CREATE INDEX `idx_notification_log_sent_at` ON `notification_log` (`sent_at`);
+CREATE TABLE `go_jobs` (
+  `id` INTEGER NOT NULL,
+  `queue` TEXT NOT NULL,
+  `name` TEXT NOT NULL,
+  `payload` TEXT NOT NULL DEFAULT '',
+  `attempts` INTEGER NOT NULL DEFAULT 0,
+  `max_tries` INTEGER NOT NULL DEFAULT 1,
+  `enqueued_at` TEXT NOT NULL,
+  `available_at` TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  PRIMARY KEY (`id`)
+);
+CREATE INDEX `idx_go_jobs_queue_available` ON `go_jobs` (`queue`, `available_at`);
+CREATE TABLE `go_locks` (
+  `name` TEXT NOT NULL,
+  `expires_at` TEXT NOT NULL,
+  PRIMARY KEY (`name`)
+);
+CREATE TABLE `go_cache` (
+  `key` TEXT NOT NULL,
+  `value` TEXT NOT NULL,
+  `expires_at` TEXT NULL,
+  PRIMARY KEY (`key`)
+);
+CREATE TABLE `go_diag_stream` (
+  `id` INTEGER NOT NULL,
+  `payload` TEXT NOT NULL,
+  PRIMARY KEY (`id`)
+);
+CREATE INDEX `idx_go_diag_stream_id` ON `go_diag_stream` (`id`);
+CREATE TABLE `go_diag_drops` (
+  `id` INTEGER NOT NULL,
+  PRIMARY KEY (`id`)
+);
+

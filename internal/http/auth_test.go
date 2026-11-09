@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/cache"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
+	"github.com/sudo-adduser-jordan/eveindustry/migrations"
 )
 
 // stubAuth implements auth.Sessions + store.AuthStore for handler tests: a
@@ -230,6 +233,78 @@ func TestDemoLoginEnabledIssuesSession(t *testing.T) {
 	}
 	if authStub.issued != 7 {
 		t.Fatalf("issued session uid = %d, want 7", authStub.issued)
+	}
+}
+
+// TestDemoLoginFlowEndToEnd runs the real demo sign-in path: POST
+// /demo/login issues a session cookie against SQLite, and the SPA's /me
+// call resolves the demo account.
+func TestDemoLoginFlowEndToEnd(t *testing.T) {
+	db, err := store.Connect(filepath.Join(t.TempDir(), "demo.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.DB.Close() }()
+	for _, name := range []string{
+		"0000_00_00_000000_baseline.up.sql",
+		"2026_11_09_000001_notification_settings_unique.up.sql",
+	} {
+		raw, err := migrations.FS.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, stmt := range strings.Split(string(raw), ";\n") {
+			if strings.TrimSpace(stmt) == "" {
+				continue
+			}
+			if _, err := db.DB.Exec(stmt); err != nil {
+				t.Fatalf("%s: %v\n%s", name, err, stmt)
+			}
+		}
+	}
+	queries := store.NewSQL(db.DB)
+	d := Deps{
+		Sessions: auth.NewCookieSessions([]byte("0123456789abcdef0123456789abcdef"), 0, false, ""),
+		Users:    queries, DemoUsers: queries, DemoEnabled: true,
+		Cache: &cache.Cache{DB: db.DB},
+	}
+	e := New(d)
+
+	req := httptest.NewRequest(http.MethodPost, "/demo/login", nil)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("POST /demo/login = %d, want 302: %s", rec.Code, rec.Body.String())
+	}
+	cookies := rec.Result().Cookies()
+	if len(cookies) == 0 {
+		t.Fatal("demo login issued no cookie")
+	}
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/me", nil)
+	req.AddCookie(cookies[0])
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET /me = %d: %s", rec.Code, rec.Body.String())
+	}
+	var body struct {
+		Data struct {
+			Demo        bool   `json:"demo"`
+			DisplayName string `json:"display_name"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if !body.Data.Demo || body.Data.DisplayName != "Demo Account" {
+		t.Fatalf("me = %+v, want the demo account", body.Data)
+	}
+	req = httptest.NewRequest(http.MethodGet, "/login", nil)
+	req.AddCookie(cookies[0])
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/app/dashboard" {
+		t.Fatalf("GET /login authed = %d %q", rec.Code, rec.Header().Get("Location"))
 	}
 }
 

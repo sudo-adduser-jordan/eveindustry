@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"strings"
 	"time"
-
-	"github.com/redis/go-redis/v9"
 )
 
 // ScheduleEntry mirrors one routes/console.php line: when it fires and what
-// it dispatches. withoutOverlapping + onOneServer both map onto the Redis
-// lock (single scheduler process per environment, like cron + Forge).
+// it dispatches. withoutOverlapping + onOneServer both map onto the Locker
+// (single scheduler process per environment, like cron + Forge).
 type ScheduleEntry struct {
 	Name     string
 	Every    time.Duration
@@ -28,7 +26,7 @@ type Scheduler struct {
 	Entries []ScheduleEntry
 	Runner  *Runner
 	Queue   Queue
-	Redis   *redis.Client
+	Locks   Locker
 	Now     func() time.Time
 	Log     func(msg string, args ...any)
 }
@@ -106,9 +104,8 @@ func (s *Scheduler) Tick(ctx context.Context, last map[string]time.Time) map[str
 		if window <= 0 {
 			window = time.Minute
 		}
-		if s.Redis != nil {
-			ok, err := s.Redis.SetNX(ctx, "jobs:schedule:"+e.Name, "1", window).Result()
-			if err != nil || !ok {
+		if s.Locks != nil {
+			if !s.Locks.Acquire(ctx, "jobs:schedule:"+e.Name, window) {
 				continue
 			}
 		}

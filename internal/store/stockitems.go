@@ -47,8 +47,8 @@ type WatchedItemUpsert struct {
 func (s *SQL) UpsertWatchedItem(ctx context.Context, in WatchedItemUpsert) (*WatchedItem, error) {
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO industry_stock_items (user_id, type_id, type_name, desired_quantity, created_at, updated_at)
-		VALUES (?, ?, ?, ?, NOW(), NOW())
-		ON DUPLICATE KEY UPDATE type_name = VALUES(type_name), desired_quantity = VALUES(desired_quantity), updated_at = NOW()`,
+		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT(user_id, type_id) DO UPDATE SET type_name = excluded.type_name, desired_quantity = excluded.desired_quantity, updated_at = CURRENT_TIMESTAMP`,
 		in.UserID, in.TypeID, in.TypeName, in.DesiredQuantity)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (s *SQL) WatchedItem(ctx context.Context, id, userID int64) (*WatchedItem, 
 }
 
 func (s *SQL) UpdateWatchedItemQuantity(ctx context.Context, id, userID int64, desired int64) (*WatchedItem, error) {
-	if _, err := s.db.ExecContext(ctx, `UPDATE industry_stock_items SET desired_quantity = ?, updated_at = NOW() WHERE id = ? AND user_id = ?`, desired, id, userID); err != nil {
+	if _, err := s.db.ExecContext(ctx, `UPDATE industry_stock_items SET desired_quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?`, desired, id, userID); err != nil {
 		return nil, err
 	}
 	return s.WatchedItem(ctx, id, userID)

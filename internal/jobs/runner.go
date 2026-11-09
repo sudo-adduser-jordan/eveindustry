@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
-
-	"github.com/redis/go-redis/v9"
 )
 
 // Handler runs one job's payload. Returning an error retries the job until
@@ -27,8 +25,9 @@ type JobDef struct {
 // Deps carries what job bodies need. Concrete wiring lives in cmd/worker.
 type Deps struct {
 	Log *slog.Logger
-	// Redis is nil when the process runs without one (locks become no-ops).
-	Redis *redis.Client
+	// Locks is nil when the process runs without a database: uniqueness
+	// windows become no-ops.
+	Locks Locker
 }
 
 // Runner dispatches envelopes to registered handlers.
@@ -48,14 +47,13 @@ func uniqueKey(name string, payload json.RawMessage) string {
 	return "jobs:unique:" + name + ":" + string(payload)
 }
 
-// AcquireUnique holds the uniqueness lock for window (SETNX). False means a
+// AcquireUnique holds the uniqueness lock for window. False means a
 // duplicate is already queued/running and this dispatch is skipped.
-func AcquireUnique(ctx context.Context, rdb *redis.Client, name string, payload json.RawMessage, window time.Duration) bool {
-	if rdb == nil || window <= 0 {
+func AcquireUnique(ctx context.Context, l Locker, name string, payload json.RawMessage, window time.Duration) bool {
+	if l == nil || window <= 0 {
 		return true
 	}
-	ok, err := rdb.SetNX(ctx, uniqueKey(name, payload), "1", window).Result()
-	return err == nil && ok
+	return l.Acquire(ctx, uniqueKey(name, payload), window)
 }
 
 // Dispatch pushes an envelope, honoring the job's uniqueness window.
@@ -64,7 +62,7 @@ func (r *Runner) Dispatch(ctx context.Context, q Queue, name string, payload jso
 	if !ok {
 		return fmt.Errorf("unknown job %s", name)
 	}
-	if def.Unique > 0 && !AcquireUnique(ctx, r.Deps.Redis, name, payload, def.Unique) {
+	if def.Unique > 0 && !AcquireUnique(ctx, r.Deps.Locks, name, payload, def.Unique) {
 		return nil
 	}
 	return q.Push(ctx, def.Queue, Envelope{Name: name, Payload: payload, MaxTries: def.MaxTries})
@@ -110,8 +108,8 @@ func (r *Runner) RunOne(ctx context.Context, e Envelope) error {
 		log.Warn("job failed", "job", e.Name, "attempt", attempt, "max", e.MaxTries, "err", err)
 		return err
 	}
-	if r.Deps.Redis != nil && def.Unique > 0 {
-		_ = r.Deps.Redis.Del(ctx, uniqueKey(e.Name, e.Payload)).Err()
+	if r.Deps.Locks != nil && def.Unique > 0 {
+		r.Deps.Locks.Release(ctx, uniqueKey(e.Name, e.Payload))
 	}
 	return nil
 }

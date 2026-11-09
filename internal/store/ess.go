@@ -73,9 +73,9 @@ func (s *SQL) UpsertEssSystem(ctx context.Context, e EssSystem) (*EssSystem, err
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO ess_tracked_systems
 			(corporation_id, solar_system_id, solar_system_name, cycle_minutes, cycle_anchor_at, notes, created_by_user_id, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-		ON DUPLICATE KEY UPDATE solar_system_name = VALUES(solar_system_name), cycle_minutes = VALUES(cycle_minutes),
-			cycle_anchor_at = VALUES(cycle_anchor_at), notes = VALUES(notes), updated_at = NOW()`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT(corporation_id, solar_system_id) DO UPDATE SET solar_system_name = excluded.solar_system_name, cycle_minutes = excluded.cycle_minutes,
+			cycle_anchor_at = excluded.cycle_anchor_at, notes = excluded.notes, updated_at = CURRENT_TIMESTAMP`,
 		e.CorporationID, e.SolarSystemID, e.SolarSystemName, e.CycleMinutes, e.CycleAnchorAt, e.Notes, e.CreatedByUserID)
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func (s *SQL) UpsertEssSystem(ctx context.Context, e EssSystem) (*EssSystem, err
 // UpdateEssSystem applies the cycle edit.
 func (s *SQL) UpdateEssSystem(ctx context.Context, e EssSystem) (*EssSystem, error) {
 	if _, err := s.db.ExecContext(ctx, `UPDATE ess_tracked_systems SET cycle_minutes = ?,
-		cycle_anchor_at = ?, notes = ?, updated_at = NOW() WHERE id = ?`,
+		cycle_anchor_at = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 		e.CycleMinutes, e.CycleAnchorAt, e.Notes, e.ID); err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (s *SQL) CreateEssPayout(ctx context.Context, p EssPayout) (*EssPayout, err
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO ess_payout_events
 			(ess_tracked_system_id, occurred_at, amount_isk, recorded_by_user_id, notes, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+		VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		p.SystemID, p.OccurredAt, p.AmountISK, p.RecordedByUserID, p.Notes)
 	if err != nil {
 		return nil, err

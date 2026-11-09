@@ -14,9 +14,8 @@ import (
 // SessionCookie mirrors config/session.php: name eve_auth_session.
 const SessionCookie = "eve_auth_session"
 
-// Sessions issues and validates login sessions. The cookie transport keeps
-// this usable without Redis; a Redis-backed implementation can replace it
-// without touching handlers.
+// Sessions issues and validates login sessions. The cookie transport is
+// stateless: no server storage is needed.
 type Sessions interface {
 	// UserID returns the logged-in user id, or false for missing, expired
 	// or tampered cookies.

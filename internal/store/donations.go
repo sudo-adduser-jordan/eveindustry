@@ -62,9 +62,9 @@ func (s *SQL) UpsertDonationConfig(ctx context.Context, corpID int64, corpName s
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO corporate_donation_configs
 			(corporation_id, corporation_name, character_id, enabled_by_user_id, is_active, created_at, updated_at)
-		VALUES (?, ?, ?, ?, 1, NOW(), NOW())
-		ON DUPLICATE KEY UPDATE corporation_name = VALUES(corporation_name), character_id = VALUES(character_id),
-			enabled_by_user_id = VALUES(enabled_by_user_id), is_active = 1, updated_at = NOW()`,
+		VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT(corporation_id) DO UPDATE SET corporation_name = excluded.corporation_name, character_id = excluded.character_id,
+			enabled_by_user_id = excluded.enabled_by_user_id, is_active = 1, updated_at = CURRENT_TIMESTAMP`,
 		corpID, corpName, characterID, userID)
 	if err != nil {
 		return nil, err
@@ -81,6 +81,6 @@ func (s *SQL) UpsertDonationConfig(ctx context.Context, corpID int64, corpName s
 // DeactivateDonationConfig mirrors disable: the row stays but goes inactive.
 func (s *SQL) DeactivateDonationConfig(ctx context.Context, corpID int64) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE corporate_donation_configs
-		SET is_active = 0, updated_at = NOW() WHERE corporation_id = ?`, corpID)
+		SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE corporation_id = ?`, corpID)
 	return err
 }

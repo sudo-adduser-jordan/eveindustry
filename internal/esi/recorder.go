@@ -57,10 +57,10 @@ func ClassifyReason(status *int, message string) string {
 	}
 }
 
-// StreamSink implements DiagSink over the Redis stream: oversized events and
+// StreamSink implements DiagSink over the SQL stream: oversized events and
 // sink failures count as drops, like the PHP sink.
 type StreamSink struct {
-	Stream   *RedisStream
+	Stream   *SQLStream
 	MaxBytes int
 }
 

@@ -1,4 +1,9 @@
-SET FOREIGN_KEY_CHECKS=0;
+PRAGMA foreign_keys=OFF;
+DROP TABLE IF EXISTS `go_diag_drops`;
+DROP TABLE IF EXISTS `go_diag_stream`;
+DROP TABLE IF EXISTS `go_cache`;
+DROP TABLE IF EXISTS `go_locks`;
+DROP TABLE IF EXISTS `go_jobs`;
 DROP TABLE IF EXISTS `notification_log`;
 DROP TABLE IF EXISTS `notification_settings`;
 DROP TABLE IF EXISTS `notification_preferences`;
@@ -62,4 +67,4 @@ DROP TABLE IF EXISTS `characters`;
 DROP TABLE IF EXISTS `sessions`;
 DROP TABLE IF EXISTS `password_reset_tokens`;
 DROP TABLE IF EXISTS `users`;
-SET FOREIGN_KEY_CHECKS=1;
+PRAGMA foreign_keys=ON;

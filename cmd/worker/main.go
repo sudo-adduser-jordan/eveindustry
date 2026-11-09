@@ -8,10 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
-	"github.com/redis/go-redis/v9"
-
 	"github.com/sudo-adduser-jordan/eveindustry/internal/cache"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/config"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
@@ -45,29 +41,22 @@ func main() {
 		}
 	}
 
-	var rdb *redis.Client
-	if host := os.Getenv("REDIS_HOST"); host != "" {
-		rdb = redis.NewClient(&redis.Options{Addr: cfg.RedisAddr, Password: cfg.RedisPassword, DB: cfg.RedisDB})
-		defer func() { _ = rdb.Close() }()
+	var db *store.DB
+	if conn, err := store.Connect(cfg.DBPath); err != nil {
+		log.Error("worker without database", "err", err)
+	} else {
+		db = conn
+		defer func() { _ = conn.DB.Close() }()
 	}
-
-	var db *sqlx.DB
-	if cfg.DBDSN != "" {
-		var err error
-		db, err = sqlx.Connect("mysql", cfg.DBDSN)
-		if err != nil {
-			log.Error("worker without database", "err", err)
-			db = nil
-		}
-	}
-	hd := jobs.HandlerDeps{Log: log, Redis: rdb, Cache: &cache.Cache{Client: rdb}}
 	var q jobs.Queue = jobs.NewMemoryQueue()
-	if rdb != nil {
-		q = &jobs.RedisQueue{Client: rdb}
-	}
+	var locks jobs.Locker
+	hd := jobs.HandlerDeps{Log: log, Cache: &cache.Cache{}}
 	if db != nil {
-		hd.DB = store.NewSQL(db)
-		hd.Industry = industry.NewSQL(db)
+		q = &jobs.SQLQueue{DB: db.DB}
+		locks = &jobs.DBLocker{DB: db.DB}
+		hd.Cache = &cache.Cache{DB: db.DB}
+		hd.DB = store.NewSQL(db.DB)
+		hd.Industry = industry.NewSQL(db.DB)
 		coord := esi.NewMemStore()
 		limiter := esi.NewLimiter(coord, "eve-industrialist")
 		circuit := esi.NewCircuit(coord)
@@ -75,9 +64,8 @@ func main() {
 		esiClient.Cache = esi.NewHTTPCache(coord)
 
 		diagEnabled := os.Getenv("ESI_DIAGNOSTICS_ENABLED") == "true" || os.Getenv("ESI_DIAGNOSTICS_ENABLED") == "1"
-		diagSinkRedis := os.Getenv("ESI_DIAGNOSTICS_SINK") == "redis"
-		if diagEnabled && diagSinkRedis && rdb != nil {
-			stream := &esi.RedisStream{Client: rdb}
+		if diagEnabled && db != nil {
+			stream := &esi.SQLStream{DB: db.DB}
 			rec := &esi.DiagRecorder{Enabled: true, Sink: &esi.StreamSink{Stream: stream}}
 			esiClient.Recorder = rec
 			esiClient.Cache.Recorder = rec
@@ -90,15 +78,15 @@ func main() {
 			PrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
 		}
 	}
-	r := jobs.NewRunner(jobs.Deps{Log: log, Redis: rdb})
+	r := jobs.NewRunner(jobs.Deps{Log: log, Locks: locks})
 	jobs.RegisterRefreshJobs(r, hd)
 	jobs.RegisterSweepJobs(r, hd)
 	jobs.RegisterImportJobs(r, hd)
 	jobs.RegisterPrecomputeJobs(r, hd)
 	jobs.RegisterMaintenanceJobs(r, hd)
 	diagDeps := jobs.DiagFlusherDeps{HandlerDeps: hd}
-	if rdb != nil {
-		diagDeps.Stream = &esi.RedisStream{Client: rdb}
+	if db != nil {
+		diagDeps.Stream = &esi.SQLStream{DB: db.DB}
 	}
 	jobs.RegisterDiagJobs(r, diagDeps)
 	jobs.RegisterNotifyJobs(r, hd)

@@ -8,7 +8,7 @@ API at `/api/v1` consumed by `frontend/` (React, Vite, TypeScript).
 | Path | Contents |
 |------|----------|
 | `cmd/api` | API server (`GET /up`, `/api/v1/*`) |
-| `cmd/worker` | Background job runner (Redis queues) |
+| `cmd/worker` | Background job runner (SQLite queues) |
 | `cmd/scheduler` | Cron tick table (scheduled dispatch) |
 | `cmd/migrate` | DB migrations runner (`migrations/*.up/down.sql`) |
 | `internal/http` | Echo router, handlers, `{data, meta}` envelope |
@@ -33,10 +33,10 @@ gofmt -l .           # must print nothing
 go vet ./...
 ```
 
-Config is all environment (`PORT`, `DB_HOST`, `DB_DATABASE`,
-`DB_USERNAME`, `DB_PASSWORD`, `REDIS_HOST`, `EVE_CLIENT_ID`,
-`EVE_CLIENT_SECRET`, `SESSION_KEY` or `APP_KEY`). Missing DB/Redis does not
-crash the server: `/api/v1/health` reports `failed` and data routes 503.
+Config is all environment (`PORT`, `DB_PATH`, `EVE_CLIENT_ID`,
+`EVE_CLIENT_SECRET`, `SESSION_KEY` or `APP_KEY`, `DEMO_ENABLED`). The database
+is an embedded SQLite file (`DB_PATH`, default `storage/eveindustry.sqlite`);
+run `go run ./cmd/migrate up` once to create the schema.
 
 ## Conventions
 

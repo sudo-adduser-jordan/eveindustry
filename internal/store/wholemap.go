@@ -125,7 +125,7 @@ func (s *SQL) CreateSignature(ctx context.Context, sig WholemapSignature) (*Whol
 		INSERT INTO wholemap_signatures
 			(user_id, signature_id, system_id, system_name, type, name, bookmark,
 			 description, locked, created_by, updated_by, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		sig.UserID, sig.SignatureID, sig.SystemID, sig.SystemName, sig.Type, sig.Name,
 		sig.Bookmark, sig.Description, sig.Locked, sig.CreatedBy, sig.UpdatedBy)
 	if err != nil {
@@ -141,7 +141,7 @@ func (s *SQL) CreateSignature(ctx context.Context, sig WholemapSignature) (*Whol
 func (s *SQL) UpdateSignature(ctx context.Context, sig WholemapSignature) (*WholemapSignature, error) {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE wholemap_signatures SET signature_id = ?, type = ?, name = ?, bookmark = ?,
-			description = ?, locked = ?, updated_by = ?, updated_at = NOW() WHERE id = ?`,
+			description = ?, locked = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 		sig.SignatureID, sig.Type, sig.Name, sig.Bookmark, sig.Description,
 		sig.Locked, sig.UpdatedBy, sig.ID)
 	if err != nil {
@@ -169,7 +169,7 @@ func (s *SQL) CreateConnection(ctx context.Context, c WormholeConnection) (*Worm
 		INSERT INTO wormhole_connections
 			(user_id, signature_id, from_system_id, from_system_name, to_system_id,
 			 to_system_name, wormhole_type, size, life, mass, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		c.UserID, c.SignatureID, c.FromSystemID, c.FromSystemName, c.ToSystemID,
 		c.ToSystemName, c.WormholeType, c.Size, c.Life, c.Mass)
 	if err != nil {
@@ -185,7 +185,7 @@ func (s *SQL) CreateConnection(ctx context.Context, c WormholeConnection) (*Worm
 func (s *SQL) UpdateConnection(ctx context.Context, c WormholeConnection) (*WormholeConnection, error) {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE wormhole_connections SET to_system_id = ?, to_system_name = ?, wormhole_type = ?,
-			size = ?, life = ?, mass = ?, updated_at = NOW() WHERE id = ?`,
+			size = ?, life = ?, mass = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 		c.ToSystemID, c.ToSystemName, c.WormholeType, c.Size, c.Life, c.Mass, c.ID)
 	if err != nil {
 		return nil, err
@@ -213,7 +213,7 @@ func (s *SQL) CreateJumpLog(ctx context.Context, j WormholeJumpLog) (*WormholeJu
 		INSERT INTO wormhole_jump_logs
 			(connection_id, user_id, character_id, character_name, ship_type_id,
 			 ship_type_name, ship_mass, jumped_at, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		j.ConnectionID, j.UserID, j.CharacterID, j.CharacterName, j.ShipTypeID,
 		j.ShipTypeName, j.ShipMass)
 	if err != nil {
@@ -246,7 +246,7 @@ func (s *SQL) UpsertNote(ctx context.Context, n WholemapNote) (*WholemapNote, bo
 	}
 	if err == nil {
 		_, err = s.db.ExecContext(ctx, `UPDATE wholemap_system_notes
-			SET system_name = ?, status = ?, comment = ?, updated_at = NOW() WHERE id = ?`,
+			SET system_name = ?, status = ?, comment = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 			n.SystemName, n.Status, n.Comment, existing.ID)
 		if err != nil {
 			return nil, false, err
@@ -257,7 +257,7 @@ func (s *SQL) UpsertNote(ctx context.Context, n WholemapNote) (*WholemapNote, bo
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO wholemap_system_notes
 			(user_id, system_id, system_name, status, comment, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+		VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		n.UserID, n.SystemID, n.SystemName, n.Status, n.Comment)
 	if err != nil {
 		return nil, false, err

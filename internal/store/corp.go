@@ -142,9 +142,9 @@ func (s *SQL) UpsertCorpConfig(ctx context.Context, corpID int64, corpName strin
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO corporation_build_program_configs
 			(corporation_id, corporation_name, character_id, enabled_by_user_id, is_active, created_at, updated_at)
-		VALUES (?, ?, ?, ?, 1, NOW(), NOW())
-		ON DUPLICATE KEY UPDATE corporation_name = VALUES(corporation_name), character_id = VALUES(character_id),
-			enabled_by_user_id = VALUES(enabled_by_user_id), is_active = 1, updated_at = NOW()`,
+		VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT(corporation_id) DO UPDATE SET corporation_name = excluded.corporation_name, character_id = excluded.character_id,
+			enabled_by_user_id = excluded.enabled_by_user_id, is_active = 1, updated_at = CURRENT_TIMESTAMP`,
 		corpID, corpName, characterID, userID)
 	if err != nil {
 		return nil, err
@@ -162,6 +162,6 @@ func (s *SQL) UpsertCorpConfig(ctx context.Context, corpID int64, corpName strin
 // the row stays (programs are kept) but goes inactive.
 func (s *SQL) DeactivateCorpConfig(ctx context.Context, corpID int64) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE corporation_build_program_configs
-		SET is_active = 0, updated_at = NOW() WHERE corporation_id = ?`, corpID)
+		SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE corporation_id = ?`, corpID)
 	return err
 }

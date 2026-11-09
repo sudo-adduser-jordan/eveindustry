@@ -74,9 +74,9 @@ func (s *SQL) UpsertMoonScanSystem(ctx context.Context, systemName string, corpo
 	}
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO moon_scan_systems (system_name, corporation_id, region_id, pricing_mode, last_scanned_at, created_at, updated_at)
-		VALUES (?, ?, ?, ?, NOW(), NOW(), NOW())
-		ON DUPLICATE KEY UPDATE region_id = VALUES(region_id), pricing_mode = VALUES(pricing_mode),
-			last_scanned_at = VALUES(last_scanned_at), updated_at = NOW()`,
+		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT(system_name, corporation_id) DO UPDATE SET region_id = excluded.region_id, pricing_mode = excluded.pricing_mode,
+			last_scanned_at = excluded.last_scanned_at, updated_at = CURRENT_TIMESTAMP`,
 		systemName, corpAny, regionID, pricingMode)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (s *SQL) UpsertMoonScanSystem(ctx context.Context, systemName string, corpo
 	if id == 0 && corporationID != nil {
 		// Duplicate key on the non-null unique pair: update + reload.
 		if _, err := s.db.ExecContext(ctx, `UPDATE moon_scan_systems SET region_id = ?, pricing_mode = ?,
-			last_scanned_at = NOW(), updated_at = NOW() WHERE system_name = ? AND corporation_id = ?`,
+			last_scanned_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE system_name = ? AND corporation_id = ?`,
 			regionID, pricingMode, systemName, *corporationID); err != nil {
 			return nil, err
 		}
@@ -127,9 +127,9 @@ func (s *SQL) UpsertMoonScanResult(ctx context.Context, systemID int64, moonName
 	}
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO moon_scan_results (system_id, moon_name, planet_name, grade, ores, total_value, scanned_at, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())
-		ON DUPLICATE KEY UPDATE planet_name = VALUES(planet_name), grade = VALUES(grade), ores = VALUES(ores),
-			total_value = VALUES(total_value), scanned_at = VALUES(scanned_at), updated_at = NOW()`,
+		VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT(system_id, moon_name) DO UPDATE SET planet_name = excluded.planet_name, grade = excluded.grade, ores = excluded.ores,
+			total_value = excluded.total_value, scanned_at = excluded.scanned_at, updated_at = CURRENT_TIMESTAMP`,
 		systemID, moonName, planetAny, grade, oresJSON, totalValue)
 	if err != nil {
 		return 0, err

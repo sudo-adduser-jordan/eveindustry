@@ -10,6 +10,8 @@ var (
 	bt               = "\x60"
 	colDefRe         = regexp.MustCompile("(?m)^\\s*" + "\x60" + "([^`]+)" + "\x60" + "\\s+[A-Z]")
 	namedKeyRe       = regexp.MustCompile("(?i)(?:UNIQUE\\s+)?KEY\\s+" + "\x60" + "([^`]+)" + "\x60")
+	createIndexRe    = regexp.MustCompile("(?i)CREATE\\s+(?:UNIQUE\\s+)?INDEX\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?" + "\x60" + "([^`]+)" + "\x60" + "\\s+ON\\s+" + "\x60" + "([^`]+)" + "\x60")
+	dropIndexRe      = regexp.MustCompile("(?i)DROP\\s+INDEX\\s+(?:IF\\s+EXISTS\\s+)?" + "\x60" + "([^`]+)" + "\x60")
 	alterAddColRe    = regexp.MustCompile("(?i)ADD\\s+COLUMN\\s+" + "\x60" + "([^`]+)" + "\x60")
 	alterDropColRe   = regexp.MustCompile("(?i)DROP\\s+COLUMN\\s+" + "\x60" + "([^`]+)" + "\x60")
 	alterModifyColRe = regexp.MustCompile("(?i)MODIFY\\s+(?:COLUMN\\s+)?" + "\x60" + "([^`]+)" + "\x60")
@@ -59,8 +61,11 @@ func TestMigrationsPairAndSplit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(versions) != 1 {
-		t.Fatalf("got %d versions, want 1 squashed baseline", len(versions))
+	if len(versions) < 1 {
+		t.Fatalf("got %d versions, want at least the squashed baseline", len(versions))
+	}
+	if versions[0] != "0000_00_00_000000_baseline" {
+		t.Fatalf("first version = %q, want 0000_00_00_000000_baseline", versions[0])
 	}
 	for _, v := range versions {
 		for _, name := range []string{v + ".up.sql", v + ".down.sql"} {
@@ -146,6 +151,15 @@ func TestMigrationChainConsistent(t *testing.T) {
 					}
 					delete(indexes[name], m[1])
 				}
+			case strings.HasPrefix(u, "CREATE INDEX"):
+				m := createIndexRe.FindStringSubmatch(s)
+				if len(m) == 3 {
+					if indexes[m[2]] == nil {
+						t.Errorf("%s: CREATE INDEX on unknown table %s", v, m[2])
+					} else {
+						indexes[m[2]][m[1]] = true
+					}
+				}
 			case strings.HasPrefix(u, "DROP TABLE"):
 				delete(cols, lastQuoted(s))
 				delete(indexes, lastQuoted(s))
@@ -158,6 +172,22 @@ func TestMigrationChainConsistent(t *testing.T) {
 						t.Errorf("%s: DROP missing index %s.%s", v, m[2], m[1])
 					} else {
 						delete(indexes[m[2]], m[1])
+					}
+					break
+				}
+				// SQLite form: DROP INDEX [IF EXISTS] name (no table).
+				if m := dropIndexRe.FindStringSubmatch(s); len(m) == 2 {
+					found := ""
+					for tbl, idx := range indexes {
+						if idx[m[1]] {
+							found = tbl
+							break
+						}
+					}
+					if found == "" {
+						t.Errorf("%s: DROP missing index %s", v, m[1])
+					} else {
+						delete(indexes[found], m[1])
 					}
 				}
 			}

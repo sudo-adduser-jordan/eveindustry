@@ -140,7 +140,7 @@ func (s *SQL) CreateStationConfig(ctx context.Context, userID int64, activity st
 	res, err := tx.ExecContext(ctx, `
 		INSERT INTO station_configs
 			(user_id, activity_type, name, structure_type, rig_me, rig_te, system_security, solar_system_id, tax_rate, is_default, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		userID, activity, strVal(in.Name), strVal(in.StructureType), strVal(in.RigME),
 		strVal(in.RigTE), strVal(in.SystemSecurity), intVal(in.SolarSystemID), floatVal(in.TaxRate), isDefault)
 	if err != nil {
@@ -204,7 +204,7 @@ func (s *SQL) UpdateStationConfig(ctx context.Context, id, userID int64, in Stat
 		set["is_default"] = *in.IsDefault
 	}
 	if len(set) > 0 {
-		q := `UPDATE station_configs SET updated_at = NOW()`
+		q := `UPDATE station_configs SET updated_at = CURRENT_TIMESTAMP`
 		var args []any
 		for k, v := range set {
 			q += ", " + k + " = ?"
@@ -250,7 +250,7 @@ func (s *SQL) SetDefaultStationConfig(ctx context.Context, id, userID int64) (*S
 		userID, cur.ActivityType); err != nil {
 		return nil, err
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE station_configs SET is_default = 1, updated_at = NOW() WHERE id = ?`, id); err != nil {
+	if _, err := tx.ExecContext(ctx, `UPDATE station_configs SET is_default = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, id); err != nil {
 		return nil, err
 	}
 	var row stationConfigRow

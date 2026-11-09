@@ -120,7 +120,7 @@ func (s *SQL) StartSweep(ctx context.Context, regionID int, startedAt time.Time,
 	}
 	defer tx.Rollback()
 	if _, err := tx.ExecContext(ctx, `INSERT INTO market_region_states (region_id) VALUES (?)
-		ON DUPLICATE KEY UPDATE region_id = region_id`, regionID); err != nil {
+		ON CONFLICT(region_id) DO UPDATE SET region_id = excluded.region_id`, regionID); err != nil {
 		return nil, err
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE market_order_sweeps SET status = ?, finished_at = ?, error = ?
@@ -130,7 +130,7 @@ func (s *SQL) StartSweep(ctx context.Context, regionID int, startedAt time.Time,
 	}
 	var runningID int64
 	err = tx.GetContext(ctx, &runningID, `SELECT id FROM market_order_sweeps
-		WHERE region_id = ? AND status IN ('running','completing') LIMIT 1 FOR UPDATE`, regionID)
+		WHERE region_id = ? AND status IN ('running','completing') LIMIT 1`, regionID)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -141,14 +141,14 @@ func (s *SQL) StartSweep(ctx context.Context, regionID int, startedAt time.Time,
 		return nil, nil
 	}
 	var gen int64
-	if err := tx.GetContext(ctx, &gen, `SELECT latest_generation FROM market_region_states WHERE region_id = ? FOR UPDATE`, regionID); err != nil {
+	if err := tx.GetContext(ctx, &gen, `SELECT latest_generation FROM market_region_states WHERE region_id = ?`, regionID); err != nil {
 		return nil, err
 	}
 	gen++
 	sweepID := newSweepID()
 	if _, err := tx.ExecContext(ctx, `INSERT INTO market_order_sweeps
 		(sweep_id, region_id, generation, status, started_at, created_at, updated_at)
-		VALUES (?, ?, ?, 'running', ?, NOW(), NOW())`, sweepID, regionID, gen, startedAt); err != nil {
+		VALUES (?, ?, ?, 'running', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, sweepID, regionID, gen, startedAt); err != nil {
 		return nil, err
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE market_region_states SET latest_generation = ?,
@@ -171,7 +171,7 @@ func (s *SQL) SweepByID(ctx context.Context, sweepID string) (*MarketOrderSweep,
 }
 
 func (s *SQL) SetPagesTotal(ctx context.Context, sweepID string, pages int) error {
-	_, err := s.db.ExecContext(ctx, `UPDATE market_order_sweeps SET pages_total = ?, updated_at = NOW()
+	_, err := s.db.ExecContext(ctx, `UPDATE market_order_sweeps SET pages_total = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE sweep_id = ? AND status IN ('running','completing')`, pages, sweepID)
 	return err
 }
@@ -179,7 +179,7 @@ func (s *SQL) SetPagesTotal(ctx context.Context, sweepID string, pages int) erro
 func (s *SQL) IncrementSweep(ctx context.Context, sweepID string, fetched, notModified int, seen int) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE market_order_sweeps
 		SET pages_fetched = pages_fetched + ?, pages_not_modified = pages_not_modified + ?,
-			orders_seen = orders_seen + ?, updated_at = NOW()
+			orders_seen = orders_seen + ?, updated_at = CURRENT_TIMESTAMP
 		WHERE sweep_id = ? AND status IN ('running','completing')`, fetched, notModified, seen, sweepID)
 	return err
 }
@@ -202,22 +202,22 @@ func (s *SQL) StoreSweepOrders(ctx context.Context, sweepID string, regionID int
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, o.OrderID, o.RegionID, o.TypeID, o.IsBuy, o.Price,
 				o.VolumeRemain, o.VolumeTotal, o.MinVolume, nullInt64(o.LocationID),
 				nullInt(o.Duration), nullString(o.Range), nullTime(o.Issued), sweepID)
 		}
-		q += ` ON DUPLICATE KEY UPDATE region_id = VALUES(region_id), type_id = VALUES(type_id),
-			is_buy_order = VALUES(is_buy_order), price = VALUES(price), volume_remain = VALUES(volume_remain),
-			volume_total = VALUES(volume_total), min_volume = VALUES(min_volume), location_id = VALUES(location_id),
-			duration = VALUES(duration), range = VALUES(range), issued = VALUES(issued),
-			batch_id = VALUES(batch_id), updated_at = NOW()`
+		q += ` ON CONFLICT(order_id) DO UPDATE SET region_id = excluded.region_id, type_id = excluded.type_id,
+			is_buy_order = excluded.is_buy_order, price = excluded.price, volume_remain = excluded.volume_remain,
+			volume_total = excluded.volume_total, min_volume = excluded.min_volume, location_id = excluded.location_id,
+			duration = excluded.duration, range = excluded.range, issued = excluded.issued,
+			batch_id = excluded.batch_id, updated_at = CURRENT_TIMESTAMP`
 		if _, err := tx.ExecContext(ctx, q, args...); err != nil {
 			return err
 		}
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE market_order_sweeps SET pages_fetched = pages_fetched + 1,
-		orders_seen = orders_seen + ?, updated_at = NOW() WHERE sweep_id = ?`, len(orders), sweepID); err != nil {
+		orders_seen = orders_seen + ?, updated_at = CURRENT_TIMESTAMP WHERE sweep_id = ?`, len(orders), sweepID); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -226,7 +226,7 @@ func (s *SQL) StoreSweepOrders(ctx context.Context, sweepID string, regionID int
 func (s *SQL) sweepLockedIDTx(ctx context.Context, tx *sqlx.Tx, regionID int, sweepID string) bool {
 	var id int64
 	err := tx.QueryRowContext(ctx, `SELECT id FROM market_order_sweeps
-		WHERE region_id = ? AND sweep_id = ? AND status IN ('running','completing') FOR UPDATE`, regionID, sweepID).Scan(&id)
+		WHERE region_id = ? AND sweep_id = ? AND status IN ('running','completing')`, regionID, sweepID).Scan(&id)
 	return err == nil
 }
 
@@ -281,7 +281,7 @@ func (s *SQL) MarkSweepOrdersSeen(ctx context.Context, sweepID string, regionID 
 		return tx.Commit()
 	}
 	for _, chunk := range chunkInt64(orderIDs, 500) {
-		q, args, err := sqlxIn(`UPDATE market_orders SET batch_id = ?, updated_at = NOW()
+		q, args, err := sqlxIn(`UPDATE market_orders SET batch_id = ?, updated_at = CURRENT_TIMESTAMP
 			WHERE region_id = ? AND order_id IN (?)`, append([]any{sweepID, regionID}, int64s(chunk)...))
 		if err != nil {
 			return err
@@ -291,7 +291,7 @@ func (s *SQL) MarkSweepOrdersSeen(ctx context.Context, sweepID string, regionID 
 		}
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE market_order_sweeps SET pages_fetched = pages_fetched + 1,
-		pages_not_modified = pages_not_modified + 1, orders_seen = orders_seen + ?, updated_at = NOW() WHERE sweep_id = ?`,
+		pages_not_modified = pages_not_modified + 1, orders_seen = orders_seen + ?, updated_at = CURRENT_TIMESTAMP WHERE sweep_id = ?`,
 		len(orderIDs), sweepID); err != nil {
 		return err
 	}
@@ -342,7 +342,7 @@ func (s *SQL) FailSweep(ctx context.Context, sweepID, reason string) error {
 		reason = reason[:490]
 	}
 	_, err := s.db.ExecContext(ctx, `UPDATE market_order_sweeps SET status = ?, finished_at = ?,
-		duration_seconds = GREATEST(0, TIMESTAMPDIFF(SECOND, started_at, ?)), error = ?, updated_at = NOW()
+		duration_seconds = max(0, strftime('%s', ?) - strftime('%s', started_at)), error = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE sweep_id = ? AND status IN ('running','completing')`,
 		SweepFailed, time.Now(), time.Now(), reason, sweepID)
 	return err
@@ -350,7 +350,7 @@ func (s *SQL) FailSweep(ctx context.Context, sweepID, reason string) error {
 
 // ClaimCompletion moves a fully-fetched running sweep to completing.
 func (s *SQL) ClaimCompletion(ctx context.Context, sweepID string) (*MarketOrderSweep, error) {
-	_, err := s.db.ExecContext(ctx, `UPDATE market_order_sweeps SET status = ?, updated_at = NOW()
+	_, err := s.db.ExecContext(ctx, `UPDATE market_order_sweeps SET status = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE sweep_id = ? AND status = 'running' AND pages_total > 0 AND pages_fetched >= pages_total`,
 		SweepCompleting, sweepID)
 	if err != nil {
@@ -364,7 +364,7 @@ func (s *SQL) DeleteUnseenOrders(ctx context.Context, regionID int, startedAt ti
 	var total int64
 	for {
 		res, err := s.db.ExecContext(ctx, `DELETE FROM market_orders
-			WHERE region_id = ? AND updated_at < ? LIMIT 1000`, regionID, startedAt)
+			WHERE rowid IN (SELECT rowid FROM market_orders WHERE region_id = ? AND updated_at < ? LIMIT 1000)`, regionID, startedAt)
 		if err != nil {
 			return total, err
 		}
@@ -383,8 +383,8 @@ func (s *SQL) DeleteUnseenOrders(ctx context.Context, regionID int, startedAt ti
 // FinishSweep marks completion with stats.
 func (s *SQL) FinishSweep(ctx context.Context, sweepID string, finishedAt time.Time, deleted, types int64) (*MarketOrderSweep, error) {
 	_, err := s.db.ExecContext(ctx, `UPDATE market_order_sweeps SET status = ?, finished_at = ?,
-		duration_seconds = GREATEST(0, TIMESTAMPDIFF(SECOND, started_at, ?)),
-		orders_deleted = ?, types_aggregated = ?, updated_at = NOW()
+		duration_seconds = max(0, strftime('%s', ?) - strftime('%s', started_at)),
+		orders_deleted = ?, types_aggregated = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE sweep_id = ? AND status IN ('completing','completed')`,
 		SweepCompleted, finishedAt, finishedAt, deleted, types, sweepID)
 	if err != nil {
@@ -403,14 +403,14 @@ func (s *SQL) PublishActiveSnapshot(ctx context.Context, regionID int, sweepID s
 	var latestGen, activeGen int64
 	var latestSweep, activeSweep sql.NullString
 	err = tx.QueryRowContext(ctx, `SELECT latest_generation, latest_sweep_id, active_generation, active_sweep_id
-		FROM market_region_states WHERE region_id = ? FOR UPDATE`, regionID).Scan(&latestGen, &latestSweep, &activeGen, &activeSweep)
+		FROM market_region_states WHERE region_id = ?`, regionID).Scan(&latestGen, &latestSweep, &activeGen, &activeSweep)
 	if err != nil {
 		return false, err
 	}
 	var gen int64
 	var status string
 	err = tx.QueryRowContext(ctx, `SELECT generation, status FROM market_order_sweeps
-		WHERE region_id = ? AND sweep_id = ? FOR UPDATE`, regionID, sweepID).Scan(&gen, &status)
+		WHERE region_id = ? AND sweep_id = ?`, regionID, sweepID).Scan(&gen, &status)
 	if err != nil {
 		return false, err
 	}
@@ -479,14 +479,14 @@ func (s *SQL) UpsertAggregates(ctx context.Context, rows []SweepAggregate) error
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, r.RegionID, r.TypeID, r.SweepID, r.SnapshotAt, r.BestBid, r.BestAsk,
 				r.SellPriceP5, r.SellVolume, r.BuyVolume, r.SellOrders, r.BuyOrders)
 		}
-		q += ` ON DUPLICATE KEY UPDATE snapshot_at = VALUES(snapshot_at), best_bid = VALUES(best_bid),
-			best_ask = VALUES(best_ask), sell_price_p5 = VALUES(sell_price_p5), sell_volume = VALUES(sell_volume),
-			buy_volume = VALUES(buy_volume), sell_orders = VALUES(sell_orders), buy_orders = VALUES(buy_orders),
-			updated_at = NOW()`
+		q += ` ON CONFLICT(region_id, sweep_id, type_id) DO UPDATE SET snapshot_at = excluded.snapshot_at, best_bid = excluded.best_bid,
+			best_ask = excluded.best_ask, sell_price_p5 = excluded.sell_price_p5, sell_volume = excluded.sell_volume,
+			buy_volume = excluded.buy_volume, sell_orders = excluded.sell_orders, buy_orders = excluded.buy_orders,
+			updated_at = CURRENT_TIMESTAMP`
 		if _, err := s.db.ExecContext(ctx, q, args...); err != nil {
 			return err
 		}

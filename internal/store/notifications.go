@@ -69,11 +69,11 @@ func (s *SQL) UpsertPushSubscription(ctx context.Context, sub PushSubscription) 
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO push_subscriptions
 			(user_id, endpoint, endpoint_hash, public_key, auth_token, content_encoding, user_agent, subscribed_at, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-		ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), endpoint = VALUES(endpoint),
-			public_key = VALUES(public_key), auth_token = VALUES(auth_token),
-			content_encoding = VALUES(content_encoding), user_agent = VALUES(user_agent),
-			subscribed_at = IF(user_id = VALUES(user_id), subscribed_at, VALUES(subscribed_at)), updated_at = NOW()`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT(endpoint_hash) DO UPDATE SET user_id = excluded.user_id, endpoint = excluded.endpoint,
+			public_key = excluded.public_key, auth_token = excluded.auth_token,
+			content_encoding = excluded.content_encoding, user_agent = excluded.user_agent,
+			subscribed_at = iif(user_id = excluded.user_id, subscribed_at, excluded.subscribed_at), updated_at = CURRENT_TIMESTAMP`,
 		sub.UserID, sub.Endpoint, sub.EndpointHash, sub.PublicKey, sub.AuthToken,
 		sub.ContentEncoding, sub.UserAgent, sub.SubscribedAt)
 	return err
@@ -103,9 +103,9 @@ func (s *SQL) NotificationPrefs(ctx context.Context, userID int64) ([]Notificati
 func (s *SQL) UpsertNotificationPref(ctx context.Context, p NotificationPref) error {
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO notification_preferences (user_id, type, enabled, lead_minutes, character_ids, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, NOW(), NOW())
-		ON DUPLICATE KEY UPDATE enabled = VALUES(enabled), lead_minutes = VALUES(lead_minutes),
-			character_ids = VALUES(character_ids), updated_at = NOW()`,
+		VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT(user_id, type) DO UPDATE SET enabled = excluded.enabled, lead_minutes = excluded.lead_minutes,
+			character_ids = excluded.character_ids, updated_at = CURRENT_TIMESTAMP`,
 		p.UserID, p.Type, p.Enabled, p.LeadMinutes, p.CharacterIDs)
 	return err
 }
@@ -126,9 +126,9 @@ func (s *SQL) QuietHours(ctx context.Context, userID int64) (*QuietHours, error)
 func (s *SQL) UpdateQuietHours(ctx context.Context, q QuietHours) error {
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO notification_settings (user_id, quiet_start, quiet_end, timezone, created_at, updated_at)
-		VALUES (?, ?, ?, ?, NOW(), NOW())
-		ON DUPLICATE KEY UPDATE quiet_start = VALUES(quiet_start), quiet_end = VALUES(quiet_end),
-			timezone = VALUES(timezone), updated_at = NOW()`,
+		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT(user_id) DO UPDATE SET quiet_start = excluded.quiet_start, quiet_end = excluded.quiet_end,
+			timezone = excluded.timezone, updated_at = CURRENT_TIMESTAMP`,
 		q.UserID, q.Start, q.End, q.Timezone)
 	return err
 }
@@ -159,7 +159,7 @@ func (s *SQL) DeleteSubscription(ctx context.Context, id int64) error {
 // ClaimNotification ports the deliver() claim: insertOrIgnore on the
 // (user, dedupe) key. False means already sent.
 func (s *SQL) ClaimNotification(ctx context.Context, userID int64, typ, dedupe string, at time.Time) (bool, error) {
-	res, err := s.db.ExecContext(ctx, `INSERT IGNORE INTO notification_log (user_id, type, dedupe_key, sent_at)
+	res, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO notification_log (user_id, type, dedupe_key, sent_at)
 		VALUES (?, ?, ?, ?)`, userID, typ, dedupe, at)
 	if err != nil {
 		return false, err
@@ -176,7 +176,7 @@ func (s *SQL) ReleaseNotificationClaim(ctx context.Context, userID int64, dedupe
 
 // PruneNotificationLog deletes entries older than 14 days.
 func (s *SQL) PruneNotificationLog(ctx context.Context) (int64, error) {
-	res, err := s.db.ExecContext(ctx, `DELETE FROM notification_log WHERE sent_at < DATE_SUB(NOW(), INTERVAL 14 DAY)`)
+	res, err := s.db.ExecContext(ctx, `DELETE FROM notification_log WHERE sent_at < datetime('now', '-14 days')`)
 	if err != nil {
 		return 0, err
 	}

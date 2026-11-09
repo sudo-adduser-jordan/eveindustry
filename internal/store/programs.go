@@ -75,7 +75,7 @@ func (s *SQL) CreateBuildProgram(ctx context.Context, p BuildProgram) (*BuildPro
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO build_programs
 			(user_id, name, program_type, t2_type_id, t2_type_name, steps, settings, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		p.UserID, p.Name, p.ProgramType, p.T2TypeID, p.T2TypeName, p.StepsJSON, p.SettingsJSON)
 	if err != nil {
 		return nil, err
@@ -88,14 +88,14 @@ func (s *SQL) CreateBuildProgram(ctx context.Context, p BuildProgram) (*BuildPro
 }
 
 func (s *SQL) RenameBuildProgram(ctx context.Context, id, userID int64, name string) (*BuildProgram, error) {
-	if _, err := s.db.ExecContext(ctx, `UPDATE build_programs SET name = ?, updated_at = NOW() WHERE id = ? AND user_id = ?`, name, id, userID); err != nil {
+	if _, err := s.db.ExecContext(ctx, `UPDATE build_programs SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?`, name, id, userID); err != nil {
 		return nil, err
 	}
 	return s.BuildProgram(ctx, id, userID)
 }
 
 func (s *SQL) UpdateBuildProgramSettings(ctx context.Context, id, userID int64, settingsJSON string) (*BuildProgram, error) {
-	if _, err := s.db.ExecContext(ctx, `UPDATE build_programs SET settings = ?, updated_at = NOW() WHERE id = ? AND user_id = ?`, settingsJSON, id, userID); err != nil {
+	if _, err := s.db.ExecContext(ctx, `UPDATE build_programs SET settings = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?`, settingsJSON, id, userID); err != nil {
 		return nil, err
 	}
 	return s.BuildProgram(ctx, id, userID)
@@ -180,7 +180,7 @@ func (s *SQL) CreateCorpProgram(ctx context.Context, p CorpProgram) (*CorpProgra
 		INSERT INTO corporation_build_programs
 			(corporation_id, created_by_user_id, name, program_type, t2_type_id,
 			 t2_type_name, steps, settings, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		p.CorporationID, p.CreatedByUserID, p.Name, p.ProgramType, p.T2TypeID,
 		p.T2TypeName, p.StepsJSON, p.SettingsJSON)
 	if err != nil {
@@ -194,14 +194,14 @@ func (s *SQL) CreateCorpProgram(ctx context.Context, p CorpProgram) (*CorpProgra
 }
 
 func (s *SQL) RenameCorpProgram(ctx context.Context, id, corpID int64, name string) (*CorpProgram, error) {
-	if _, err := s.db.ExecContext(ctx, `UPDATE corporation_build_programs SET name = ?, updated_at = NOW() WHERE id = ? AND corporation_id = ?`, name, id, corpID); err != nil {
+	if _, err := s.db.ExecContext(ctx, `UPDATE corporation_build_programs SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND corporation_id = ?`, name, id, corpID); err != nil {
 		return nil, err
 	}
 	return s.CorpProgram(ctx, id, corpID)
 }
 
 func (s *SQL) UpdateCorpProgramSettings(ctx context.Context, id, corpID int64, settingsJSON string) (*CorpProgram, error) {
-	if _, err := s.db.ExecContext(ctx, `UPDATE corporation_build_programs SET settings = ?, updated_at = NOW() WHERE id = ? AND corporation_id = ?`, settingsJSON, id, corpID); err != nil {
+	if _, err := s.db.ExecContext(ctx, `UPDATE corporation_build_programs SET settings = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND corporation_id = ?`, settingsJSON, id, corpID); err != nil {
 		return nil, err
 	}
 	return s.CorpProgram(ctx, id, corpID)

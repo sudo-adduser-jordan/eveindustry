@@ -12,7 +12,7 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// DiagStream abstracts the Redis buffer for the flusher.
+// DiagStream abstracts the diagnostics buffer table for the flusher.
 type DiagStream interface {
 	Epoch(ctx context.Context) string
 	TotalAdded(ctx context.Context) int64

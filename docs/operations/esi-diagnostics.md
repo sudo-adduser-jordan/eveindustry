@@ -1,5 +1,10 @@
 # ESI diagnostics rollout
 
+> Go port note: the buffer is the `go_diag_stream` SQLite table (no Redis),
+> drained by the same `esi:diagnostics-flush` cadence. `ESI_DIAGNOSTICS_SINK`
+> is ignored; only `ESI_DIAGNOSTICS_ENABLED` gates capture. The rollout
+> detail below describes the legacy PHP/Horizon deployment.
+
 Passive capture of the application's own ESI traffic, reported at **Admin → ESI Diagnostics** (`/app/admin/esi-diagnostics`). It never sends an ESI request. Everything is off until the flags below are set, so deploying the code changes nothing.
 
 ## What runs where

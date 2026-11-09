@@ -7,9 +7,9 @@ import (
 )
 
 // CoordStore is the coordination backend for rate limiting, the error
-// circuit and token-refresh locks. MemStore serves tests and single-binary
-// deployments; a Redis implementation lands with the jobs/deploy phase for
-// multi-process coordination.
+// circuit and token-refresh locks. MemStore serves single-host deployments
+// (locks are in-process only); cross-host coordination would need a shared
+// store.
 type CoordStore interface {
 	Get(key string) ([]byte, bool)
 	Put(key string, value []byte, ttl time.Duration)

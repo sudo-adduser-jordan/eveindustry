@@ -13,7 +13,7 @@ type TradingStore interface {
 	// StationCandidates ports the candidate half of scanStationTrading():
 	// per-type best buy/sell with the fee maths evaluated in SQL, filtered
 	// to positive spreads at or above the margin floor. Bound params replace
-	// the PHP string interpolation (MySQL binds reliably in expressions).
+	// the PHP string interpolation (SQLite binds reliably in expressions).
 	StationCandidates(ctx context.Context, regionID int, brokerRate, taxRate, minMarginPct float64) ([]market.StationCandidate, error)
 	// BestPrices ports MarketClient::getRegionBestPrices(): MIN sell or MAX
 	// buy per type from local market_orders.

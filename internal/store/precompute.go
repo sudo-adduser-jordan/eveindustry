@@ -46,19 +46,19 @@ func (s *SQL) UpsertManufacturingCosts(ctx context.Context, rows []PrecomputedCo
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, r.ProductID, r.BlueprintID, r.RegionID, r.MEL, r.ProductName,
 				r.BlueprintName, r.Portion, r.InputCost, r.OutputValue, r.BaseProfit, r.ProfitMargin,
 				r.SellScore, r.ScoreAvgVolume, r.ScoreAvgOrders, r.ScoreActive, r.ScoreTotal, r.PricesAsOf)
 		}
-		q += ` ON DUPLICATE KEY UPDATE product_name = VALUES(product_name), blueprint_name = VALUES(blueprint_name),
-			portion_size = VALUES(portion_size), input_cost = VALUES(input_cost), output_value = VALUES(output_value),
-			base_profit = VALUES(base_profit), profit_margin = VALUES(profit_margin), sell_score = VALUES(sell_score),
-			sell_score_avg_daily_volume = VALUES(sell_score_avg_daily_volume),
-			sell_score_avg_order_count = VALUES(sell_score_avg_order_count),
-			sell_score_active_days = VALUES(sell_score_active_days),
-			sell_score_total_days = VALUES(sell_score_total_days),
-			prices_as_of = VALUES(prices_as_of), updated_at = NOW()`
+		q += ` ON CONFLICT(product_type_id, region_id, me_level) DO UPDATE SET product_name = excluded.product_name, blueprint_name = excluded.blueprint_name,
+			portion_size = excluded.portion_size, input_cost = excluded.input_cost, output_value = excluded.output_value,
+			base_profit = excluded.base_profit, profit_margin = excluded.profit_margin, sell_score = excluded.sell_score,
+			sell_score_avg_daily_volume = excluded.sell_score_avg_daily_volume,
+			sell_score_avg_order_count = excluded.sell_score_avg_order_count,
+			sell_score_active_days = excluded.sell_score_active_days,
+			sell_score_total_days = excluded.sell_score_total_days,
+			prices_as_of = excluded.prices_as_of, updated_at = CURRENT_TIMESTAMP`
 		if _, err := s.db.ExecContext(ctx, q, args...); err != nil {
 			return err
 		}

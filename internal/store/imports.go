@@ -47,11 +47,11 @@ func (s *SQL) UpsertMarketHistory(ctx context.Context, rows []MarketHistoryImpor
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, r.RegionID, r.TypeID, r.Date, r.Average, r.Highest, r.Lowest, r.Volume, r.OrderCount)
 		}
-		q += ` ON DUPLICATE KEY UPDATE average = VALUES(average), highest = VALUES(highest), lowest = VALUES(lowest),
-			volume = VALUES(volume), order_count = VALUES(order_count), updated_at = NOW()`
+		q += ` ON CONFLICT(region_id, type_id, date) DO UPDATE SET average = excluded.average, highest = excluded.highest, lowest = excluded.lowest,
+			volume = excluded.volume, order_count = excluded.order_count, updated_at = CURRENT_TIMESTAMP`
 		res, err := s.db.ExecContext(ctx, q, args...)
 		if err != nil {
 			return total, err
@@ -84,11 +84,11 @@ func (s *SQL) UpsertGlobalPrices(ctx context.Context, regionID int, prices []Glo
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, r.TypeID, regionID, r.Average, r.Adjusted, fetchedAt)
 		}
-		q += ` ON DUPLICATE KEY UPDATE average_price = VALUES(average_price), adjusted_price = VALUES(adjusted_price),
-			fetched_at = VALUES(fetched_at), updated_at = NOW()`
+		q += ` ON CONFLICT(type_id, region_id) DO UPDATE SET average_price = excluded.average_price, adjusted_price = excluded.adjusted_price,
+			fetched_at = excluded.fetched_at, updated_at = CURRENT_TIMESTAMP`
 		res, err := s.db.ExecContext(ctx, q, args...)
 		if err != nil {
 			return total, err
@@ -154,7 +154,7 @@ type SnapshotItemRow struct {
 // CreateContractGeneration stages a building generation.
 func (s *SQL) CreateContractGeneration(ctx context.Context) (int64, error) {
 	res, err := s.db.ExecContext(ctx, `INSERT INTO public_contract_generations
-		(status, contract_count, item_count, created_at) VALUES ('building', 0, 0, NOW())`)
+		(status, contract_count, item_count, created_at) VALUES ('building', 0, 0, CURRENT_TIMESTAMP)`)
 	if err != nil {
 		return 0, err
 	}
@@ -184,7 +184,7 @@ func (s *SQL) PublishContractGeneration(ctx context.Context, id int64) (bool, er
 		return false, err
 	}
 	var active sql.NullInt64
-	err = tx.GetContext(ctx, &active, `SELECT active_generation_id FROM public_contract_snapshot_state WHERE id = 1 FOR UPDATE`)
+	err = tx.GetContext(ctx, &active, `SELECT active_generation_id FROM public_contract_snapshot_state WHERE id = 1`)
 	if err != nil && err != sql.ErrNoRows {
 		return false, err
 	}
@@ -200,7 +200,7 @@ func (s *SQL) PublishContractGeneration(ctx context.Context, id int64) (bool, er
 		return false, err
 	}
 	if _, err := tx.ExecContext(ctx, `INSERT INTO public_contract_snapshot_state (id, active_generation_id, updated_at)
-		VALUES (1, ?, ?) ON DUPLICATE KEY UPDATE active_generation_id = VALUES(active_generation_id), updated_at = NOW()`, id, now); err != nil {
+		VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET active_generation_id = excluded.active_generation_id, updated_at = CURRENT_TIMESTAMP`, id, now); err != nil {
 		return false, err
 	}
 	return true, tx.Commit()
@@ -218,7 +218,7 @@ func (s *SQL) InsertSnapshotContracts(ctx context.Context, generationID int64, r
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, generationID, r.ContractID, r.RegionID, r.Type, r.Title, r.ForCorporation,
 				r.IssuerCorpID, r.IssuerID, r.DateIssued, r.DateExpired, r.DaysToComplete,
 				r.StartLocationID, r.EndLocationID, r.StationID, r.SystemID, r.ConstellationID,
@@ -254,7 +254,7 @@ func (s *SQL) InsertSnapshotItems(ctx context.Context, generationID int64, rows 
 			if i > 0 {
 				q += ","
 			}
-			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`
+			q += `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = append(args, generationID, r.ContractID, r.TypeID, r.Quantity, r.IsIncluded,
 				r.IsBlueprintCopy, r.MaterialEfficiency, r.TimeEfficiency, r.Runs, r.RecordID, r.ItemID, r.HTTPModified)
 		}

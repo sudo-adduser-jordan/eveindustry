@@ -11,9 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
-	"github.com/redis/go-redis/v9"
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/cache"
@@ -25,38 +23,24 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// Phase 0 API server: GET /up, GET /api/v1/health (DB + Redis probes with
-// 503 on failure, mirroring HealthController) and GET /api/v1/me (401 stub
-// until the Sanctum/SSO port in Phase 2). Missing DB/Redis config does not
-// crash the process; health just reports failed.
+// API server: GET /up, GET /api/v1/health (DB + cache probes with 503 on
+// failure, mirroring HealthController) and the /api/v1 JSON surface.
+// Storage is an embedded SQLite file (DB_PATH); a missing database does not
+// crash the process, health just reports failed.
 func main() {
 	cfg := config.Load()
 	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	var sqlxDB *sqlx.DB
-	if cfg.DBDSN != "" {
-		db, err := sqlx.Connect("mysql", cfg.DBDSN)
-		if err != nil {
-			log.Warn("database not reachable at startup; /health will report failed", "error", err)
-		} else {
-			sqlxDB = db
-			defer func() { _ = db.Close() }()
-		}
-	}
-
-	var rdb *redis.Client
-	// config.RedisAddr is ":6379" when REDIS_HOST is unset; only dial when a host is set.
-	if host := os.Getenv("REDIS_HOST"); host != "" {
-		rdb = redis.NewClient(&redis.Options{
-			Addr:     cfg.RedisAddr,
-			Password: cfg.RedisPassword,
-			DB:       cfg.RedisDB,
-		})
-		defer func() { _ = rdb.Close() }()
+	if db, err := store.Connect(cfg.DBPath); err != nil {
+		log.Warn("database not reachable at startup; /health will report failed", "error", err)
+	} else {
+		sqlxDB = db.DB
+		defer func() { _ = db.DB.Close() }()
 	}
 
 	deps := gohttp.Deps{
-		Cache: &cache.Cache{Client: rdb},
+		Cache: &cache.Cache{DB: sqlxDB},
 		App: gohttp.AppConfig{
 			SourceURL: cfg.SourceURL, DiscordURL: cfg.DiscordURL, DiscordBot: cfg.DiscordBot,
 		},
@@ -88,9 +72,8 @@ func main() {
 		esiClient.Cache = esi.NewHTTPCache(coord)
 
 		diagEnabled := os.Getenv("ESI_DIAGNOSTICS_ENABLED") == "true" || os.Getenv("ESI_DIAGNOSTICS_ENABLED") == "1"
-		diagSinkRedis := os.Getenv("ESI_DIAGNOSTICS_SINK") == "redis"
-		if diagEnabled && diagSinkRedis && rdb != nil {
-			stream := &esi.RedisStream{Client: rdb}
+		if diagEnabled && sqlxDB != nil {
+			stream := &esi.SQLStream{DB: sqlxDB}
 			rec := &esi.DiagRecorder{Enabled: true, Sink: &esi.StreamSink{Stream: stream}}
 			esiClient.Recorder = rec
 			esiClient.Cache.Recorder = rec
@@ -191,17 +174,12 @@ func main() {
 		deps.Wholemap = queries
 		deps.Programs = queries
 	}
-	if rdb != nil {
+	if sqlxDB != nil {
 		deps.CachePing = func(ctx context.Context) bool {
 			ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 			defer cancel()
-			key := "health:go:ping"
-			if err := rdb.Set(ctx, key, "1", 10*time.Second).Err(); err != nil {
-				return false
-			}
-			v, err := rdb.Get(ctx, key).Result()
-			_ = rdb.Del(ctx, key)
-			return err == nil && v == "1"
+			var one int
+			return sqlxDB.GetContext(ctx, &one, `SELECT 1`) == nil && one == 1
 		}
 	}
 

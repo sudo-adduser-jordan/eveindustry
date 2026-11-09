@@ -4,15 +4,18 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "modernc.org/sqlite"
 
 	"github.com/sudo-adduser-jordan/eveindustry/internal/config"
 	"github.com/sudo-adduser-jordan/eveindustry/migrations"
 )
+
+func dirOf(p string) string { return filepath.Dir(p) }
 
 var migrationFS = migrations.FS
 
@@ -20,8 +23,8 @@ var migrationFS = migrations.FS
 //
 // Each migrations/<version>_<name>.up.sql/.down.sql pair is one version,
 // applied in filename order like Laravel. Applied versions live in
-// schema_migrations. MySQL DDL is non-transactional, so statements run one
-// at a time and a failure stops the run (same as `php artisan migrate`).
+// schema_migrations. Statements run one at a time and a failure stops the
+// run (same as `php artisan migrate`).
 func main() {
 	if err := run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, "migrate: "+err.Error())
@@ -31,10 +34,16 @@ func main() {
 
 func run(args []string) error {
 	cfg := config.Load()
-	if cfg.DBDSN == "" {
-		return fmt.Errorf("no database configured (set DB_HOST/DB_DATABASE/...)")
+	if cfg.DBPath == "" {
+		return fmt.Errorf("no database configured (set DB_PATH)")
 	}
-	db, err := sql.Open("mysql", cfg.DBDSN+"?multiStatements=false&parseTime=true")
+	if dir := dirOf(cfg.DBPath); dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return err
+		}
+	}
+	dsn := cfg.DBPath + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)&_time_format=sqlite&_timezone=UTC&_texttotime=1"
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return err
 	}

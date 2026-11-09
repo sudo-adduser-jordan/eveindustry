@@ -107,19 +107,19 @@ type BudgetMetricDelta struct {
 
 // EnsureDiagCheckpoint inserts the collector row when missing.
 func (s *SQL) EnsureDiagCheckpoint(ctx context.Context) error {
-	_, err := s.db.ExecContext(ctx, `INSERT IGNORE INTO esi_telemetry_checkpoints (name, updated_at) VALUES ('collector', NOW())`)
+	_, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO esi_telemetry_checkpoints (name, updated_at) VALUES ('collector', CURRENT_TIMESTAMP)`)
 	return err
 }
 
-// DiagCheckpointForUpdate locks the collector row. Plain queries (no tx)
-// return the row without locking.
+// DiagCheckpointForUpdate reads the collector row. Inside a transaction the
+// SQLite write lock serializes concurrent flushers (no FOR UPDATE).
 func (s *SQL) DiagCheckpointForUpdate(ctx context.Context, tx *sql.Tx) (*DiagCheckpoint, error) {
 	var out DiagCheckpoint
 	var err error
 	if tx != nil {
 		err = tx.QueryRowContext(ctx, `SELECT name, stream_epoch, last_stream_id, last_flushed_at,
 			gap_count, last_gap_at, last_gap_reason, dropped_events, expired_rows, entries_consumed
-			FROM esi_telemetry_checkpoints WHERE name = 'collector' FOR UPDATE`).Scan(
+			FROM esi_telemetry_checkpoints WHERE name = 'collector'`).Scan(
 			&out.Name, &out.StreamEpoch, &out.LastStreamID, &out.LastFlushedAt,
 			&out.GapCount, &out.LastGapAt, &out.LastGapReason, &out.DroppedEvents,
 			&out.ExpiredRows, &out.EntriesConsumed)
@@ -137,8 +137,8 @@ func (s *SQL) DiagCheckpointForUpdate(ctx context.Context, tx *sql.Tx) (*DiagChe
 // UpdateDiagCheckpoint writes the post-batch checkpoint.
 func (s *SQL) UpdateDiagCheckpoint(ctx context.Context, checkpoint DiagCheckpoint) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE esi_telemetry_checkpoints SET stream_epoch = ?,
-		last_stream_id = ?, last_flushed_at = NOW(), gap_count = ?, last_gap_at = ?,
-		last_gap_reason = ?, dropped_events = ?, expired_rows = ?, entries_consumed = ?, updated_at = NOW()
+		last_stream_id = ?, last_flushed_at = CURRENT_TIMESTAMP, gap_count = ?, last_gap_at = ?,
+		last_gap_reason = ?, dropped_events = ?, expired_rows = ?, entries_consumed = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE name = 'collector'`,
 		checkpoint.StreamEpoch, checkpoint.LastStreamID, checkpoint.GapCount, checkpoint.LastGapAt, checkpoint.LastGapReason,
 		checkpoint.DroppedEvents, checkpoint.ExpiredRows, checkpoint.EntriesConsumed)
@@ -147,17 +147,17 @@ func (s *SQL) UpdateDiagCheckpoint(ctx context.Context, checkpoint DiagCheckpoin
 
 // BumpDiagExpired tracks deliberate expiry apart from capture loss.
 func (s *SQL) BumpDiagExpired(ctx context.Context, total int64) error {
-	if _, err := s.db.ExecContext(ctx, `INSERT IGNORE INTO esi_telemetry_checkpoints (name, updated_at) VALUES ('collector', NOW())`); err != nil {
+	if _, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO esi_telemetry_checkpoints (name, updated_at) VALUES ('collector', CURRENT_TIMESTAMP)`); err != nil {
 		return err
 	}
-	_, err := s.db.ExecContext(ctx, `UPDATE esi_telemetry_checkpoints SET expired_rows = expired_rows + ?, updated_at = NOW() WHERE name = 'collector'`, total)
+	_, err := s.db.ExecContext(ctx, `UPDATE esi_telemetry_checkpoints SET expired_rows = expired_rows + ?, updated_at = CURRENT_TIMESTAMP WHERE name = 'collector'`, total)
 	return err
 }
 
 // InsertDiagEvents batch-inserts validated detail rows (25 per chunk).
 func (s *SQL) InsertDiagEvents(ctx context.Context, rows []DiagEventRow) error {
 	for _, chunk := range chunkDiagEvents(rows, 25) {
-		q := `INSERT IGNORE INTO esi_diagnostic_events (event_id, occurred_at, kind, method, operation_key,
+		q := `INSERT OR IGNORE INTO esi_diagnostic_events (event_id, occurred_at, kind, method, operation_key,
 			compatibility_date, dataset, job_class, correlation_id, source_identity, application_id,
 			character_id, corporation_id, resource_id, page, batch_size, http_status, reason, duration_ms,
 			response_received, limiter_group, legacy_remaining, retry_after_seconds, upstream_request_id,
@@ -193,75 +193,47 @@ func chunkDiagEvents(in []DiagEventRow, n int) [][]DiagEventRow {
 	return out
 }
 
-// MergeEndpointMetric ports mergeEndpoint: insert or add onto the bucket.
+// MergeEndpointMetric ports mergeEndpoint: one atomic upsert that inserts
+// the bucket or adds onto it (dimension_hash + bucket_at is unique).
 func (s *SQL) MergeEndpointMetric(ctx context.Context, m EndpointMetricDelta) error {
-	var id int64
-	var req, suc, errs, dsum, dcnt int64
-	var dmax int
-	var first, last string
-	err := s.db.QueryRowContext(ctx, `SELECT id, request_count, success_count, error_count,
-		duration_sum_ms, duration_count, duration_max_ms, first_observed_at, last_observed_at
-		FROM esi_endpoint_metrics WHERE dimension_hash = ? AND bucket_at = ? FOR UPDATE`,
-		m.DimensionHash, m.BucketAt).Scan(&id, &req, &suc, &errs, &dsum, &dcnt, &dmax, &first, &last)
-	if err == sql.ErrNoRows {
-		_, err = s.db.ExecContext(ctx, `INSERT INTO esi_endpoint_metrics (dimension_hash, bucket_at,
-			operation_key, event_kind, http_status, reason, dataset, source_identity, limiter_group,
-			request_count, success_count, error_count, duration_sum_ms, duration_count, duration_max_ms,
-			first_observed_at, last_observed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			m.DimensionHash, m.BucketAt, m.Operation, m.EventKind, m.HTTPStatus, m.Reason, m.Dataset,
-			m.SourceID, m.LimiterGroup, m.Requests, m.Successes, m.Errors, m.DurationSum, m.DurationCount,
-			m.DurationMax, m.FirstSeen, m.LastSeen)
-		return err
-	}
-	if err != nil {
-		return err
-	}
-	if m.FirstSeen.Format("2006-01-02 15:04:05") < first {
-		first = m.FirstSeen.Format("2006-01-02 15:04:05")
-	}
-	if m.LastSeen.Format("2006-01-02 15:04:05") > last {
-		last = m.LastSeen.Format("2006-01-02 15:04:05")
-	}
-	if m.DurationMax > dmax {
-		dmax = m.DurationMax
-	}
-	_, err = s.db.ExecContext(ctx, `UPDATE esi_endpoint_metrics SET request_count = ?, success_count = ?,
-		error_count = ?, duration_sum_ms = ?, duration_count = ?, duration_max_ms = ?,
-		first_observed_at = LEAST(first_observed_at, ?), last_observed_at = GREATEST(last_observed_at, ?) WHERE id = ?`,
-		req+m.Requests, suc+m.Successes, errs+m.Errors, dsum+m.DurationSum, dcnt+m.DurationCount, dmax,
-		m.FirstSeen, m.LastSeen, id)
+	_, err := s.db.ExecContext(ctx, `INSERT INTO esi_endpoint_metrics (dimension_hash, bucket_at,
+		operation_key, event_kind, http_status, reason, dataset, source_identity, limiter_group,
+		request_count, success_count, error_count, duration_sum_ms, duration_count, duration_max_ms,
+		first_observed_at, last_observed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(dimension_hash, bucket_at) DO UPDATE SET
+		request_count = request_count + excluded.request_count,
+		success_count = success_count + excluded.success_count,
+		error_count = error_count + excluded.error_count,
+		duration_sum_ms = duration_sum_ms + excluded.duration_sum_ms,
+		duration_count = duration_count + excluded.duration_count,
+		duration_max_ms = max(duration_max_ms, excluded.duration_max_ms),
+		first_observed_at = min(first_observed_at, excluded.first_observed_at),
+		last_observed_at = max(last_observed_at, excluded.last_observed_at)`,
+		m.DimensionHash, m.BucketAt, m.Operation, m.EventKind, m.HTTPStatus, m.Reason, m.Dataset,
+		m.SourceID, m.LimiterGroup, m.Requests, m.Successes, m.Errors, m.DurationSum, m.DurationCount,
+		m.DurationMax, m.FirstSeen, m.LastSeen)
 	return err
 }
 
-// MergeBudgetMetric ports mergeBudget: same insert-or-add shape.
+// MergeBudgetMetric ports mergeBudget: same atomic insert-or-add shape.
 func (s *SQL) MergeBudgetMetric(ctx context.Context, m BudgetMetricDelta) error {
-	var id int64
-	err := s.db.QueryRowContext(ctx, `SELECT id FROM esi_budget_metrics
-		WHERE dimension_hash = ? AND bucket_at = ? FOR UPDATE`, m.DimensionHash, m.BucketAt).Scan(&id)
-	if err == sql.ErrNoRows {
-		_, err = s.db.ExecContext(ctx, `INSERT INTO esi_budget_metrics (dimension_hash, bucket_at, granularity,
-			source_identity, application_id, mechanism, limiter_group, observations, remaining_min, remaining_max,
-			remaining_first, remaining_last, used_sum, reset_at_min, reset_at_max,
-			circuit_opened_count, circuit_closed_count, pause_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			m.DimensionHash, m.BucketAt, m.Granularity, m.SourceID, m.ApplicationID, m.Mechanism,
-			m.LimiterGroup, m.Observations, m.RemainingMin, m.RemainingMax, m.RemainingFirst, m.RemainingLast,
-			m.UsedSum, m.ResetMin, m.ResetMax, m.CircuitOpened, m.CircuitClosed, m.PauseSeconds)
-		return err
-	}
-	if err != nil {
-		return err
-	}
-	_, err = s.db.ExecContext(ctx, `UPDATE esi_budget_metrics SET observations = observations + ?,
-		remaining_min = LEAST(COALESCE(remaining_min, ?), COALESCE(?, remaining_min)),
-		remaining_max = GREATEST(COALESCE(remaining_max, ?), COALESCE(?, remaining_max)),
-		used_sum = COALESCE(used_sum, 0) + COALESCE(?, 0),
-		reset_at_min = LEAST(COALESCE(reset_at_min, ?), COALESCE(?, reset_at_min)),
-		reset_at_max = GREATEST(COALESCE(reset_at_max, ?), COALESCE(?, reset_at_max)),
-		circuit_opened_count = circuit_opened_count + ?, circuit_closed_count = circuit_closed_count + ?,
-		pause_seconds = pause_seconds + ? WHERE id = ?`,
-		m.Observations, m.RemainingMin, m.RemainingMin, m.RemainingMax, m.RemainingMax,
-		m.UsedSum, m.ResetMin, m.ResetMin, m.ResetMax, m.ResetMax,
-		m.CircuitOpened, m.CircuitClosed, m.PauseSeconds, id)
+	_, err := s.db.ExecContext(ctx, `INSERT INTO esi_budget_metrics (dimension_hash, bucket_at, granularity,
+		source_identity, application_id, mechanism, limiter_group, observations, remaining_min, remaining_max,
+		remaining_first, remaining_last, used_sum, reset_at_min, reset_at_max,
+		circuit_opened_count, circuit_closed_count, pause_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(dimension_hash, bucket_at) DO UPDATE SET
+		observations = observations + excluded.observations,
+		remaining_min = min(coalesce(remaining_min, excluded.remaining_min), coalesce(excluded.remaining_min, remaining_min)),
+		remaining_max = max(coalesce(remaining_max, excluded.remaining_max), coalesce(excluded.remaining_max, remaining_max)),
+		used_sum = coalesce(used_sum, 0) + coalesce(excluded.used_sum, 0),
+		reset_at_min = min(coalesce(reset_at_min, excluded.reset_at_min), coalesce(excluded.reset_at_min, reset_at_min)),
+		reset_at_max = max(coalesce(reset_at_max, excluded.reset_at_max), coalesce(excluded.reset_at_max, reset_at_max)),
+		circuit_opened_count = circuit_opened_count + excluded.circuit_opened_count,
+		circuit_closed_count = circuit_closed_count + excluded.circuit_closed_count,
+		pause_seconds = pause_seconds + excluded.pause_seconds`,
+		m.DimensionHash, m.BucketAt, m.Granularity, m.SourceID, m.ApplicationID, m.Mechanism,
+		m.LimiterGroup, m.Observations, m.RemainingMin, m.RemainingMax, m.RemainingFirst, m.RemainingLast,
+		m.UsedSum, m.ResetMin, m.ResetMax, m.CircuitOpened, m.CircuitClosed, m.PauseSeconds)
 	return err
 }
 

@@ -24,7 +24,7 @@ func (s *SQL) EnsureDemoUser(ctx context.Context, email string) (int64, error) {
 		return 0, err
 	}
 	res, err := s.db.ExecContext(ctx, `INSERT INTO users (name, email, is_active, is_stock_manager_enabled, is_demo, last_login_at, created_at, updated_at)
-		VALUES ('Demo Account', ?, 1, 1, 1, NOW(), NOW(), NOW())`, email)
+		VALUES ('Demo Account', ?, 1, 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, email)
 	if err != nil {
 		return 0, err
 	}
@@ -34,7 +34,7 @@ func (s *SQL) EnsureDemoUser(ctx context.Context, email string) (int64, error) {
 // TouchDemoUser refreshes the demo account flags + login.
 func (s *SQL) TouchDemoUser(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE users SET name = 'Demo Account', is_admin = 0, is_super_admin = 0,
-		is_active = 1, is_stock_manager_enabled = 1, is_demo = 1, last_login_at = NOW(), updated_at = NOW() WHERE id = ?`, id)
+		is_active = 1, is_stock_manager_enabled = 1, is_demo = 1, last_login_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, id)
 	return err
 }
 
@@ -97,7 +97,7 @@ func (s *SQL) CreateDemoCharacter(ctx context.Context, c DemoCharacter) error {
 	_, err := s.db.ExecContext(ctx, `INSERT INTO characters (character_id, user_id, name, corporation_id, corporation_name,
 		alliance_id, alliance_name, is_main, access_token, refresh_token, token_expires_at, scopes,
 		is_esi_active, is_director_ceo, roles, cached_location, cached_training, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'demo-access-token', 'demo-refresh-token', ?, ?, 1, ?, ?, ?, ?, NOW(), NOW())`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'demo-access-token', 'demo-refresh-token', ?, ?, 1, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		c.CharacterID, c.UserID, c.Name, c.CorporationID, c.CorpName,
 		c.AllianceID, c.AllianceName, c.IsMain, time.Now().AddDate(10, 0, 0), string(scopes),
 		c.IsDirectorCEO, string(roles), c.CachedLoc, c.CachedTrain)
@@ -161,7 +161,7 @@ func (s *SQL) DeleteSweepAggregates(ctx context.Context, regionID int, sweepID s
 	var total int64
 	for {
 		res, err := s.db.ExecContext(ctx, `DELETE FROM market_aggregates
-			WHERE region_id = ? AND sweep_id = ? LIMIT ?`, regionID, sweepID, batch)
+			WHERE rowid IN (SELECT rowid FROM market_aggregates WHERE region_id = ? AND sweep_id = ? LIMIT ?)`, regionID, sweepID, batch)
 		if err != nil {
 			return total, err
 		}
@@ -232,7 +232,7 @@ func (s *SQL) DeleteContractGenerationItems(ctx context.Context, generationID in
 	var total int64
 	for {
 		res, err := s.db.ExecContext(ctx, `DELETE FROM public_contract_snapshot_items
-			WHERE generation_id = ? LIMIT ?`, generationID, batch)
+			WHERE rowid IN (SELECT rowid FROM public_contract_snapshot_items WHERE generation_id = ? LIMIT ?)`, generationID, batch)
 		if err != nil {
 			return total, err
 		}
@@ -250,7 +250,7 @@ func (s *SQL) DeleteContractGenerationContracts(ctx context.Context, generationI
 	var total int64
 	for {
 		res, err := s.db.ExecContext(ctx, `DELETE FROM public_contract_snapshot_contracts
-			WHERE generation_id = ? LIMIT ?`, generationID, batch)
+			WHERE rowid IN (SELECT rowid FROM public_contract_snapshot_contracts WHERE generation_id = ? LIMIT ?)`, generationID, batch)
 		if err != nil {
 			return total, err
 		}

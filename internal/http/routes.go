@@ -19,7 +19,7 @@ import (
 )
 
 // Deps are the already-wired collaborators for the router. Probes are plain
-// funcs so handlers stay thin and unit tests can stub DB/Redis.
+// funcs so handlers stay thin and unit tests can stub the DB.
 type Deps struct {
 	DBPing    func(ctx context.Context) error
 	CachePing func(ctx context.Context) bool

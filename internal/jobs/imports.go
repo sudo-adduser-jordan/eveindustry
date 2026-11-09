@@ -22,7 +22,7 @@ import (
 
 // RegisterImportJobs wires market:update-prices (default, daily),
 // market:import-daily-history (updates, every 3h, 2 tries) and
-// contracts:import (updates, hourly, single-flight via Redis).
+// contracts:import (updates, hourly, single-flight via the go_locks table).
 func RegisterImportJobs(r *Runner, h HandlerDeps) {
 	r.Register("market-update-prices", JobDef{
 		Queue: QueueDefault, MaxTries: 2, Timeout: 300 * time.Second,

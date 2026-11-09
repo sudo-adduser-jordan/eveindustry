@@ -68,7 +68,7 @@ func (s *SQL) CreateStructureWindow(ctx context.Context, w StructureWindow) (*St
 		INSERT INTO structure_vulnerability_windows
 			(corporation_id, solar_system_id, solar_system_name, structure_type, structure_name,
 			 day_of_week, start_time_utc, duration_minutes, reinforce_exit_at, notes, created_by_user_id, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		w.CorporationID, w.SolarSystemID, w.SolarSystemName, w.StructureType, w.StructureName,
 		w.DayOfWeek, w.StartTimeUTC, w.DurationMinutes, w.ReinforceExitAt, w.Notes, w.CreatedByUserID)
 	if err != nil {
@@ -85,7 +85,7 @@ func (s *SQL) CreateStructureWindow(ctx context.Context, w StructureWindow) (*St
 func (s *SQL) UpdateStructureWindow(ctx context.Context, w StructureWindow) (*StructureWindow, error) {
 	if _, err := s.db.ExecContext(ctx, `UPDATE structure_vulnerability_windows SET solar_system_id = ?,
 		solar_system_name = ?, structure_type = ?, structure_name = ?, day_of_week = ?,
-		start_time_utc = ?, duration_minutes = ?, reinforce_exit_at = ?, notes = ?, updated_at = NOW()
+		start_time_utc = ?, duration_minutes = ?, reinforce_exit_at = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?`,
 		w.SolarSystemID, w.SolarSystemName, w.StructureType, w.StructureName, w.DayOfWeek,
 		w.StartTimeUTC, w.DurationMinutes, w.ReinforceExitAt, w.Notes, w.ID); err != nil {
