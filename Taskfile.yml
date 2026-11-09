@@ -77,15 +77,18 @@ tasks:
         mkdir -p .run/bin .run/log
         # Kill anything already running: tracked pidfiles plus orphans
         # (previous runs, crashed starts) matched by binary path.
+        # NOTE: tasks run under gosh, which has no kill/jobs builtins, so
+        # liveness is tested via /proc and signals go through real sh.
+        # The [.] / [n] brackets keep pkill from matching this script itself.
         for svc in api worker scheduler ui; do
           if [ -f .run/$svc.pid ]; then
             pid=$(cat .run/$svc.pid)
-            if kill -0 "$pid" 2>/dev/null; then kill "$pid" 2>/dev/null || true; fi
+            if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then sh -c 'kill "$1" 2>/dev/null' _ "$pid" || true; fi
             rm -f .run/$svc.pid
           fi
-          pkill -f ".run/bin/$svc" 2>/dev/null || true
+          pkill -f "[.]run/bin/$svc" 2>/dev/null || true
         done
-        pkill -f "node_modules/.bin/vite" 2>/dev/null || true
+        pkill -f "[n]ode_modules/.bin/vite" 2>/dev/null || true
         sleep 1
         go build -o .run/bin/api ./cmd/api
         go build -o .run/bin/worker ./cmd/worker
@@ -93,8 +96,9 @@ tasks:
         for svc in api worker scheduler; do
           nohup sh -c 'echo $$ > .run/$0.pid; exec ./.run/bin/$0' "$svc" >.run/log/$svc.log 2>&1 < /dev/null &
           sleep 0.5
-          if [ -f .run/$svc.pid ] && kill -0 "$(cat .run/$svc.pid)" 2>/dev/null; then
-            echo "$svc started (pid $(cat .run/$svc.pid))"
+          pid=$(cat .run/$svc.pid 2>/dev/null || true)
+          if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then
+            echo "$svc started (pid $pid)"
           else
             echo "$svc failed to start:"; tail -5 .run/log/$svc.log; exit 1
           fi
@@ -106,7 +110,7 @@ tasks:
             echo "api at http://localhost:$port"
             break
           fi
-          if ! kill -0 "$api_pid" 2>/dev/null; then
+          if [ -z "$api_pid" ] || [ ! -d "/proc/$api_pid" ]; then
             echo "api died on startup:"; tail -10 .run/log/api.log; exit 1
           fi
           sleep 0.5
@@ -122,7 +126,8 @@ tasks:
               echo "web ui at http://localhost:$ui_port/app/"
               break
             fi
-            if ! kill -0 "$(cat .run/ui.pid 2>/dev/null || echo 0)" 2>/dev/null; then
+            uipid=$(cat .run/ui.pid 2>/dev/null || true)
+            if [ -z "$uipid" ] || [ ! -d "/proc/$uipid" ]; then
               echo "ui failed to start (see .run/log/ui.log)"; break
             fi
             sleep 0.5
@@ -139,10 +144,12 @@ tasks:
         for svc in api worker scheduler ui; do
           if [ -f .run/$svc.pid ]; then
             pid=$(cat .run/$svc.pid)
-            if kill -0 "$pid" 2>/dev/null; then
-              kill "$pid"
-              for i in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || break; sleep 0.5; done
-              kill -9 "$pid" 2>/dev/null || true
+            if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then
+              sh -c 'kill "$1" 2>/dev/null' _ "$pid" || true
+              for i in $(seq 1 20); do
+                if [ -d "/proc/$pid" ]; then sleep 0.5; else break; fi
+              done
+              if [ -d "/proc/$pid" ]; then sh -c 'kill -9 "$1" 2>/dev/null' _ "$pid" || true; fi
               echo "$svc stopped (was $pid)"
             else
               echo "$svc not running (stale pid $pid)"
@@ -151,9 +158,9 @@ tasks:
           else
             echo "$svc not running"
           fi
-          pkill -f ".run/bin/$svc" 2>/dev/null || true
+          pkill -f "[.]run/bin/$svc" 2>/dev/null || true
         done
-        pkill -f "node_modules/.bin/vite" 2>/dev/null || true
+        pkill -f "[n]ode_modules/.bin/vite" 2>/dev/null || true
 
   migrate:
     desc: "Apply pending SQL migrations (usage: task migrate -- [up|down|status] [n])"
