@@ -1,4 +1,35 @@
-import { ApiError, unwrap } from './client'
+import { vi } from 'vitest'
+import { ApiError, authMiddleware, LOGIN_URL, unwrap } from './client'
+import { leaveSession } from './persistence'
+
+vi.mock('./persistence', () => ({ leaveSession: vi.fn() }))
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  window.history.pushState({}, '', '/')
+})
+
+async function respond401() {
+  const param = {
+    request: new Request('http://localhost/x'),
+    response: new Response(null, { status: 401 }),
+  } as never
+  await authMiddleware.onResponse!(param)
+}
+
+describe('authMiddleware 401 handling', () => {
+  it('sends app pages to the login page', async () => {
+    window.history.pushState({}, '', '/app/dashboard')
+    await respond401()
+    expect(leaveSession).toHaveBeenCalledWith(LOGIN_URL)
+  })
+
+  it('stays put on the login page instead of reloading it', async () => {
+    window.history.pushState({}, '', LOGIN_URL)
+    await respond401()
+    expect(leaveSession).not.toHaveBeenCalled()
+  })
+})
 
 describe('unwrap', () => {
   it('returns data on success', () => {

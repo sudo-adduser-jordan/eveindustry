@@ -145,15 +145,13 @@ func getRaw(t *testing.T, d Deps, method, path string) *httptest.ResponseRecorde
 }
 
 func TestLoginPageAnonymous(t *testing.T) {
+	// The SPA owns the login UI: anonymous visits bounce to /app/login.
 	rec := getRaw(t, Deps{}, "GET", "/login")
-	if rec.Code != http.StatusOK {
-		t.Fatalf("GET /login = %d, want 200", rec.Code)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("GET /login = %d, want 302", rec.Code)
 	}
-	if ct := rec.Header().Get("Content-Type"); ct != "text/html; charset=UTF-8" {
-		t.Fatalf("content-type = %q, want html", ct)
-	}
-	if body := rec.Body.String(); !strings.Contains(body, "Eve Industrialist") {
-		t.Fatalf("login page does not mention the app: %q", body)
+	if loc := rec.Header().Get("Location"); loc != "/app/login" {
+		t.Fatalf("location = %q, want /app/login", loc)
 	}
 }
 
@@ -166,20 +164,23 @@ func TestLoginRedirectsWhenAuthenticated(t *testing.T) {
 	if loc := rec.Header().Get("Location"); loc != "/app/dashboard" {
 		t.Fatalf("location = %q, want /app/dashboard", loc)
 	}
-	// Unknown user id renders the page instead of redirecting.
+	// Unknown user id bounces to the SPA login instead of redirecting in.
 	rec = getRaw(t, Deps{Sessions: &stubAuth{uid: 99}, Users: stub}, "GET", "/login")
-	if rec.Code != http.StatusOK {
-		t.Fatalf("GET /login unknown user = %d, want 200", rec.Code)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("GET /login unknown user = %d, want 302", rec.Code)
+	}
+	if loc := rec.Header().Get("Location"); loc != "/app/login" {
+		t.Fatalf("location = %q, want /app/login", loc)
 	}
 }
 
 func TestWelcomePage(t *testing.T) {
 	rec := getRaw(t, Deps{}, "GET", "/welcome")
-	if rec.Code != http.StatusOK {
-		t.Fatalf("GET /welcome = %d, want 200", rec.Code)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("GET /welcome = %d, want 302", rec.Code)
 	}
-	if body := rec.Body.String(); !strings.Contains(body, "/login") {
-		t.Fatalf("welcome page does not link to login: %q", body)
+	if loc := rec.Header().Get("Location"); loc != "/app/login" {
+		t.Fatalf("location = %q, want /app/login", loc)
 	}
 	stub := testAuth()
 	rec = getRaw(t, Deps{Sessions: stub, Users: stub}, "GET", "/welcome")
@@ -305,6 +306,36 @@ func TestDemoLoginFlowEndToEnd(t *testing.T) {
 	e.ServeHTTP(rec, req)
 	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/app/dashboard" {
 		t.Fatalf("GET /login authed = %d %q", rec.Code, rec.Header().Get("Location"))
+	}
+}
+
+func TestDemoLoginJSONReturnsRedirectBody(t *testing.T) {
+	// The SPA login page posts with Accept: application/json and navigates
+	// itself, so the handler answers 200 with the redirect target.
+	authStub := testAuth()
+	demo := &stubDemo{id: 7}
+	d := Deps{Sessions: authStub, Users: authStub, DemoUsers: demo, DemoEnabled: true}
+	e := New(d)
+	req := httptest.NewRequest(http.MethodPost, "/demo/login", nil)
+	req.Header.Set("Accept", "application/json")
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("POST /demo/login json = %d, want 200: %s", rec.Code, rec.Body.String())
+	}
+	var body struct {
+		Data struct {
+			Redirect string `json:"redirect"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.Data.Redirect != "/app/dashboard" {
+		t.Fatalf("redirect = %q, want /app/dashboard", body.Data.Redirect)
+	}
+	if authStub.issued != 7 {
+		t.Fatalf("issued session uid = %d, want 7", authStub.issued)
 	}
 }
 

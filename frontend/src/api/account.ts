@@ -14,12 +14,12 @@ export function useCharacterActions() {
   return {
     main: useMutation({ mutationFn: (character: number) => done(api.POST('/characters/{character}/main', { params: { path: { character } } })), onSuccess: refresh }),
     remove: useMutation({ mutationFn: (character: number) => done(api.DELETE('/characters/{character}', { params: { path: { character } } })), onSuccess: refresh }),
-    deleteAccount: useMutation({ mutationFn: () => done(api.DELETE('/account')), onSuccess: () => leaveSession('/welcome') }),
+    deleteAccount: useMutation({ mutationFn: () => done(api.DELETE('/account')), onSuccess: () => leaveSession('/app/login') }),
   }
 }
 
 export function useSessionActions() {
   return {
-    logout: useMutation({ mutationFn: async () => { await forgetThisDevice().catch(() => undefined); return done(api.POST('/logout')) }, onSuccess: () => leaveSession('/welcome') }),
+    logout: useMutation({ mutationFn: async () => { await forgetThisDevice().catch(() => undefined); return done(api.POST('/logout')) }, onSuccess: () => leaveSession('/app/login') }),
   }
 }

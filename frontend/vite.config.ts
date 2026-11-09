@@ -52,6 +52,8 @@ export default defineConfig({
       '/api': laravel,
       '/sanctum': laravel,
       '/login': laravel,
+      '/welcome': laravel,
+      '/demo': laravel,
       '/auth': laravel,
     },
   },

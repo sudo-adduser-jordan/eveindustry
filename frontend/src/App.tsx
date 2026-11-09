@@ -5,6 +5,7 @@ import { Shell } from './components/Shell'
 
 // One chunk per route keeps the shell under its size budget.
 const Overview = lazy(() => import('./pages/Overview'))
+const Login = lazy(() => import('./pages/Login'))
 const Characters = lazy(() => import('./pages/Characters'))
 const Notifications = lazy(() => import('./pages/Notifications'))
 const MarketStatus = lazy(() => import('./pages/MarketStatus'))
@@ -61,6 +62,7 @@ export function App() {
       <Routes>
         <Route element={<Shell />}>
           <Route index element={<Overview />} />
+          <Route path="login" element={<Login />} />
           <Route path="characters" element={<Characters />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="market-status" element={<MarketStatus />} />

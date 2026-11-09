@@ -118,7 +118,8 @@ func New(d Deps) *echo.Echo {
 	v1 := e.Group("/api/v1")
 	v1.GET("/health", handleHealth(d))
 
-	// Public login surface (HTML, not the /api/v1 JSON envelope).
+	// Public login surface: the SPA owns the UI at /app/login, so /login
+	// and /welcome bounce there (or to the app when signed in).
 	e.GET("/login", handleLogin(d))
 	e.GET("/welcome", handleWelcome(d))
 	e.POST("/demo/login", handleDemoLogin(d))

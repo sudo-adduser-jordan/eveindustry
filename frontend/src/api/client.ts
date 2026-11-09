@@ -38,8 +38,8 @@ function ensureCsrfCookie(): Promise<void> {
   return csrfReady
 }
 
-/** Where a signed-out visitor goes. Blade login until that page is ported. */
-export const LOGIN_URL = '/login'
+/** Where a signed-out visitor goes: the in-app login page. */
+export const LOGIN_URL = '/app/login'
 
 export const authMiddleware: Middleware = {
   async onRequest({ request }) {
@@ -54,7 +54,9 @@ export const authMiddleware: Middleware = {
   },
   async onResponse({ response }) {
     // 401 never renders as a page error: the session is gone, sign in again.
-    if (response.status === 401) {
+    // Except on the login page itself, which renders from the 401 state —
+    // without this guard it would reload itself forever.
+    if (response.status === 401 && window.location.pathname !== LOGIN_URL) {
       await leaveSession(LOGIN_URL)
     }
     return response
