@@ -70,43 +70,73 @@ tasks:
       - go run ./cmd/scheduler
 
   start:
-    desc: Build and start api + worker + scheduler in the background (.run/)
+    desc: Kill leftovers, build and start api + worker + scheduler + web UI (.run/)
     cmds:
       - |
         set -e
         mkdir -p .run/bin .run/log
+        # Kill anything already running: tracked pidfiles plus orphans
+        # (previous runs, crashed starts) matched by binary path.
+        for svc in api worker scheduler ui; do
+          if [ -f .run/$svc.pid ]; then
+            pid=$(cat .run/$svc.pid)
+            if kill -0 "$pid" 2>/dev/null; then kill "$pid" 2>/dev/null || true; fi
+            rm -f .run/$svc.pid
+          fi
+          pkill -f ".run/bin/$svc" 2>/dev/null || true
+        done
+        pkill -f "node_modules/.bin/vite" 2>/dev/null || true
+        sleep 1
         go build -o .run/bin/api ./cmd/api
         go build -o .run/bin/worker ./cmd/worker
         go build -o .run/bin/scheduler ./cmd/scheduler
         for svc in api worker scheduler; do
+          nohup sh -c 'echo $$ > .run/$0.pid; exec ./.run/bin/$0' "$svc" >.run/log/$svc.log 2>&1 < /dev/null &
+          sleep 0.5
           if [ -f .run/$svc.pid ] && kill -0 "$(cat .run/$svc.pid)" 2>/dev/null; then
-            echo "$svc already running (pid $(cat .run/$svc.pid))"
+            echo "$svc started (pid $(cat .run/$svc.pid))"
           else
-            rm -f .run/$svc.pid
-            nohup sh -c 'echo $$ > .run/$0.pid; exec ./.run/bin/$0' "$svc" >.run/log/$svc.log 2>&1 < /dev/null &
-            sleep 0.5
-            if [ -f .run/$svc.pid ]; then
-              echo "$svc started (pid $(cat .run/$svc.pid))"
-            else
-              echo "$svc failed to start (see .run/log/$svc.log)"
-            fi
+            echo "$svc failed to start:"; tail -5 .run/log/$svc.log; exit 1
           fi
         done
         port="${PORT:-8080}"
+        api_pid=$(cat .run/api.pid)
         for i in $(seq 1 30); do
           if curl -fs -o /dev/null "http://localhost:$port/up" 2>/dev/null; then
-            echo "api healthy at http://localhost:$port"
+            echo "api at http://localhost:$port"
             break
+          fi
+          if ! kill -0 "$api_pid" 2>/dev/null; then
+            echo "api died on startup:"; tail -10 .run/log/api.log; exit 1
           fi
           sleep 0.5
           if [ "$i" = "30" ]; then echo "api did not answer /up (see .run/log/api.log)"; exit 1; fi
         done
+        # Web UI: vite dev server proxying /api to the Go api.
+        ui_port="${UI_PORT:-5173}"
+        if [ -x frontend/node_modules/.bin/vite ]; then
+          LARAVEL_URL="http://localhost:$port" nohup sh -c 'cd frontend && echo $$ > ../.run/$0.pid; exec ./node_modules/.bin/vite --port "$1" --strictPort' ui "$ui_port" >.run/log/ui.log 2>&1 < /dev/null &
+          sleep 1
+          for i in $(seq 1 30); do
+            if curl -fs -o /dev/null "http://localhost:$ui_port/" 2>/dev/null; then
+              echo "web ui at http://localhost:$ui_port/app/"
+              break
+            fi
+            if ! kill -0 "$(cat .run/ui.pid 2>/dev/null || echo 0)" 2>/dev/null; then
+              echo "ui failed to start (see .run/log/ui.log)"; break
+            fi
+            sleep 0.5
+            if [ "$i" = "30" ]; then echo "ui did not answer (see .run/log/ui.log)"; fi
+          done
+        else
+          echo "web ui skipped (npm or frontend/node_modules/.bin/vite missing)"
+        fi
 
   stop:
-    desc: Stop the background api + worker + scheduler
+    desc: Stop the background api + worker + scheduler + web UI
     cmds:
       - |
-        for svc in api worker scheduler; do
+        for svc in api worker scheduler ui; do
           if [ -f .run/$svc.pid ]; then
             pid=$(cat .run/$svc.pid)
             if kill -0 "$pid" 2>/dev/null; then
@@ -121,7 +151,9 @@ tasks:
           else
             echo "$svc not running"
           fi
+          pkill -f ".run/bin/$svc" 2>/dev/null || true
         done
+        pkill -f "node_modules/.bin/vite" 2>/dev/null || true
 
   migrate:
     desc: "Apply pending SQL migrations (usage: task migrate -- [up|down|status] [n])"
