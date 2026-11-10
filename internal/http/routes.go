@@ -123,6 +123,7 @@ func New(d Deps) *echo.Echo {
 	e.GET("/login", handleLogin(d))
 	e.GET("/welcome", handleWelcome(d))
 	e.POST("/demo/login", handleDemoLogin(d))
+	registerDemoImages(e)
 
 	// Everything else needs a session, like the PHP auth:sanctum group.
 	// Demo accounts are read-mostly, like the PHP demo-guard group.
