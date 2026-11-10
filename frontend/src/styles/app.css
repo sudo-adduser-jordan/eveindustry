@@ -418,6 +418,3 @@ tr.detail > td { background: rgba(var(--accent2-rgb), 0.04); }
 .chart.wide svg { height: 140px; }
 
 .demo-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-bottom: 1rem; padding: 0.6rem 1rem; border: 1px solid var(--warn); border-radius: 12px; background: var(--panel); }
-
-.sidebar-legal { font-size: 0.7rem; color: var(--muted); margin: 0.5rem 0 0; line-height: 1.4; }
-.sidebar-legal a { color: inherit; text-decoration: underline; }

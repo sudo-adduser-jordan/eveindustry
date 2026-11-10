@@ -94,10 +94,6 @@ export function Shell() {
           {me.data?.data.demo ? null : <p><a href="/auth/eve/scopes">Add character</a></p>}
           <button type="button" className="button small" disabled={session.logout.isPending} onClick={() => session.logout.mutate()}>Log out</button>
           {session.logout.error ? <p role="alert">{session.logout.error.message}</p> : null}
-          <p className="sidebar-legal">
-            {me.data?.data.source_url ? <><a href={me.data.data.source_url} target="_blank" rel="noopener noreferrer">Source (AGPL-3.0)</a> · </> : null}
-            Unofficial fan tool. EVE Online © CCP hf.
-          </p>
         </div>
       </aside>
       <main className="content">
