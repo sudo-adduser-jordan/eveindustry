@@ -56,21 +56,25 @@ tasks:
 
   run:api:
     desc: Run the API server (env from environment, see README)
+    dotenv: ['.env']
     cmds:
       - go run ./cmd/api
 
   run:worker:
     desc: Run the background job worker
+    dotenv: ['.env']
     cmds:
       - go run ./cmd/worker
 
   run:scheduler:
     desc: Run the cron tick dispatcher
+    dotenv: ['.env']
     cmds:
       - go run ./cmd/scheduler
 
   start:
     desc: Install frontend deps, build and start api + worker + scheduler + web UI (.run/)
+    dotenv: ['.env']
     deps:
       - frontend:install
     cmds:
@@ -166,6 +170,7 @@ tasks:
 
   migrate:
     desc: "Apply pending SQL migrations (usage: task migrate -- [up|down|status] [n])"
+    dotenv: ['.env']
     cmds:
       - go run ./cmd/migrate {{.CLI_ARGS}}
 
