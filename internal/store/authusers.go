@@ -24,20 +24,22 @@ type AuthStore interface {
 }
 
 type authUserRow struct {
-	ID             int64  `db:"id"`
-	Name           string `db:"name"`
-	IsAdmin        bool   `db:"is_admin"`
-	IsSuperAdmin   bool   `db:"is_super_admin"`
-	IsActive       bool   `db:"is_active"`
-	IsStockManager bool   `db:"is_stock_manager_enabled"`
-	IsDemo         bool   `db:"is_demo"`
+	ID             int64        `db:"id"`
+	Name           string       `db:"name"`
+	IsAdmin        bool         `db:"is_admin"`
+	IsSuperAdmin   bool         `db:"is_super_admin"`
+	IsActive       bool         `db:"is_active"`
+	IsStockManager bool         `db:"is_stock_manager_enabled"`
+	IsDemo         bool         `db:"is_demo"`
+	CreatedAt      sql.NullTime `db:"created_at"`
+	LastLoginAt    sql.NullTime `db:"last_login_at"`
 }
 
 func (s *SQL) UserByID(ctx context.Context, userID int64) (*auth.User, error) {
 	var row authUserRow
 	err := s.db.GetContext(ctx, &row, `
 		SELECT id, name, is_admin, is_super_admin, is_active,
-		       is_stock_manager_enabled, is_demo
+		       is_stock_manager_enabled, is_demo, created_at, last_login_at
 		FROM users WHERE id = ?`, userID)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -45,11 +47,20 @@ func (s *SQL) UserByID(ctx context.Context, userID int64) (*auth.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &auth.User{
+	u := &auth.User{
 		ID: row.ID, Name: row.Name, IsAdmin: row.IsAdmin,
 		IsSuperAdmin: row.IsSuperAdmin, IsActive: row.IsActive,
 		IsStockManager: row.IsStockManager, IsDemo: row.IsDemo,
-	}, nil
+	}
+	if row.CreatedAt.Valid {
+		t := row.CreatedAt.Time
+		u.CreatedAt = &t
+	}
+	if row.LastLoginAt.Valid {
+		t := row.LastLoginAt.Time
+		u.LastLoginAt = &t
+	}
+	return u, nil
 }
 
 type authCharacterRow struct {

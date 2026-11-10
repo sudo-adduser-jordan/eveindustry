@@ -9,6 +9,7 @@ package auth
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 // Demo ID range mirrors DemoIds: reserved ids far above CCP-issued ones.
@@ -37,6 +38,10 @@ type User struct {
 	IsActive       bool
 	IsStockManager bool
 	IsDemo         bool
+	// CreatedAt/LastLoginAt back the dashboard account resource. Nil when
+	// the row predates the columns or the lookup did not select them.
+	CreatedAt   *time.Time
+	LastLoginAt *time.Time
 }
 
 // Admin mirrors User::isAdmin().

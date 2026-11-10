@@ -293,7 +293,7 @@ func RefreshDashboardStats(ctx context.Context, d HandlerDeps, userID int64) err
 	}
 	if d.Cache != nil {
 		d.Cache.SetJSON(ctx, "dashboard.pi_stats."+itoa(userID), map[string]any{
-			"expired_extractors": expired, "full_storage": full,
+			"total_planets": len(colonies), "expired_extractors": expired, "full_storage": full,
 		}, 1200*time.Second)
 		var flat []map[string]any
 		for _, c := range colonies {
