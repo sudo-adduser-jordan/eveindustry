@@ -133,6 +133,18 @@ func TestAssetsIndex(t *testing.T) {
 	if code != http.StatusOK || len(body["data"].([]any)) != 2 {
 		t.Fatalf("loc filter = %d %v", code, body)
 	}
+	// station expansion (the lazy per-location list) pages with meta.pagination
+	code, body = get(t, d, "/api/v1/assets?location_id=60003760&include_children=false&per_page=50&page=1")
+	if code != http.StatusOK {
+		t.Fatalf("loc page = %d %v", code, body)
+	}
+	pag := body["meta"].(map[string]any)["pagination"].(map[string]any)
+	if pag["total"] != 2.0 || pag["page"] != 1.0 || pag["per_page"] != 50.0 || pag["last_page"] != 1.0 {
+		t.Fatalf("pagination = %v", pag)
+	}
+	if len(body["data"].([]any)) != 2 {
+		t.Fatalf("loc items = %v", body["data"])
+	}
 	// bad sort -> 422
 	if code, _ := get(t, d, "/api/v1/assets?sort=nope"); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad sort = %d", code)

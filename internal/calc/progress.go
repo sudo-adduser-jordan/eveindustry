@@ -20,6 +20,14 @@ var MaterialGroups = map[int]string{
 	4144: "Mutaplasmids",
 }
 
+// FallbackMaterialGroups maps well-known material type ids to their group
+// when the SDE reference has no row (fresh deployments before sde:import).
+// SDE remains the source of truth; this only fills gaps.
+var FallbackMaterialGroups = map[int]int{
+	34: 18, 35: 18, 36: 18, 37: 18, 38: 18, 39: 18, 40: 18,
+	16274: 423, 17887: 423, 17888: 423, 17889: 423,
+}
+
 // ProgressMeta is the type metadata summarise needs from storage: groups for
 // every material type, names for blueprints, and group/volume for materials.
 type ProgressMeta struct {

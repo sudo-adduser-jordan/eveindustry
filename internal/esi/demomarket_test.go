@@ -91,6 +91,64 @@ func TestDemoCorporationEndpoints(t *testing.T) {
 	if st != 200 || len(body.([]any)) != 1 {
 		t.Fatalf("affiliation = %d %v", st, body)
 	}
+	st, body, _ = r.Respond(ctx, "get", "/corporations/99100000001/assets/", nil, map[string]string{}, nil)
+	items, ok := body.([]any)
+	if st != 200 || !ok || len(items) == 0 {
+		t.Fatalf("corp assets = %d %v", st, body)
+	}
+	seenFlags := map[string]bool{}
+	seenIDs := map[int64]bool{}
+	for _, it := range items {
+		m, ok := it.(map[string]any)
+		if !ok {
+			t.Fatalf("corp asset shape = %v", it)
+		}
+		flag, _ := m["location_flag"].(string)
+		seenFlags[flag] = true
+		id, ok := m["item_id"].(int64)
+		if !ok {
+			t.Fatalf("corp asset item_id = %v", m["item_id"])
+		}
+		if seenIDs[id] {
+			t.Fatalf("duplicate corp item_id %v", id)
+		}
+		seenIDs[id] = true
+	}
+	if !seenFlags["CorpSAG1"] {
+		t.Fatalf("corp flags = %v, want corp hangar flags", seenFlags)
+	}
+}
+
+func TestDemoPaginatedClientPaths(t *testing.T) {
+	r := demoResponder()
+	cc := NewCharacterClient(nil, nil, &stubCreds{}, nil, nil)
+	cc.Demo = r
+	ctx := context.Background()
+	got, err := cc.GetAssets(ctx, 99000000001)
+	if err != nil || len(got) == 0 {
+		t.Fatalf("GetAssets demo = %d %v", len(got), err)
+	}
+	corp, err := cc.GetCorporationAssets(ctx, 99000000001, 99100000001)
+	if err != nil || len(corp) == 0 {
+		t.Fatalf("GetCorporationAssets demo = %d %v", len(corp), err)
+	}
+	personalIDs := map[int64]bool{}
+	for _, a := range got {
+		id, _ := a["item_id"].(int64)
+		personalIDs[id] = true
+	}
+	for _, a := range corp {
+		id, _ := a["item_id"].(int64)
+		if personalIDs[id] {
+			t.Fatalf("corp item_id %d collides with personal assets", id)
+		}
+		if _, ok := a["location_flag"].(string); !ok {
+			t.Fatalf("corp asset flag = %v", a)
+		}
+	}
+	if _, err := cc.GetAssets(ctx, 12345); err == nil {
+		t.Fatal("real id must not resolve through the demo responder")
+	}
 }
 
 func TestRouteGroups(t *testing.T) {

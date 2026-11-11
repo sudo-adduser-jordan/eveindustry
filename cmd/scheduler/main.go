@@ -58,6 +58,7 @@ func main() {
 		hd.ESIChars = esi.NewCharacterClient(esiClient, nil, hd.DB, nil, nil)
 		hd.ESIUniverse = esi.NewUniverseClient(esiClient, hd.DB, nil, hd.DB)
 		hd.ESIMarket = esi.NewMarketClient(esiClient, nil)
+		jobs.WireDemo(&hd)
 		hd.Sender = &notify.WebPushSender{
 			Subject: os.Getenv("VAPID_SUBJECT"), PublicKey: os.Getenv("VAPID_PUBLIC_KEY"),
 			PrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),

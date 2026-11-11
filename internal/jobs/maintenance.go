@@ -127,6 +127,9 @@ func ResetDemoAccount(ctx context.Context, h HandlerDeps) error {
 			return err
 		}
 	}
+	// Seed the reference rows the demo renders (type names/groups, hub
+	// stations/systems) before warming the caches that read them.
+	seedDemoReferenceData(ctx, h)
 	// Warm the caches so the first page load is not empty.
 	_ = RefreshAssetData(ctx, h, uid, true)
 	_ = RefreshIndustryData(ctx, h, uid)

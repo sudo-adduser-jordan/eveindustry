@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -193,6 +194,9 @@ func (c *CharacterClient) GetSkills(ctx context.Context, characterID int64) (map
 // 10000-page safety cap all fail as incomplete, never a prefix. query
 // carries extra params like include_completed=true.
 func (c *CharacterClient) Paginated(ctx context.Context, endpoint string, query map[string]string, characterID int64) ([]map[string]any, error) {
+	if c.Demo != nil && auth.IsDemoID(characterID) {
+		return c.demoPaginated(ctx, endpoint, query, characterID)
+	}
 	auth, err := c.credential(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -249,6 +253,59 @@ func (c *CharacterClient) Paginated(ctx context.Context, endpoint string, query 
 		}
 	}
 	return nil, &RequestError{Outcome: OutcomeIncomplete, RetryAfterSecs: 30}
+}
+
+// demoPaginated answers paginated reads for demo characters from the
+// DemoResponder, mirroring ESI's page/X-Pages contract. Corporate endpoints
+// resolve through the same responder keyed off the calling character.
+func (c *CharacterClient) demoPaginated(ctx context.Context, endpoint string, query map[string]string, characterID int64) ([]map[string]any, error) {
+	chars, _ := c.Demo.Chars(ctx)
+	var ch *DemoCharacter
+	for _, cc := range chars {
+		if cc.ID == characterID {
+			cc := cc
+			ch = &cc
+			break
+		}
+	}
+	var all []map[string]any
+	for page := 1; page <= 10000; page++ {
+		q := map[string]string{"page": fmt.Sprintf("%d", page)}
+		for k, v := range query {
+			q[k] = v
+		}
+		status, payload, headers := c.Demo.Respond(ctx, http.MethodGet, endpoint, ch, q, nil)
+		if status == 0 || payload == nil {
+			return nil, &RequestError{Outcome: OutcomeNotFound, Status: 404}
+		}
+		if status < 200 || status >= 300 {
+			return nil, &RequestError{Outcome: OutcomeNotFound, Status: status}
+		}
+		list, ok := payload.([]any)
+		if !ok {
+			return nil, &RequestError{Outcome: OutcomeIncomplete, RetryAfterSecs: 30, Status: status}
+		}
+		for _, item := range list {
+			m, ok := item.(map[string]any)
+			if !ok {
+				return nil, &RequestError{Outcome: OutcomeIncomplete, RetryAfterSecs: 30, Status: status}
+			}
+			all = append(all, m)
+		}
+		pages := 1
+		if headers != nil {
+			if p, err := strconv.Atoi(headers["X-Pages"]); err == nil && p > 0 {
+				pages = p
+			}
+		}
+		if page >= pages {
+			break
+		}
+	}
+	if all == nil {
+		all = []map[string]any{}
+	}
+	return all, nil
 }
 
 // GetAssets ports getCharacterAssets(): full snapshot, 1h cache; empty

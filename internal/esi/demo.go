@@ -326,7 +326,10 @@ func (r *DemoResponder) corporationEndpoint(ctx context.Context, corpID int64, r
 			}
 		}
 		return 200, demoPaged(all, query), demoPages(len(all))
-	case rest == "/assets" || rest == "/assets/names":
+	case rest == "/assets":
+		corp := r.demoCorpAssets(ctx, corpID)
+		return 200, demoPaged(corp, query), demoPages(len(corp))
+	case rest == "/assets/names":
 		return 200, demoPaged([]any{}, query), demoPages(0)
 	case rest == "/industry/jobs":
 		inc := query["include_completed"] == "true"
@@ -490,6 +493,61 @@ func (r *DemoResponder) demoAssets(c DemoCharacter) []any {
 		add(pair[1], 1+int((c.ID+int64(pair[1]))%40), false)
 	}
 	return items
+}
+
+// demoCorpAssets mirrors a corp hangar snapshot: deterministic per corp,
+// station-homed with corp hangar flags so the corporate assets tab has data.
+// Item ids use a corp-disjoint base so personal and corporate trees never
+// collide on item_id.
+func (r *DemoResponder) demoCorpAssets(ctx context.Context, corpID int64) []any {
+	chars, _ := r.Chars(ctx)
+	var members []DemoCharacter
+	for _, c := range chars {
+		if c.CorporationID == corpID {
+			members = append(members, c)
+		}
+	}
+	sortDemoChars(members)
+	if len(members) == 0 {
+		return []any{}
+	}
+	home, _, _ := DemoHome(members[0].ID)
+	base := 2000000000000 + 500000000 + ((corpID-DemoCorporationBase)%100000)*1000
+	flags := []string{"CorpSAG1", "CorpSAG2", "CorpSAG3", "CorpSAG4", "CorpSAG5", "CorpSAG6", "CorpSAG7", "CorpDeliveries"}
+	var items []any
+	n := int64(0)
+	add := func(typeID int, qty int) {
+		items = append(items, map[string]any{
+			"item_id": base + n, "type_id": typeID, "quantity": qty, "is_singleton": false,
+			"location_id": home, "location_type": "station", "location_flag": flags[int(n)%len(flags)],
+		})
+		n++
+	}
+	for _, typeID := range sortedDemoMineralIDs() {
+		add(typeID, int(float64(DemoMinerals[typeID])*(0.6+float64(corpID%50)/100)))
+	}
+	for _, typeID := range DemoIsotopes {
+		add(typeID, 40000+int(corpID%80000))
+	}
+	for _, pair := range r.demoPick(members[0], 12, "corpasset") {
+		add(pair[1], 5+int((corpID+int64(pair[1]))%120))
+	}
+	return items
+}
+
+// sortedDemoMineralIDs lists the demo mineral type ids in ascending order so
+// corp snapshots are stable across map iterations.
+func sortedDemoMineralIDs() []int {
+	ids := make([]int, 0, len(DemoMinerals))
+	for id := range DemoMinerals {
+		ids = append(ids, id)
+	}
+	for i := 1; i < len(ids); i++ {
+		for j := i; j > 0 && ids[j] < ids[j-1]; j-- {
+			ids[j], ids[j-1] = ids[j-1], ids[j]
+		}
+	}
+	return ids
 }
 
 func (r *DemoResponder) demoJobs(c DemoCharacter, includeCompleted bool) []any {

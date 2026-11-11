@@ -49,7 +49,7 @@ func handleAssetMaterials(d Deps) echo.HandlerFunc {
 				warning = "Corporation assets are not included: main character " + mainName + " cannot fetch them."
 			}
 		}
-		all, _ := cachedOrLiveAssets(ctx, d, uid, chars, corpOK)
+		all, filled := cachedOrLiveAssets(ctx, d, uid, chars, corpOK)
 		typeIDs := map[int]bool{}
 		for _, a := range all {
 			if a.TypeID > 0 {
@@ -67,6 +67,9 @@ func handleAssetMaterials(d Deps) echo.HandlerFunc {
 		typeNames := map[int]string{}
 		for _, a := range all {
 			gid := groups[a.TypeID]
+			if gid == 0 {
+				gid = calc.FallbackMaterialGroups[a.TypeID]
+			}
 			gname, ok := calc.MaterialGroups[gid]
 			if !ok {
 				continue
@@ -129,7 +132,7 @@ func handleAssetMaterials(d Deps) echo.HandlerFunc {
 		return Success(c, http.StatusOK, map[string]any{
 			"grand_total": grand, "groups": groupsOut,
 		}, map[string]any{
-			"last_updated": nil, "corporation_assets_warning": warning,
+			"last_updated": lastUpdated(filled), "corporation_assets_warning": warning,
 		})
 	}
 }
@@ -150,7 +153,7 @@ func handleAssetShips(d Deps) echo.HandlerFunc {
 			return dbError(c, err)
 		}
 		corpOK := assets.CorpDenial(chars) == nil
-		all, _ := cachedOrLiveAssets(ctx, d, uid, chars, corpOK)
+		all, filled := cachedOrLiveAssets(ctx, d, uid, chars, corpOK)
 		typeIDs := map[int]bool{}
 		for _, a := range all {
 			if a.TypeID > 0 {
@@ -183,7 +186,7 @@ func handleAssetShips(d Deps) echo.HandlerFunc {
 		if len(names) == 0 {
 			return Success(c, http.StatusOK, map[string]any{
 				"total_ships": 0, "type_count": 0, "ship_groups": []any{},
-			}, map[string]any{"last_updated": nil})
+			}, map[string]any{"last_updated": lastUpdated(filled)})
 		}
 		grouped := map[string]*shipGroup{}
 		var total int
@@ -223,7 +226,7 @@ func handleAssetShips(d Deps) echo.HandlerFunc {
 		}
 		return Success(c, http.StatusOK, map[string]any{
 			"total_ships": total, "type_count": len(order), "ship_groups": out,
-		}, map[string]any{"last_updated": nil})
+		}, map[string]any{"last_updated": lastUpdated(filled)})
 	}
 }
 

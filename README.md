@@ -24,6 +24,40 @@ API at `/api/v1` consumed by `frontend/` (React, Vite, TypeScript).
 | `migrations/` | SQL schema (one `.up.sql`/`.down.sql` pair per version) |
 | `plan.md` | Port phases, conventions, remaining work |
 
+## Setup (fresh checkout)
+
+Prerequisites: Go 1.24+, Node 20+, and the [go-task](https://taskfile.dev/) runner.
+
+```sh
+task setup
+```
+
+This creates `.env` from `.env.example` (first run only), installs Go and
+frontend dependencies, applies migrations, fetches the SDE reference data
+(the long pole; skipped on reruns when the checksum is unchanged) and resets
+the demo account. Afterwards:
+
+```sh
+task start   # api + worker + scheduler + web UI (demo mode on by default)
+```
+
+Useful slices of the same flow:
+
+```sh
+task deps            # install deps only (no network-heavy imports)
+task deps:update     # update Go + frontend deps to latest allowed versions
+task migrate -- up  # apply pending SQL migrations
+task setup:sde       # fetch SDE reference data now (scheduler runs it daily)
+task setup:demo      # reset demo data now (scheduler runs it daily)
+task job -- <name> [json-payload]  # run any background job once and exit
+```
+
+Config is all environment; see `.env.example` (`PORT`, `DB_PATH`,
+`EVE_CLIENT_ID`, `EVE_CLIENT_SECRET`, `SESSION_KEY` or `APP_KEY`,
+`DEMO_ENABLED`, ...). The database is an embedded SQLite file (`DB_PATH`,
+default `storage/eveindustry.sqlite`); run `go run ./cmd/migrate up` once to
+create the schema.
+
 ## Run
 
 ```sh

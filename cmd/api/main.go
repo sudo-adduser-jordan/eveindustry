@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -19,6 +18,7 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 	gohttp "github.com/sudo-adduser-jordan/eveindustry/internal/http"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/jobs"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
@@ -87,41 +87,7 @@ func main() {
 		}
 		esiChars := esi.NewCharacterClient(esiClient, refresher, queries, nil, appKey)
 		esiUniverse := esi.NewUniverseClient(esiClient, queries, nil, queries)
-		demo := &esi.DemoResponder{
-			Chars: func(ctx context.Context) ([]esi.DemoCharacter, error) {
-				rows, err := queries.DemoCharacters(ctx)
-				if err != nil {
-					return nil, err
-				}
-				out := make([]esi.DemoCharacter, 0, len(rows))
-				for _, r := range rows {
-					c := esi.DemoCharacter{ID: r.CharacterID, Name: r.Name, CreatedAt: r.CreatedAt}
-					if r.CorporationID.Valid {
-						c.CorporationID = r.CorporationID.Int64
-					}
-					if r.CorporationName.Valid {
-						c.CorpName = r.CorporationName.String
-					}
-					if r.AllianceID.Valid {
-						c.AllianceID = r.AllianceID.Int64
-					}
-					if r.AllianceName.Valid {
-						c.AllianceName = r.AllianceName.String
-					}
-					if r.Roles.Valid && r.Roles.String != "" {
-						var roles []string
-						if err := json.Unmarshal([]byte(r.Roles.String), &roles); err == nil {
-							c.Roles = roles
-						}
-					}
-					out = append(out, c)
-				}
-				return out, nil
-			},
-			Pool: func(ctx context.Context) ([][2]int, error) {
-				return deps.Industry.DemoBlueprintPool(ctx)
-			},
-		}
+		demo := jobs.DemoResponder(queries, deps.Industry)
 		esiChars.Demo = demo
 		esiUniverse.Demo = demo
 		deps.Skills.Characters = esiChars

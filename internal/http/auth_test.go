@@ -309,6 +309,93 @@ func TestDemoLoginFlowEndToEnd(t *testing.T) {
 	}
 }
 
+// TestDemoLoginWarmsAssetCache posts /demo/login for a demo account that
+// already has a character: the handler rebuilds the asset cache inline so
+// the assets tab has data on first paint instead of waiting for the next
+// 30-minute background refresh.
+func TestDemoLoginWarmsAssetCache(t *testing.T) {
+	db, err := store.Connect(filepath.Join(t.TempDir(), "warm.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.DB.Close() }()
+	for _, name := range []string{
+		"0000_00_00_000000_baseline.up.sql",
+		"2026_11_09_000001_notification_settings_unique.up.sql",
+	} {
+		raw, err := migrations.FS.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, stmt := range strings.Split(string(raw), ";\n") {
+			if strings.TrimSpace(stmt) == "" {
+				continue
+			}
+			if _, err := db.DB.Exec(stmt); err != nil {
+				t.Fatalf("%s: %v\n%s", name, err, stmt)
+			}
+		}
+	}
+	ctx := context.Background()
+	queries := store.NewSQL(db.DB)
+	uid, err := queries.EnsureDemoUser(ctx, DemoEmail)
+	if err != nil || uid == 0 {
+		t.Fatalf("EnsureDemoUser: %v %d", err, uid)
+	}
+	const charID = int64(99000000001)
+	if err := queries.CreateDemoCharacter(ctx, store.DemoCharacter{
+		CharacterID: charID, UserID: uid, Name: "Demo One",
+		CorporationID: 99100000001, CorpName: "Demo Corp",
+		IsMain: true, IsDirectorCEO: true, Roles: []string{"Director"},
+	}); err != nil {
+		t.Fatalf("CreateDemoCharacter: %v", err)
+	}
+	d := Deps{
+		Sessions: auth.NewCookieSessions([]byte("0123456789abcdef0123456789abcdef"), 0, false, ""),
+		Users:    queries, DemoUsers: queries, DemoEnabled: true,
+		Cache: &cache.Cache{DB: db.DB},
+		AssetBrowser: AssetBrowserDeps{
+			Characters: &stubAssetChars{assets: map[int64][]map[string]any{charID: {
+				{"item_id": 1, "type_id": 34, "quantity": 100.0, "location_id": 60003760, "location_type": "station", "location_flag": "Hangar"},
+			}}},
+			Universe:  &stubAssetUniverse{},
+			Reference: &stubAssetRef{},
+		},
+		Industry: &stubIndustry{names: map[int]string{34: "Tritanium"}},
+	}
+	e := New(d)
+	req := httptest.NewRequest(http.MethodPost, "/demo/login", nil)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("POST /demo/login = %d, want 302: %s", rec.Code, rec.Body.String())
+	}
+	cookies := rec.Result().Cookies()
+	if len(cookies) == 0 {
+		t.Fatal("demo login issued no cookie")
+	}
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/assets", nil)
+	req.AddCookie(cookies[0])
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET /assets = %d: %s", rec.Code, rec.Body.String())
+	}
+	var body struct {
+		Data []map[string]any `json:"data"`
+		Meta map[string]any   `json:"meta"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if len(body.Data) != 1 || body.Data[0]["type_name"] != "Tritanium" {
+		t.Fatalf("assets = %v, want the warmed Tritanium stack", body.Data)
+	}
+	if body.Meta["last_updated"] == nil {
+		t.Fatalf("meta = %v, want last_updated from the login warm", body.Meta)
+	}
+}
+
 func TestDemoLoginJSONReturnsRedirectBody(t *testing.T) {
 	// The SPA login page posts with Accept: application/json and navigates
 	// itself, so the handler answers 200 with the redirect target.

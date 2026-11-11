@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"time"
+
+	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 )
 
 // DemoUser mirrors the users row for the demo account.
@@ -31,9 +33,17 @@ func (s *SQL) EnsureDemoUser(ctx context.Context, email string) (int64, error) {
 	return res.LastInsertId()
 }
 
-// TouchDemoUser refreshes the demo account flags + login.
+// TouchDemoUser refreshes the demo account flags + login. It also backfills
+// the demo ESI scopes on the account's characters: resets created before the
+// scope fix left them scopeless, which empties every scope-gated tab (assets,
+// industry) until the next daily reset.
 func (s *SQL) TouchDemoUser(ctx context.Context, id int64) error {
-	_, err := s.db.ExecContext(ctx, `UPDATE users SET name = 'Demo Account', is_admin = 0, is_super_admin = 0,
+	scopes, _ := json.Marshal(esi.DemoScopes)
+	_, err := s.db.ExecContext(ctx, `UPDATE characters SET scopes = ? WHERE user_id = ?`, string(scopes), id)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.ExecContext(ctx, `UPDATE users SET name = 'Demo Account', is_admin = 0, is_super_admin = 0,
 		is_active = 1, is_stock_manager_enabled = 1, is_demo = 1, last_login_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, id)
 	return err
 }
@@ -90,10 +100,11 @@ type DemoCharacter struct {
 	CachedTrain   string
 }
 
-// CreateDemoCharacter inserts one demo character.
+// CreateDemoCharacter inserts one demo character. Demo characters carry the
+// full demo scope set so scope-gated tabs (assets, industry) serve demo data.
 func (s *SQL) CreateDemoCharacter(ctx context.Context, c DemoCharacter) error {
 	roles, _ := json.Marshal(c.Roles)
-	scopes, _ := json.Marshal([]string{})
+	scopes, _ := json.Marshal(esi.DemoScopes)
 	_, err := s.db.ExecContext(ctx, `INSERT INTO characters (character_id, user_id, name, corporation_id, corporation_name,
 		alliance_id, alliance_name, is_main, access_token, refresh_token, token_expires_at, scopes,
 		is_esi_active, is_director_ceo, roles, cached_location, cached_training, created_at, updated_at)

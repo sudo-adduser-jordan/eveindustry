@@ -183,6 +183,7 @@ func handleDemoLogin(d Deps) echo.HandlerFunc {
 		if err := d.DemoUsers.TouchDemoUser(c.Request().Context(), uid); err != nil {
 			return dbError(c, err)
 		}
+		warmDemoAssets(c.Request().Context(), d, uid)
 		d.Sessions.Issue(c.Response(), uid)
 		if strings.Contains(c.Request().Header.Get("Accept"), "application/json") {
 			return Success(c, http.StatusOK, map[string]any{"redirect": "/app/dashboard"}, nil)

@@ -98,6 +98,23 @@ func (a assetRefAdapter) FindSystem(ctx context.Context, id int) (string, bool) 
 	return st.SolarSystemName, true
 }
 
+// warmDemoAssets rebuilds one demo user's asset cache inline at demo login.
+// RefreshAssetData only runs every 30 minutes, so without this a stale empty
+// snapshot (or none at all) would greet first-time demo visitors. Best
+// effort: failures leave the background refresh to heal the cache later.
+func warmDemoAssets(ctx context.Context, d Deps, uid int64) {
+	if d.Cache == nil || d.Users == nil || d.Industry == nil || d.AssetBrowser.Characters == nil {
+		return
+	}
+	chars, err := d.Users.CharactersForUser(ctx, uid)
+	if err != nil || len(chars) == 0 {
+		return
+	}
+	all := assets.FetchUserAssets(ctx, assetDeps(d), chars, true)
+	d.Cache.SetJSON(ctx, "assets.user."+itoaProg(int(uid)), all, 0)
+	d.Cache.SetJSON(ctx, "assets.user."+itoaProg(int(uid))+".cached_at", time.Now().Unix(), 0)
+}
+
 // GET /assets or /corporation/assets — paginated tree with search, sort,
 // parent/location filters and the children toggle.
 func handleAssetsIndex(d Deps, corporate bool) echo.HandlerFunc {
@@ -201,8 +218,14 @@ func handleAssetsIndex(d Deps, corporate bool) echo.HandlerFunc {
 		for _, t := range tree {
 			items = append(items, assetNodeShape(t))
 		}
-		return Success(c, http.StatusOK, pagedSlice(items, page, perPage), map[string]any{
+		offset, pagination := paginate(len(items), page, perPage)
+		end := offset + perPage
+		if end > len(items) {
+			end = len(items)
+		}
+		return Success(c, http.StatusOK, items[offset:end], map[string]any{
 			"last_updated": lastUpdated(filled),
+			"pagination":   pagination,
 		})
 	}
 }

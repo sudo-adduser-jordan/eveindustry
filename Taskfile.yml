@@ -186,6 +186,46 @@ tasks:
     cmds:
       - go test -count=1 ./cmd/migrate/
 
+  deps:
+    desc: Install all dependencies (Go modules + frontend packages)
+    cmds:
+      - go mod download
+      - task: frontend:install
+
+  deps:update:
+    desc: Update Go and frontend dependencies to latest allowed versions
+    cmds:
+      - go get -u ./... && go mod tidy
+      - task: frontend:update
+
+  job:
+    desc: "Run one background job once and exit (usage: task job -- <name> [json-payload]; e.g. sde-import, demo-reset)"
+    dotenv: ['.env']
+    cmds:
+      - go run ./cmd/job {{.CLI_ARGS}}
+
+  setup:sde:
+    desc: Fetch SDE reference data now (same sde:import job the scheduler runs daily)
+    dotenv: ['.env']
+    cmds:
+      - go run ./cmd/job sde-import
+
+  setup:demo:
+    desc: Reset demo data now (same demo:reset job the scheduler runs daily)
+    dotenv: ['.env']
+    cmds:
+      - DEMO_ENABLED="${DEMO_ENABLED:-true}" go run ./cmd/job demo-reset
+
+  setup:
+    desc: Fresh-checkout bootstrap (env file, dependencies, migrations, SDE reference data, demo data)
+    cmds:
+      - '[ -f .env ] || cp .env.example .env'
+      - task: deps
+      - task: migrate
+        vars: {CLI_ARGS: up}
+      - task: setup:sde
+      - task: setup:demo
+
   frontend:install:
     desc: Install frontend dependencies
     dir: frontend
@@ -196,6 +236,12 @@ tasks:
       - node_modules/.bin/vite
     cmds:
       - npm ci
+
+  frontend:update:
+    desc: Update frontend dependencies to latest allowed versions
+    dir: frontend
+    cmds:
+      - npm update
 
   frontend:gen:
     desc: Regenerate the typed API client from docs/openapi.json
