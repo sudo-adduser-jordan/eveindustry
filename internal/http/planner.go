@@ -10,10 +10,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/market"
 )
 
-// POST /calculators/reaction-planner — mirrors
-// ReactionPlannerController@calculate: resolve the composite/intermediate
-// chain, price it in one region, add job + SCC fees. Entries for formulas
-// with no SDE materials are skipped, like the PHP chain resolver.
 func handleReactionPlanner(d Deps) echo.HandlerFunc {
 	type entry struct {
 		FormulaTypeID *int     `json:"formula_type_id"`

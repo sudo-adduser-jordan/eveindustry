@@ -19,7 +19,7 @@ import { typeIconUrl, iconFallback } from '../components/typeIcon'
 type Detail = components['schemas']['CorporateBuildProgramDetailResource']
 type Progress = components['schemas']['BuildProgramProgressResource']
 
-/** A program step. The API types the first level; deeper `children` have the same shape. */
+
 export interface Step {
   type_id: number
   name: string
@@ -30,7 +30,7 @@ export interface Step {
   children: Step[]
 }
 
-/** The stock found for a step, same tree shape as the program's. */
+
 export interface ProgressStep {
   available: number
   progress: number
@@ -40,11 +40,11 @@ export interface ProgressStep {
   children: ProgressStep[]
 }
 
-// The generated types stop at the first level of the recursive tree.
+
 export const asSteps = (steps: Detail['steps']) => steps as unknown as Step[]
 export const asProgressSteps = (steps: Progress['steps']) => steps as unknown as ProgressStep[]
 
-/** The program's steps cut into the merged program's sections; one unnamed group without sections. */
+
 export function groupSteps(steps: Step[], sections: Detail['sections']): Array<{ name: string | null; start: number; steps: Step[] }> {
   if (sections.length === 0) return [{ name: null, start: 0, steps }]
   let at = 0
@@ -140,7 +140,7 @@ export default function BuildProgramDetail() {
   const saveFilter = useSaveLocationFilter()
   const [name, setName] = useState<string | null>(null)
   const [expandAll, setExpandAll] = useState(false)
-  // null until the user applies a filter; the saved one applies until then.
+  
   const [applied, setApplied] = useState<{ input: number[]; output: number[] } | null>(null)
 
   const saved = program.data?.data.program

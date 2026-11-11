@@ -12,22 +12,17 @@ import (
 	"time"
 )
 
-// Auth carries one character's credential for an authenticated call. The
-// caller refreshes expired tokens via Refresh before sending (or passes a
-// Refresher for the automatic post-401 retry).
 type Auth struct {
 	CharacterID int64
 	AccessToken string
 }
 
-// Response is one finished ESI response.
 type Response struct {
 	Status  int
 	Headers http.Header
 	Body    []byte
 }
 
-// JSON decodes the body; nil for empty bodies.
 func (r *Response) JSON() any {
 	if len(r.Body) == 0 {
 		return nil
@@ -39,10 +34,8 @@ func (r *Response) JSON() any {
 	return v
 }
 
-// Successful mirrors 2xx.
 func (r *Response) Successful() bool { return r.Status >= 200 && r.Status < 300 }
 
-// Pages reads X-Pages, or 0 when absent/unparseable.
 func (r *Response) Pages() int {
 	p, err := strconv.Atoi(r.Headers.Get("X-Pages"))
 	if err != nil || p < 1 {
@@ -51,9 +44,6 @@ func (r *Response) Pages() int {
 	return p
 }
 
-// Client ports EsiHttpClient::send/requireSuccess over the Limiter+Circuit.
-// Dials with a 5s connect timeout and 30s total timeout like the PHP
-// connectTimeout/timeout pair.
 type Client struct {
 	HTTP              *http.Client
 	BaseURL           string
@@ -62,15 +52,11 @@ type Client struct {
 	Limiter           *Limiter
 	Circuit           *Circuit
 	store             CoordStore
-	// Refresh rotates one character's token; nil disables the post-401 retry.
-	Refresh func(ctx context.Context, characterID int64, priorAccess string, force bool) (string, error)
-	// Cache serves GETs with ETag revalidation; nil disables caching.
-	Cache *HTTPCache
-	// Recorder captures passive diagnostics; nil disables collection.
-	Recorder *DiagRecorder
+	Refresh           func(ctx context.Context, characterID int64, priorAccess string, force bool) (string, error)
+	Cache             *HTTPCache
+	Recorder          *DiagRecorder
 }
 
-// NewClient builds a transport with the PHP timeouts.
 func NewClient(store CoordStore, limiter *Limiter, circuit *Circuit, userAgent string) *Client {
 	transport := &http.Transport{}
 	return &Client{
@@ -83,14 +69,10 @@ func NewClient(store CoordStore, limiter *Limiter, circuit *Circuit, userAgent s
 	}
 }
 
-// Do sends one request. params go in the query for GET/HEAD/DELETE and in a
-// JSON body otherwise. auth nil means a public call.
 func (c *Client) Do(ctx context.Context, method, endpoint string, params map[string]string, headers map[string]string, auth *Auth) (*Response, error) {
 	return c.DoJSON(ctx, method, endpoint, params, nil, headers, auth)
 }
 
-// DoJSON is Do with an explicit JSON body for non-GET methods (arrays for
-// the affiliation/names endpoints, objects elsewhere).
 func (c *Client) DoJSON(ctx context.Context, method, endpoint string, query map[string]string, body any, headers map[string]string, auth *Auth) (*Response, error) {
 	method = strings.ToUpper(method)
 	if c.Circuit != nil && c.Circuit.IsLimited() {
@@ -226,7 +208,6 @@ func (c *Client) sendOnce(ctx context.Context, method, endpoint string, query ma
 	return resp, nil
 }
 
-// recordDeferral ports the local_deferral capture for budget-held requests.
 func (c *Client) recordDeferral(ctx context.Context, method, endpoint string, auth *Auth, group string, outcome Outcome) {
 	if c.Recorder == nil || !c.Recorder.Enabled {
 		return
@@ -248,7 +229,6 @@ func (c *Client) recordDeferral(ctx context.Context, method, endpoint string, au
 	})
 }
 
-// recordAttempt ports the http_attempt capture for wire responses.
 func (c *Client) recordAttempt(ctx context.Context, method, endpoint string, auth *Auth, resp *Response, duration time.Duration) {
 	if c.Recorder == nil || !c.Recorder.Enabled {
 		return
@@ -267,7 +247,6 @@ func (c *Client) recordAttempt(ctx context.Context, method, endpoint string, aut
 	})
 }
 
-// recordFailure ports the connection_failure capture.
 func (c *Client) recordFailure(ctx context.Context, method, endpoint string, auth *Auth, duration time.Duration) {
 	if c.Recorder == nil || !c.Recorder.Enabled {
 		return
@@ -307,8 +286,6 @@ func (c *Client) trackCircuit(hresp *http.Response) {
 	c.Circuit.TrackResponse(remain, maxInt(1, reset), hresp.StatusCode == 420, retry)
 }
 
-// resolveGroup ports resolveRateLimitGroup(): learned route-group cache,
-// else the pinned route table, else legacy.
 func (c *Client) resolveGroup(endpoint, method string) string {
 	path := endpoint
 	if u, err := url.Parse(endpoint); err == nil && u.Path != "" {
@@ -322,7 +299,6 @@ func (c *Client) resolveGroup(endpoint, method string) string {
 	if g, ok := routeGroups[strings.ToLower(method)+" "+path]; ok {
 		return g
 	}
-	// Templates carry {placeholders}; match segment-wise.
 	m := strings.ToLower(method)
 	segs := strings.Split(strings.Trim(path, "/"), "/")
 	for route, g := range routeGroups {
@@ -440,8 +416,6 @@ func responseErrText(r *Response) string {
 	return e
 }
 
-// requireSuccess ports requireSuccess(): 2xx/304 pass, everything else maps
-// to an outcome with a retry delay.
 func (c *Client) requireSuccess(r *Response) (*Response, error) {
 	if r.Successful() || r.Status == http.StatusNotModified {
 		return r, nil
@@ -489,7 +463,6 @@ func maxInt(a, b int) int {
 	return b
 }
 
-// esiErrorText extracts the ESI error string for classification.
 func esiErrorText(r *Response) string {
 	var data struct {
 		Error string `json:"error"`

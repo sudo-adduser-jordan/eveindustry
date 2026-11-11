@@ -8,7 +8,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// stubStock implements StockReader in memory.
 type stubStock struct {
 	assets     map[int64][]map[string]any
 	assetErr   map[int64]bool
@@ -77,7 +76,6 @@ func TestAssetStock(t *testing.T) {
 		if len(rows) != 3 {
 			t.Fatalf("%s: rows = %v", path, rows)
 		}
-		// 100 + 7 = 107
 		if rows[0].(map[string]any)["quantity"].(float64) != 107 {
 			t.Fatalf("row0 = %v", rows[0])
 		}
@@ -101,7 +99,6 @@ func TestFormulaStock(t *testing.T) {
 		t.Fatalf("scope = %v", data)
 	}
 	formulas := data["formulas"].([]any)
-	// blueprints 3 + 1 active reaction job = 4
 	if len(formulas) != 2 || formulas[0].(map[string]any)["quantity"].(float64) != 4 {
 		t.Fatalf("formulas = %v", formulas)
 	}

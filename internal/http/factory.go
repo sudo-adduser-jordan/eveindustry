@@ -11,7 +11,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerFactoryPlanner mounts GET /calculators/factory-planner.
 func registerFactoryPlanner(v1 *echo.Group, d Deps) {
 	if d.Market == nil {
 		return
@@ -19,8 +18,6 @@ func registerFactoryPlanner(v1 *echo.Group, d Deps) {
 	v1.Group("/calculators").GET("/factory-planner", handleFactoryPlanner(d))
 }
 
-// GET /calculators/factory-planner — mirrors FactoryPlannerController@calculate:
-// daily planet figures for every schematic in a tier, after customs tax.
 func handleFactoryPlanner(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}

@@ -8,11 +8,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 )
 
-// ESICharacterStore is the SQL CredentialStore for ESI calls. Tokens are
-// read and written raw: PHP decrypts encrypted-at-rest rows on read
-// (EsiToken::encrypted) and the Go character client decrypts them the same
-// way when the APP_KEY is configured, so mixed PHP/Go operation keeps
-// working (PHP reads both raw and encrypted rows).
 var _ esi.CredentialStore = (*SQL)(nil)
 
 type esiCredRow struct {
@@ -22,8 +17,6 @@ type esiCredRow struct {
 	IsEsiActive    bool           `db:"is_esi_active"`
 }
 
-// Credentials loads one character's ESI credential. Absent row reports
-// ok=false (callers fail closed with a credential outcome).
 func (s *SQL) Credentials(ctx context.Context, characterID int64) (esi.Credential, bool, error) {
 	var row esiCredRow
 	err := s.db.GetContext(ctx, &row, `
@@ -48,7 +41,6 @@ func (s *SQL) Credentials(ctx context.Context, characterID int64) (esi.Credentia
 	return cred, true, nil
 }
 
-// SaveTokens persists a rotation (raw; never re-encrypts).
 func (s *SQL) SaveTokens(ctx context.Context, characterID int64, access, refresh string, expiresAt time.Time) error {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE characters SET access_token = ?, refresh_token = ?, token_expires_at = ?
@@ -56,7 +48,6 @@ func (s *SQL) SaveTokens(ctx context.Context, characterID int64, access, refresh
 	return err
 }
 
-// Deactivate marks the character ESI-inactive (invalid_grant path).
 func (s *SQL) Deactivate(ctx context.Context, characterID int64) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE characters SET is_esi_active = 0 WHERE character_id = ?`, characterID)
 	return err

@@ -12,10 +12,7 @@ function useSystemHits(q: string) {
 
 const secClass = (s: number) => (s >= 0.5 ? 'text-profit' : s > 0 ? 'text-warn' : 'text-loss')
 
-/**
- * Pick a solar system and report its ESI cost index for `activity` (as a
- * percentage) through `onIndex` once it loads.
- */
+
 export function SystemPicker({
   system,
   onChange,
@@ -32,7 +29,7 @@ export function SystemPicker({
 
   useEffect(() => {
     if (index !== undefined) onIndex(Math.round(index * 10000) / 100)
-    // onIndex is a state setter in every caller.
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index])
 

@@ -9,8 +9,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerStructures mounts the generic station-config CRUD. Other users'
-// structures 404.
 func registerStructures(v1 *echo.Group, d Deps) {
 	if d.Planning == nil {
 		return
@@ -50,8 +48,6 @@ func structureShape(r store.StationConfig) map[string]any {
 	return m
 }
 
-// POST /structures — 201. With is_default it becomes the default for its
-// activity type.
 func handleStructureStore(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -75,7 +71,6 @@ func handleStructureStore(d Deps) echo.HandlerFunc {
 	}
 }
 
-// PUT /structures/:id — partial update, only sent fields change.
 func handleStructureUpdate(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := planID(c)
@@ -106,7 +101,6 @@ func handleStructureUpdate(d Deps) echo.HandlerFunc {
 	}
 }
 
-// DELETE /structures/:id — 204, 404 foreign/missing.
 func handleStructureDestroy(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := planID(c)
@@ -125,7 +119,6 @@ func handleStructureDestroy(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /structures/:id/default — default for its activity type.
 func handleStructureDefault(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := planID(c)
@@ -144,7 +137,6 @@ func handleStructureDefault(d Deps) echo.HandlerFunc {
 	}
 }
 
-// decodeStationInput validates store (required=true) or update payloads.
 func decodeStationInput(raw map[string]any, verrs validationErrors, required bool) (store.StationConfigInput, bool) {
 	var in store.StationConfigInput
 	if v, present := raw["activity_type"]; required {
@@ -232,9 +224,6 @@ func strOf2(v any) *string {
 	return &e
 }
 
-// GET /structures — the user's station configs, defaults first then by
-// name, with solar system names and effective bonuses. ?activity_type
-// filters (present-but-empty matches nothing, like the old route).
 func handleStructuresIndex(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		page, perPage, ok := listPage(c)
@@ -243,7 +232,6 @@ func handleStructuresIndex(d Deps) echo.HandlerFunc {
 		}
 		var activity *string
 		if vals, present := c.QueryParams()["activity_type"]; present {
-			// Key present (even empty) filters, mirroring forUser.
 			v := ""
 			if len(vals) > 0 {
 				v = vals[0]

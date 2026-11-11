@@ -36,7 +36,7 @@ function customProperties(css: string): string[] {
 beforeEach(() => {
   localStorage.clear()
   delete document.documentElement.dataset.theme
-  // Mirror index.html: the app ships a theme-color meta for applyTheme.
+  
   if (!document.querySelector('meta[name="theme-color"]')) {
     const meta = document.createElement('meta')
     meta.setAttribute('name', 'theme-color')
@@ -115,7 +115,7 @@ it('groups every theme into the picker sections', () => {
   }
 })
 
-// Themes must differ in structure, not only in palette: chrome, shape or type.
+
 it('changes more than colours in every non-default theme', () => {
   const structural = ['clip-path', 'border-radius', 'text-transform', 'box-shadow', 'font-display', 'content: none']
   for (const [id, css] of Object.entries(themeFiles)) {

@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// Pin categories mirroring PlanetaryService.
 const (
 	PinExtractor       = "extractor"
 	PinBasicFactory    = "basic_factory"
@@ -18,7 +17,6 @@ const (
 	PinUnknown         = "unknown"
 )
 
-// LaunchpadCapacity and StorageCapacity in m3.
 const (
 	LaunchpadCapacity = 10000.0
 	StorageCapacity   = 12000.0
@@ -27,7 +25,6 @@ const (
 	NoiseFactor       = 0.8
 )
 
-// PinTypeMap mirrors PIN_TYPE_MAP.
 var PinTypeMap = map[int]string{
 	2848: PinExtractor, 3060: PinExtractor, 3061: PinExtractor, 3062: PinExtractor,
 	3063: PinExtractor, 3064: PinExtractor, 3067: PinExtractor, 3068: PinExtractor,
@@ -44,14 +41,11 @@ var PinTypeMap = map[int]string{
 	2508: PinCommandCenter, 2509: PinCommandCenter, 2510: PinCommandCenter, 2511: PinCommandCenter,
 }
 
-// TypeResolver maps type ids to names and volumes (DB -> ESI -> PI map).
 type TypeResolver struct {
 	Names   map[int]string
 	Volumes map[int]float64
 }
 
-// PI commodity fallback volumes by tier (P0..P4); the static map from PHP is
-// keyed by type id, which callers fold into Volumes.
 func (r TypeResolver) Name(id int) string {
 	if id <= 0 {
 		return "Unknown"
@@ -69,7 +63,6 @@ func (r TypeResolver) Volume(id int) float64 {
 	return DefaultVolume
 }
 
-// CategorizePinType ports categorizePinType with the name fallback.
 func CategorizePinType(typeID int, name string) string {
 	if c, ok := PinTypeMap[typeID]; ok {
 		return c
@@ -94,7 +87,6 @@ func CategorizePinType(typeID int, name string) string {
 	return PinUnknown
 }
 
-// ExtractorTotals ports calculateExtractorTotals.
 func ExtractorTotals(qtyPerCycle, cycleTime, duration int) (total float64, avgPerHour float64, cycles int) {
 	if qtyPerCycle <= 0 || cycleTime <= 0 || duration <= 0 {
 		return 0, 0, 0
@@ -119,7 +111,6 @@ func ExtractorTotals(qtyPerCycle, cycleTime, duration int) (total float64, avgPe
 	return total, avgPerHour, cycles
 }
 
-// StorageUsage ports computeStorageUsage.
 func StorageUsage(contents []map[string]any, capacity float64, r TypeResolver) map[string]any {
 	var totalItems int64
 	var totalVolume float64
@@ -146,7 +137,6 @@ func StorageUsage(contents []map[string]any, capacity float64, r TypeResolver) m
 	}
 }
 
-// PinAnalysis is one analyzed pin.
 type PinAnalysis struct {
 	PinID    int
 	TypeID   int
@@ -156,7 +146,6 @@ type PinAnalysis struct {
 	Raw      map[string]any
 }
 
-// PlanetAnalysis ports analyzePlanet.
 type PlanetAnalysis struct {
 	Summary map[string]int
 	Pins    []any
@@ -166,8 +155,6 @@ type PlanetAnalysis struct {
 	Routes  []any
 }
 
-// AnalyzePlanet ports analyzePlanet: pin details, extractor/factory stats,
-// storage usage, alerts, route flow. schematic fetches via lookup.
 func AnalyzePlanet(details map[string]any, r TypeResolver, schematic func(id int) map[string]any, now time.Time) PlanetAnalysis {
 	pins := listOf(details["pins"])
 	routes := listOf(details["routes"])
@@ -279,7 +266,6 @@ func AnalyzePlanet(details map[string]any, r TypeResolver, schematic func(id int
 	}
 }
 
-// AnalyzeRoutes ports analyzeRoutes.
 func AnalyzeRoutes(routes []any, r TypeResolver) []any {
 	out := make([]any, 0, len(routes))
 	for _, rv := range routes {
@@ -298,7 +284,6 @@ func AnalyzeRoutes(routes []any, r TypeResolver) []any {
 	return out
 }
 
-// CapacityEntry is one planet capacity row.
 type CapacityEntry struct {
 	CharacterName  string
 	PlanetName     string
@@ -308,7 +293,6 @@ type CapacityEntry struct {
 	Status         string
 }
 
-// BuildCapacityAnalysis ports buildCapacityAnalysis.
 func BuildCapacityAnalysis(planets []map[string]any) []any {
 	out := make([]any, 0, len(planets))
 	for _, p := range planets {

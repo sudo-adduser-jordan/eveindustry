@@ -18,8 +18,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// Deps are the already-wired collaborators for the router. Probes are plain
-// funcs so handlers stay thin and unit tests can stub the DB.
 type Deps struct {
 	DBPing    func(ctx context.Context) error
 	CachePing func(ctx context.Context) bool
@@ -28,8 +26,6 @@ type Deps struct {
 	SetupPrices setup.Probe
 	SetupOrders setup.Probe
 
-	// Reference and Market are nil when no database is configured: data
-	// routes answer 503 while /up and /health keep their contracts.
 	Reference          store.ReferenceStore
 	Market             store.MarketStore
 	Industry           industry.IndustryStore
@@ -66,29 +62,18 @@ type Deps struct {
 	Abyssal            AbyssalDeps
 	Planetary          PlanetaryDeps
 
-	// Login surface: GET /login and /welcome render the public sign-in
-	// pages the SPA redirects to (401 -> /login, logout -> /welcome).
-	// SSOConfigured reports EVE_CLIENT_ID/SECRET presence; DemoEnabled
-	// gates POST /demo/login (404 when off, like the PHP route).
 	SSOConfigured bool
 	DemoEnabled   bool
 	DemoUsers     DemoUsers
 
-	// Sessions and Users drive RequireAuth. Either nil means nobody can
-	// authenticate, so every authed route 401s (never silently open).
 	Sessions auth.Sessions
 	Users    store.AuthStore
 
-	// App carries the public metadata /me exposes.
 	App AppConfig
 
-	// RefreshThrottle keeps the 30-minute clear throttle for industry
-	// caches. Nil means a fresh in-memory throttle (tests override).
 	RefreshThrottle *RefreshThrottle
 }
 
-// New builds the Echo router for the Go API. Routes mirror routes/api.php
-// mounted at /api/v1 plus the /up health path from bootstrap/app.php.
 func New(d Deps) *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
@@ -113,15 +98,11 @@ func New(d Deps) *echo.Echo {
 	v1 := e.Group("/api/v1")
 	v1.GET("/health", handleHealth(d))
 
-	// Public login surface: the SPA owns the UI at /app/login, so /login
-	// and /welcome bounce there (or to the app when signed in).
 	e.GET("/login", handleLogin(d))
 	e.GET("/welcome", handleWelcome(d))
 	e.POST("/demo/login", handleDemoLogin(d))
 	registerDemoImages(e)
 
-	// Everything else needs a session, like the PHP auth:sanctum group.
-	// Demo accounts are read-mostly, like the PHP demo-guard group.
 	authed := v1.Group("", RequireAuth(d), BlockDemo)
 	authed.GET("/me", handleMe(d))
 	authed.POST("/logout", handleLogout(d))
@@ -172,8 +153,6 @@ func New(d Deps) *echo.Echo {
 	return e
 }
 
-// handleHealth mirrors App\Http\Controllers\Api\V1\HealthController: 200 when
-// every check is ok, 503 when any failed. `setup` never affects the status.
 func handleHealth(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx, cancel := context.WithTimeout(c.Request().Context(), 5*time.Second)
@@ -207,7 +186,6 @@ func handleHealth(d Deps) echo.HandlerFunc {
 	}
 }
 
-// PingDB adapts *sql.DB (or sqlx.DB via .DB) to Deps.DBPing.
 func PingDB(db *sql.DB) func(ctx context.Context) error {
 	return func(ctx context.Context) error {
 		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -224,8 +202,6 @@ func jsonErrorHandler(err error, c echo.Context) {
 	if he, ok := err.(*echo.HTTPError); ok {
 		code = he.Code
 	}
-	// Echo uses 404 for unknown routes and 405 for wrong method; keep both
-	// inside the {message, code} envelope.
 	msg := http.StatusText(code)
 	if msg == "" {
 		msg = "Error."

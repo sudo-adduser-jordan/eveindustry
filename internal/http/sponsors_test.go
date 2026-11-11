@@ -161,17 +161,14 @@ func TestSponsors(t *testing.T) {
 	if body["data"].(map[string]any)["name"] != "New" {
 		t.Fatalf("stored = %v", body["data"])
 	}
-	// missing image -> 422
 	ct, b = multipartSponsor(t, map[string]string{"name": "X", "url": "https://x.io"}, "", nil)
 	if code, _ := postMultipart(t, d, "/api/v1/admin/sponsors", ct, b); code != http.StatusUnprocessableEntity {
 		t.Fatalf("no image = %d", code)
 	}
-	// non-image bytes -> 422
 	ct, b = multipartSponsor(t, map[string]string{"name": "X", "url": "https://x.io"}, "x.txt", []byte("hello world, this is text"))
 	if code, _ := postMultipart(t, d, "/api/v1/admin/sponsors", ct, b); code != http.StatusUnprocessableEntity {
 		t.Fatalf("text image = %d", code)
 	}
-	// update without new banner keeps old path
 	ct, b = multipartSponsor(t, map[string]string{"name": "ACME2", "url": "https://acme.io"}, "", nil)
 	code, body = postMultipart(t, d, "/api/v1/admin/sponsors/1", ct, b)
 	if code != http.StatusOK || body["data"].(map[string]any)["image_url"] != "/storage/sponsors/a.png" {

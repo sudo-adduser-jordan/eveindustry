@@ -5,7 +5,6 @@ import (
 	"sort"
 )
 
-// Trading defaults mirror MarketTradingService::DEFAULT_*.
 const (
 	DefaultBrokerFee      = 3.0
 	DefaultSalesTax       = 3.6
@@ -14,7 +13,6 @@ const (
 	DefaultTransportIskM3 = 0.0
 )
 
-// RegionName mirrors MarketTradingService::regionName().
 func RegionName(regionID int) string {
 	if n, ok := Regions[regionID]; ok {
 		return n
@@ -22,9 +20,6 @@ func RegionName(regionID int) string {
 	return "Region " + itoa(regionID)
 }
 
-// StationProfit ports calcStationTradeProfit(): buy-order/sell-order spread
-// after broker fees and sales tax. Non-positive or inverted spreads yield
-// all zeros.
 type StationProfit struct {
 	GrossMarginPct   float64 `json:"gross_margin_pct"`
 	NetProfitPerUnit float64 `json:"net_profit_per_unit"`
@@ -58,10 +53,6 @@ func CalcStationTradeProfit(buyPrice, sellPrice, brokerFeePct, salesTaxPct float
 	}
 }
 
-// ArbitrageProfit ports calcArbitrageProfit(): buy from sell orders in one
-// region, sell into buy orders in another, after sales tax and hauling.
-// (PHP accepts a broker fee argument it never uses — selling into existing
-// buy orders pays no broker fee — so the Go signature drops it.)
 type ArbitrageProfit struct {
 	NetProfitPerUnit float64 `json:"net_profit_per_unit"`
 	NetMarginPct     float64 `json:"net_margin_pct"`
@@ -87,7 +78,6 @@ func CalcArbitrageProfit(buySellMin, sellBuyMax, brokerFeePct, salesTaxPct, tran
 	}
 }
 
-// StationCandidate is one row of the station-trading candidate query.
 type StationCandidate struct {
 	TypeID         int
 	TypeName       *string
@@ -97,8 +87,6 @@ type StationCandidate struct {
 	SellOrderCount int
 }
 
-// StationOpportunity is one station-trading result row, mirroring
-// StationTradingOpportunityResource.
 type StationOpportunity struct {
 	TypeID           int     `json:"type_id"`
 	TypeName         string  `json:"type_name"`
@@ -115,7 +103,6 @@ type StationOpportunity struct {
 	SellOrderCount   int     `json:"sell_order_count"`
 }
 
-// StationScanInput mirrors scanStationTrading() arguments.
 type StationScanInput struct {
 	BrokerFeePct   float64
 	SalesTaxPct    float64
@@ -123,9 +110,6 @@ type StationScanInput struct {
 	MinDailyVolume int
 }
 
-// BuildStationOpportunities ports the post-SQL half of scanStationTrading():
-// history volumes (nil history = include, mirroring the ESI-error path),
-// the volume floor, daily ISK profit and the final sort.
 func BuildStationOpportunities(cands []StationCandidate, in StationScanInput, volumes map[int]*int) []StationOpportunity {
 	out := []StationOpportunity{}
 	for _, c := range cands {
@@ -157,7 +141,6 @@ func BuildStationOpportunities(cands []StationCandidate, in StationScanInput, vo
 	return out
 }
 
-// ArbitrageOpportunity mirrors ArbitrageOpportunityResource.
 type ArbitrageOpportunity struct {
 	TypeID           int      `json:"type_id"`
 	TypeName         string   `json:"type_name"`
@@ -172,13 +155,11 @@ type ArbitrageOpportunity struct {
 	CargoValueM3     *float64 `json:"cargo_value_m3"`
 }
 
-// TypeVolume is the local SDE name + volume for one type.
 type TypeVolume struct {
 	Name     string
 	VolumeM3 float64
 }
 
-// ArbitrageScanInput mirrors scanRegionArbitrage() arguments.
 type ArbitrageScanInput struct {
 	BrokerFeePct      float64
 	SalesTaxPct       float64
@@ -187,9 +168,6 @@ type ArbitrageScanInput struct {
 	MinDailyVolume    int
 }
 
-// BuildArbitrageOpportunities ports the per-type half of
-// scanRegionArbitrage(): margin filter, volume floor (nil history =
-// include), daily ISK profit and the final sort.
 func BuildArbitrageOpportunities(buyPrices, sellPrices map[int]float64, types map[int]TypeVolume, in ArbitrageScanInput, volumes map[int]*int) []ArbitrageOpportunity {
 	out := []ArbitrageOpportunity{}
 	for typeID, buyPrice := range buyPrices {
@@ -233,7 +211,6 @@ func BuildArbitrageOpportunities(buyPrices, sellPrices map[int]float64, types ma
 	return out
 }
 
-// DailyVolume ports the 30-day average: sum(volume)/days truncated to int.
 func DailyVolume(volumes []uint64) int {
 	if len(volumes) == 0 {
 		return 0

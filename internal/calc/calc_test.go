@@ -5,7 +5,6 @@ import (
 )
 
 func TestCalculateMaterials(t *testing.T) {
-	// base 100 x 10 runs, ME 10, no structure: 100*10*0.9 = 900 -> 900
 	got := CalculateMaterials([]BaseMaterial{{TypeID: 34, Name: "Trit", Quantity: 100}}, 10, 10, 0)
 	if got[0].AdjustedQuantity != 900 {
 		t.Fatalf("got %+v", got[0])
@@ -13,12 +12,10 @@ func TestCalculateMaterials(t *testing.T) {
 	if got[0].QuantityPerRun != 90 {
 		t.Fatalf("per run: %+v", got[0])
 	}
-	// floor: base 1 x 1 run ME 10 -> max(1, ceil(0.9)) = 1
 	got = CalculateMaterials([]BaseMaterial{{TypeID: 35, Quantity: 1}}, 10, 1, 0)
 	if got[0].AdjustedQuantity != 1 {
 		t.Fatalf("floor: %+v", got[0])
 	}
-	// structure bonus: 100 x 1, ME 0, struct 4% -> 96
 	got = CalculateMaterials([]BaseMaterial{{TypeID: 36, Quantity: 100}}, 0, 1, 4)
 	if got[0].AdjustedQuantity != 96 {
 		t.Fatalf("structure: %+v", got[0])
@@ -27,7 +24,6 @@ func TestCalculateMaterials(t *testing.T) {
 
 func TestCalculateProductionTime(t *testing.T) {
 	got := CalculateProductionTime(3600, 20, 5, 5, 5, 2)
-	// 3600 * 0.8 * 0.8 * 0.85 * 0.98 = 1919.232/run -> 1919; total 9596.16 -> 9596
 	if got.TimePerRunSeconds != 1919 || got.TotalTimeSeconds != 9596 {
 		t.Fatalf("got %+v", got)
 	}
@@ -51,7 +47,6 @@ func TestReactionMaterialsAndTime(t *testing.T) {
 		t.Fatalf("got %+v", got[0])
 	}
 	tm := ReactionTime(600, 5, 5, 0)
-	// 600 * 0.8 = 480/run -> 480; total 2400
 	if tm.TimePerRunSeconds != 480 || tm.TotalTimeSeconds != 2400 {
 		t.Fatalf("got %+v", tm)
 	}
@@ -80,14 +75,12 @@ func TestCalculateJob(t *testing.T) {
 		BuybackMultiplier: 1,
 	}
 	got := CalculateJob(in, JobTime{})
-	// material 900*10 = 9000; revenue 10*10000 = 100000; scc 4000; profit 87000
 	if got.TotalBuyCost != 9000 || got.TotalRevenue != 100000 || got.SCCFee != 4000 {
 		t.Fatalf("got buy=%v rev=%v scc=%v", got.TotalBuyCost, got.TotalRevenue, got.SCCFee)
 	}
 	if got.ProfitFullBuy != 87000 || got.MarginFullBuy != 966.7 {
 		t.Fatalf("got profit=%v margin=%v", got.ProfitFullBuy, got.MarginFullBuy)
 	}
-	// no components -> build == buy
 	if got.TotalBuildCost != 9000 || got.BuildCheaper {
 		t.Fatalf("build: %+v", got)
 	}

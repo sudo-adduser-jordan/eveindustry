@@ -10,7 +10,7 @@ type StockType = components['schemas']['StockTypeResource']
 
 const SCOPES = [{ scope: 'esi-assets.read_corporation_assets.v1', description: 'Read Corporation Assets' }]
 
-/** A whole non-negative number, or null for anything else (so a bad entry is never sent as 0). */
+
 export function parseQuantity(text: string): number | null {
   const n = Number(text)
   return text.trim() !== '' && Number.isInteger(n) && n >= 0 ? n : null

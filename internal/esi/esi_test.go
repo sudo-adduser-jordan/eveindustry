@@ -24,14 +24,12 @@ func TestLimiterReserveReconcile(t *testing.T) {
 	if lim.Remaining("g", "u1") != DefaultLimit-5 {
 		t.Fatalf("remaining: %d", lim.Remaining("g", "u1"))
 	}
-	// reconcile with actual used cost 2
 	if err := lim.Reconcile("g", "u1", id, ResponseHeaders{Status: 200, Used: intPtr(2)}); err != nil {
 		t.Fatal(err)
 	}
 	if lim.Remaining("g", "u1") != DefaultLimit-2 {
 		t.Fatalf("after reconcile: %d", lim.Remaining("g", "u1"))
 	}
-	// 429 sets a cooldown
 	if err := lim.Reconcile("g", "u1", "", ResponseHeaders{Status: 429, RetryAfterSecs: intPtr(30)}); err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +44,6 @@ func TestLimiterAdvertisedConfig(t *testing.T) {
 	if err := lim.Reconcile("g", "u", "", ResponseHeaders{Status: 200, Advertised: "100/15m"}); err != nil {
 		t.Fatal(err)
 	}
-	// spend it all
 	for i := 0; i < 20; i++ {
 		if _, err := lim.Reserve("g", "u", 5); err != nil {
 			t.Fatal(err)
@@ -114,17 +111,14 @@ func TestClientClassification(t *testing.T) {
 	if _, err := cl.Do(ctx, "GET", "/throttled", nil, nil, nil); reqErr(err) != OutcomeRateLimited {
 		t.Fatalf("429: %v", err)
 	}
-	// 420 opens the circuit: next call defers locally
 	if _, err := cl.Do(ctx, "GET", "/limited", nil, nil, nil); reqErr(err) != OutcomeErrorLimited {
 		t.Fatalf("420: %v", err)
 	}
 	if _, err := cl.Do(ctx, "GET", "/ok", nil, nil, nil); reqErr(err) != OutcomeErrorLimited {
 		t.Fatalf("circuit must hold: %v", err)
 	}
-	// bearer header
 	r, err = cl.Do(ctx, "GET", "/auth", nil, nil, &Auth{CharacterID: 1, AccessToken: "tok"})
 	if err != nil || r == nil {
-		// circuit still open from the 420 above; use a fresh stack
 		_, _, _, cl2 := testStack()
 		cl2.BaseURL = srv.URL
 		r, err = cl2.Do(ctx, "GET", "/auth", nil, nil, &Auth{CharacterID: 1, AccessToken: "tok"})
@@ -152,7 +146,6 @@ func TestTokenRefresh(t *testing.T) {
 		t.Fatalf("got %+v %v (%s)", pair, err, gotForm)
 	}
 
-	// invalid_grant -> credential
 	srv2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		w.Write([]byte(`{"error":"invalid_grant"}`))

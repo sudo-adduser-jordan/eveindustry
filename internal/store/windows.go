@@ -7,7 +7,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// StructureWindow mirrors one structure_vulnerability_windows row.
 type StructureWindow struct {
 	ID              int64          `db:"id"`
 	CorporationID   int64          `db:"corporation_id"`
@@ -23,7 +22,6 @@ type StructureWindow struct {
 	CreatedByUserID sql.NullInt64  `db:"created_by_user_id"`
 }
 
-// WindowStore covers corporation structure vulnerability windows.
 type WindowStore interface {
 	StructureWindows(ctx context.Context, corporationID int64, limit, offset int) ([]StructureWindow, int, error)
 	StructureWindow(ctx context.Context, id int64) (*StructureWindow, error)
@@ -35,7 +33,6 @@ type WindowStore interface {
 const windowCols = `id, corporation_id, solar_system_id, solar_system_name, structure_type,
 	structure_name, day_of_week, start_time_utc, duration_minutes, reinforce_exit_at, notes, created_by_user_id`
 
-// StructureWindows lists a corporation's windows by system, type and name.
 func (s *SQL) StructureWindows(ctx context.Context, corporationID int64, limit, offset int) ([]StructureWindow, int, error) {
 	var total int
 	if err := s.db.GetContext(ctx, &total, `SELECT COUNT(*) FROM structure_vulnerability_windows WHERE corporation_id = ?`, corporationID); err != nil {
@@ -62,7 +59,6 @@ func (s *SQL) StructureWindow(ctx context.Context, id int64) (*StructureWindow, 
 	return &out, err
 }
 
-// CreateStructureWindow adds a vulnerability window.
 func (s *SQL) CreateStructureWindow(ctx context.Context, w StructureWindow) (*StructureWindow, error) {
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO structure_vulnerability_windows
@@ -81,7 +77,6 @@ func (s *SQL) CreateStructureWindow(ctx context.Context, w StructureWindow) (*St
 	return s.StructureWindow(ctx, id)
 }
 
-// UpdateStructureWindow applies the window edit.
 func (s *SQL) UpdateStructureWindow(ctx context.Context, w StructureWindow) (*StructureWindow, error) {
 	if _, err := s.db.ExecContext(ctx, `UPDATE structure_vulnerability_windows SET solar_system_id = ?,
 		solar_system_name = ?, structure_type = ?, structure_name = ?, day_of_week = ?,
@@ -99,7 +94,6 @@ func (s *SQL) DeleteStructureWindow(ctx context.Context, id int64) error {
 	return err
 }
 
-// CorpWindows lists tracked windows for corporations (notification scan).
 func (s *SQL) CorpWindows(ctx context.Context, corpIDs []int64) ([]StructureWindow, error) {
 	if len(corpIDs) == 0 {
 		return nil, nil

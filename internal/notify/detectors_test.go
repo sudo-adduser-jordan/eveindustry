@@ -29,14 +29,12 @@ func TestDetectPiExpiring(t *testing.T) {
 		Pins: []PiPin{{Expiry: &soon}, {Expiry: &past}, {}},
 	}}
 	msgs := DetectPiExpiring(planets, map[int64]bool{}, time.Hour, now, now.Add(-time.Hour))
-	// past is before since -> only the soon one counts
 	if len(msgs) != 1 {
 		t.Fatalf("msgs = %+v", msgs)
 	}
 	if msgs[0].DedupeKey == "" {
 		t.Fatal("missing dedupe")
 	}
-	// outside horizon -> none
 	msgs = DetectPiExpiring(planets, map[int64]bool{}, time.Minute, now, now.Add(-time.Hour))
 	if len(msgs) != 0 {
 		t.Fatalf("horizon = %+v", msgs)
@@ -44,24 +42,21 @@ func TestDetectPiExpiring(t *testing.T) {
 }
 
 func TestDetectStructureWindows(t *testing.T) {
-	now := time.Date(2026, 11, 8, 12, 0, 0, 0, time.UTC) // a Saturday
+	now := time.Date(2026, 11, 8, 12, 0, 0, 0, time.UTC)
 	_ = now
-	monday := time.Date(2026, 11, 9, 12, 0, 0, 0, time.UTC) // Monday noon
+	monday := time.Date(2026, 11, 9, 12, 0, 0, 0, time.UTC)
 	windows := []store.StructureWindow{{
 		ID: 1, CorporationID: 7, SolarSystemName: "Jita", StructureType: "upwell",
 		StructureName: "Fort", StartTimeUTC: "13:00",
 	}}
-	// opening Monday 13:00 within 2h horizon
 	msgs := DetectStructureWindows(windows, false, 2*time.Hour, monday)
 	if len(msgs) != 1 {
 		t.Fatalf("opening = %+v", msgs)
 	}
-	// outside horizon
 	msgs = DetectStructureWindows(windows, false, 30*time.Minute, monday)
 	if len(msgs) != 0 {
 		t.Fatalf("far = %+v", msgs)
 	}
-	// timer with no reinforce time -> none
 	msgs = DetectStructureWindows(windows, true, 2*time.Hour, monday)
 	if len(msgs) != 0 {
 		t.Fatalf("timer = %+v", msgs)

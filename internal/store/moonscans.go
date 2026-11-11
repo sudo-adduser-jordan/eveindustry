@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// MoonScanSystem mirrors one moon_scan_systems row.
 type MoonScanSystem struct {
 	ID            int64         `db:"id"`
 	SystemName    string        `db:"system_name"`
@@ -16,7 +15,6 @@ type MoonScanSystem struct {
 	LastScannedAt time.Time     `db:"last_scanned_at"`
 }
 
-// MoonScanResult mirrors one moon_scan_results row.
 type MoonScanResult struct {
 	ID                       int64          `db:"id"`
 	SystemID                 sql.NullInt64  `db:"system_id"`
@@ -31,7 +29,6 @@ type MoonScanResult struct {
 	ScannedAt                time.Time      `db:"scanned_at"`
 }
 
-// MoonScanStore covers the moon-scan lookup tables, scoped by corporation.
 type MoonScanStore interface {
 	MoonScanSystems(ctx context.Context, corporationID int64) ([]MoonScanSystem, error)
 	MoonScanSystem(ctx context.Context, corporationID int64, systemName string) (*MoonScanSystem, error)
@@ -42,7 +39,6 @@ type MoonScanStore interface {
 
 const moonScanSystemCols = `id, system_name, corporation_id, region_id, pricing_mode, last_scanned_at`
 
-// MoonScanSystems ports systemsForUser: the corporation's systems by name.
 func (s *SQL) MoonScanSystems(ctx context.Context, corporationID int64) ([]MoonScanSystem, error) {
 	var out []MoonScanSystem
 	err := s.db.SelectContext(ctx, &out, `SELECT `+moonScanSystemCols+`
@@ -53,7 +49,6 @@ func (s *SQL) MoonScanSystems(ctx context.Context, corporationID int64) ([]MoonS
 	return out, err
 }
 
-// MoonScanSystem ports findSystem: nil when the corp never scanned it.
 func (s *SQL) MoonScanSystem(ctx context.Context, corporationID int64, systemName string) (*MoonScanSystem, error) {
 	var out MoonScanSystem
 	err := s.db.GetContext(ctx, &out, `SELECT `+moonScanSystemCols+`
@@ -64,9 +59,6 @@ func (s *SQL) MoonScanSystem(ctx context.Context, corporationID int64, systemNam
 	return &out, err
 }
 
-// UpsertMoonScanSystem ports the analyse upsert (one row per system+corp).
-// The unique key treats NULL corp as distinct per insert, so the lookup
-// first updates when a row exists.
 func (s *SQL) UpsertMoonScanSystem(ctx context.Context, systemName string, corporationID *int64, regionID int64, pricingMode string) (*MoonScanSystem, error) {
 	var corpAny any
 	if corporationID != nil {
@@ -86,7 +78,6 @@ func (s *SQL) UpsertMoonScanSystem(ctx context.Context, systemName string, corpo
 		return nil, err
 	}
 	if id == 0 && corporationID != nil {
-		// Duplicate key on the non-null unique pair: update + reload.
 		if _, err := s.db.ExecContext(ctx, `UPDATE moon_scan_systems SET region_id = ?, pricing_mode = ?,
 			last_scanned_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE system_name = ? AND corporation_id = ?`,
 			regionID, pricingMode, systemName, *corporationID); err != nil {
@@ -107,7 +98,6 @@ func (s *SQL) UpsertMoonScanSystem(ctx context.Context, systemName string, corpo
 const moonScanResultCols = `id, system_id, moon_name, planet_name, grade, ores,
 	total_value, occupied, occupying_corporation_id, occupying_corporation_name, scanned_at`
 
-// MoonScanMoons loads a system's moons best-first.
 func (s *SQL) MoonScanMoons(ctx context.Context, systemID int64) ([]MoonScanResult, error) {
 	var out []MoonScanResult
 	err := s.db.SelectContext(ctx, &out, `SELECT `+moonScanResultCols+`
@@ -118,8 +108,6 @@ func (s *SQL) MoonScanMoons(ctx context.Context, systemID int64) ([]MoonScanResu
 	return out, err
 }
 
-// UpsertMoonScanResult ports the analyse upsert (one row per system+moon),
-// returning the row id.
 func (s *SQL) UpsertMoonScanResult(ctx context.Context, systemID int64, moonName string, planetName *string, grade, oresJSON string, totalValue int64) (int64, error) {
 	var planetAny any
 	if planetName != nil {

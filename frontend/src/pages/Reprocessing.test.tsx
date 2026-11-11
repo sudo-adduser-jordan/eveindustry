@@ -60,7 +60,7 @@ describe('Reprocessing', () => {
     fireEvent.click(screen.getByText('Jita IV - Moon 4'))
     expect(screen.getByText('Scrap Plate')).toHaveAttribute('title', '500 Tritanium')
     expect(screen.getByText('+150%')).toBeInTheDocument()
-    // Never a price of 0: no market data yet is said outright.
+    
     expect(screen.getByText('Prices: no data yet')).toBeInTheDocument()
   })
 

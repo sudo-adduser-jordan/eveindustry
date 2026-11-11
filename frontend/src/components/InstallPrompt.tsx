@@ -1,6 +1,6 @@
 import { useInstall } from '../pwa/install'
 
-/** A dismissible install popup. The module only opens it once per 24 hours. */
+
 export function InstallPrompt() {
   const { bannerOpen, canInstall, ios, install, dismiss } = useInstall()
   if (!bannerOpen) return null

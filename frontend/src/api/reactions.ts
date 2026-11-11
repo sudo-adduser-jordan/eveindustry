@@ -12,7 +12,7 @@ export type SavedReactionPlan = Schemas['ReactionPlanResource']
 export type ReactionPlanBody = Schemas['ReactionPlanStoreRequest']
 export type ReactionProgramRequest = Schemas['StoreReactionPlanProgramRequest']
 
-/** Reaction formula name search; waits for two characters. */
+
 export function useFormulaSearch(q: string) {
   return useQuery({
     queryKey: ['reference', 'reaction-formulas', q],
@@ -22,7 +22,7 @@ export function useFormulaSearch(q: string) {
   })
 }
 
-/** Inputs, product and base time of one reaction formula. */
+
 export function useFormulaActivity(formulaTypeId: number | null) {
   return useQuery({
     queryKey: ['reference', 'reaction-formula', formulaTypeId],
@@ -34,7 +34,7 @@ export function useFormulaActivity(formulaTypeId: number | null) {
   })
 }
 
-/** Reactions skill of one of your characters. */
+
 export function useReactionSkills(characterId: number | null) {
   return useQuery({
     queryKey: ['calculators', 'reactions', 'skills', characterId],
@@ -58,7 +58,7 @@ export function useCalculateReactionPlan() {
   })
 }
 
-/** Owned quantity of the plan's raw materials. */
+
 export function useReactionStock(typeIds: number[]) {
   return useQuery({
     queryKey: ['calculators', 'reaction-stock', typeIds],
@@ -68,7 +68,7 @@ export function useReactionStock(typeIds: number[]) {
   })
 }
 
-/** How many of each reaction formula the user owns (needs the blueprints scope). */
+
 export function useFormulaStock(formulaTypeIds: number[]) {
   return useQuery({
     queryKey: ['calculators', 'formula-stock', formulaTypeIds],
@@ -79,7 +79,7 @@ export function useFormulaStock(formulaTypeIds: number[]) {
   })
 }
 
-/** Saved reaction plans. */
+
 export function useReactionPlans() {
   return useQuery({
     queryKey: ['plans', 'reaction'],
@@ -88,7 +88,7 @@ export function useReactionPlans() {
   })
 }
 
-/** Create a plan (id null) or update the plan with `id`. */
+
 export function useSaveReactionPlan() {
   const client = useQueryClient()
   return useMutation({
@@ -111,7 +111,7 @@ export function useDeleteReactionPlan() {
   })
 }
 
-/** Create a personal or corporate build program from a reaction plan. */
+
 export function useCreateReactionProgram(corporate: boolean) {
   return useMutation({
     mutationFn: async (body: ReactionProgramRequest) =>

@@ -9,7 +9,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// stubMarket is an in-memory store.MarketStore for handler tests.
 type stubMarket struct {
 	aggregates   map[int]float64
 	hasSnapshot  bool
@@ -128,7 +127,6 @@ func TestPricesWithoutSnapshotUseRawOrders(t *testing.T) {
 		t.Fatalf("code = %d", code)
 	}
 	row := body["data"].([]any)[0].(map[string]any)
-	// total 200, target 10 -> 10 units @ 10.0
 	if row["price"].(float64) != 10 || row["source"] != "orders" {
 		t.Fatalf("raw-order price: %v", row)
 	}

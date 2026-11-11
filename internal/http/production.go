@@ -13,8 +13,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 )
 
-// ProductionESI is the ESI surface can-produce needs.
-// *esi.CharacterClient satisfies it; tests stub it.
 type ProductionESI interface {
 	GetBlueprints(ctx context.Context, characterID int64) ([]map[string]any, error)
 	GetAssets(ctx context.Context, characterID int64) ([]map[string]any, error)
@@ -23,7 +21,6 @@ type ProductionESI interface {
 	GetCorporationAssets(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error)
 }
 
-// ProductionDeps carries the ESI client for can-produce.
 type ProductionDeps struct {
 	Characters ProductionESI
 }
@@ -49,9 +46,6 @@ func itoa64(n int64) string {
 	return string(buf[i:])
 }
 
-// registerProduction mounts GET /industry/can-produce. The refresh endpoint
-// is a writes-phase route (IndustryRefreshController); without the cache it
-// would be a no-op, so only the live read lands here.
 func registerProduction(v1 *echo.Group, d Deps) {
 	if d.Production.Characters == nil || d.Users == nil || d.Industry == nil {
 		return
@@ -59,9 +53,6 @@ func registerProduction(v1 *echo.Group, d Deps) {
 	v1.GET("/industry/can-produce", handleCanProduce(d))
 }
 
-// GET /industry/can-produce — mirrors CanProduceController@index: per
-// character (and per eligible corporation) the blueprints held,
-// cross-referenced with hangar materials. Computed live.
 func handleCanProduce(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -91,9 +82,6 @@ func handleCanProduce(d Deps) echo.HandlerFunc {
 	}
 }
 
-// charProduce ports buildCharacterSource + buildCorporationSource for one
-// character: personal assets/blueprints, plus the corp hangars when the
-// character holds Director/Station_Manager with the three corp scopes.
 func charProduce(ctx context.Context, d Deps, ch auth.Character) (map[string]any, map[string]any, error) {
 	personal, err := produceSource(ctx, d, ch.CharacterID, ch.Name, ch.PortraitURL(), nil)
 	if err != nil {
@@ -231,7 +219,6 @@ func produceSourceData(ctx context.Context, d Deps, bps, assets []map[string]any
 			names = n
 		}
 	}
-	// fill SDE-missing names from the type table
 	for id, a := range acts {
 		changed := false
 		for i, m := range a.Materials {

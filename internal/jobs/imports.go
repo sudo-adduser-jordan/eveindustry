@@ -20,9 +20,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// RegisterImportJobs wires market:update-prices (default, daily),
-// market:import-daily-history (updates, every 3h, 2 tries) and
-// contracts:import (updates, hourly, single-flight via the go_locks table).
 func RegisterImportJobs(r *Runner, h HandlerDeps) {
 	r.Register("market-update-prices", JobDef{
 		Queue: QueueDefault, MaxTries: 2, Timeout: 300 * time.Second,
@@ -48,8 +45,6 @@ func RegisterImportJobs(r *Runner, h HandlerDeps) {
 	})
 }
 
-// ImportSchedule mirrors the price/history/contract cadences. History covers
-// today and yesterday; contracts run hourly.
 func ImportSchedule(h HandlerDeps, forgeID int) []ScheduleEntry {
 	return []ScheduleEntry{
 		{
@@ -79,8 +74,6 @@ func ImportSchedule(h HandlerDeps, forgeID int) []ScheduleEntry {
 	}
 }
 
-// UpdateMarketPrices ports fetchAndStoreGlobalPrices: ESI global prices into
-// market_prices for the Forge region.
 func UpdateMarketPrices(ctx context.Context, h HandlerDeps) error {
 	live, err := h.ESIMarket.GetMarketPrices(ctx)
 	if err != nil || len(live) == 0 {
@@ -107,7 +100,6 @@ func UpdateMarketPrices(ctx context.Context, h HandlerDeps) error {
 	return err
 }
 
-// ImportDailyMarketHistory ports the everef CSV import for one date.
 func ImportDailyMarketHistory(ctx context.Context, h HandlerDeps, date string) error {
 	if date == "" {
 		date = time.Now().Format("2006-01-02")
@@ -187,8 +179,6 @@ func ImportDailyMarketHistory(ctx context.Context, h HandlerDeps, date string) e
 	return nil
 }
 
-// ImportPublicContracts ports the everef public-contract snapshot import:
-// download, extract, stage, orphan-check, atomic publish.
 func ImportPublicContracts(ctx context.Context, h HandlerDeps) error {
 	const dataURL = "https://data.everef.net/public-contracts/public-contracts.tar.bz2"
 	dir, err := os.MkdirTemp("", "eve_pc_*")
@@ -362,7 +352,6 @@ func importContractItemsCSV(ctx context.Context, h HandlerDeps, path string, gen
 	return count, nil
 }
 
-// readCSVMap parses a CSV with required headers; malformed rows fail.
 func readCSVMap(path string, required []string) ([]map[string]string, error) {
 	f, err := os.Open(path)
 	if err != nil {

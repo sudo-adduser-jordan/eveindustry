@@ -11,9 +11,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/migrations"
 )
 
-// applyMigrations opens a scratch SQLite database and applies every embedded
-// up migration in filename order. The baseline DDL has one statement per
-// line terminator and no interior semicolons, so a plain split suffices.
 func applyMigrations(t *testing.T) *SQL {
 	t.Helper()
 	entries, err := migrations.FS.ReadDir(".")
@@ -31,7 +28,6 @@ func applyMigrations(t *testing.T) *SQL {
 			ups = append(ups, e.Name())
 		}
 	}
-	// Deterministic order: sort like the migrate runner.
 	for i := 0; i < len(ups); i++ {
 		for j := i + 1; j < len(ups); j++ {
 			if ups[j] < ups[i] {
@@ -60,8 +56,6 @@ func applyMigrations(t *testing.T) *SQL {
 func nullStr(s string) sql.NullString { return sql.NullString{String: s, Valid: true} }
 func int64ptr(v int64) *int64         { return &v }
 
-// TestSQLiteUpsertPaths exercises the SQLite-translated write paths:
-// ON CONFLICT upserts, atomic merges and second-precision datetimes.
 func TestSQLiteUpsertPaths(t *testing.T) {
 	s := applyMigrations(t)
 	ctx := context.Background()
@@ -72,8 +66,6 @@ func TestSQLiteUpsertPaths(t *testing.T) {
 		t.Fatalf("EnsureDemoUser: %v %d", err, uid)
 	}
 
-	// notification_settings has a UNIQUE(user_id) from the dated migration:
-	// insert then conflicting update must converge on one row.
 	qh := QuietHours{UserID: uid, Start: nullStr("01:00"), End: nullStr("02:00"), Timezone: "UTC"}
 	if err := s.UpdateQuietHours(ctx, qh); err != nil {
 		t.Fatalf("UpdateQuietHours insert: %v", err)
@@ -91,7 +83,6 @@ func TestSQLiteUpsertPaths(t *testing.T) {
 		t.Fatalf("settings rows: %v %d", err, n)
 	}
 
-	// Endpoint merge: insert then add; sums and min/max must accumulate.
 	md := EndpointMetricDelta{DimensionHash: "h1", BucketAt: now.Truncate(time.Hour),
 		Operation: "op", EventKind: "http_attempt", HTTPStatus: 200, Reason: "ok",
 		Requests: 2, Successes: 2, DurationCount: 2, DurationMax: 50, FirstSeen: now, LastSeen: now}
@@ -120,7 +111,6 @@ func TestSQLiteUpsertPaths(t *testing.T) {
 		t.Fatalf("min/max flipped: %+v", sum)
 	}
 
-	// Budget merge with NULL remaining bounds on the first write.
 	bd := BudgetMetricDelta{DimensionHash: "b1", BucketAt: now.Truncate(time.Hour),
 		Granularity: "minute", Mechanism: "token", Observations: 5, UsedSum: int64ptr(3)}
 	if err := s.MergeBudgetMetric(ctx, bd); err != nil {
@@ -132,9 +122,6 @@ func TestSQLiteUpsertPaths(t *testing.T) {
 	}
 }
 
-// TestSQLiteSweepLifecycle runs the region sweep state machine end to end:
-// generation claim, page storage with restate, completion and snapshot
-// publish, plus the rowid-batched unseen-order delete.
 func TestSQLiteSweepLifecycle(t *testing.T) {
 	s := applyMigrations(t)
 	ctx := context.Background()
@@ -186,7 +173,6 @@ func TestSQLiteSweepLifecycle(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("PublishActiveSnapshot: %v %v", err, ok)
 	}
-	// Backdate so the unseen sweep (none stamped after the restate) is due.
 	if _, err := s.db.ExecContext(ctx, `UPDATE market_orders SET updated_at = datetime('now', '-1 day') WHERE region_id = 10000002`); err != nil {
 		t.Fatal(err)
 	}
@@ -196,8 +182,6 @@ func TestSQLiteSweepLifecycle(t *testing.T) {
 	}
 }
 
-// TestSQLiteJSONEach validates the json_each product expansion used by the
-// manufacturing browser: blueprint products are a JSON array of objects.
 func TestSQLiteJSONEach(t *testing.T) {
 	s := applyMigrations(t)
 	ctx := context.Background()
@@ -223,8 +207,6 @@ func TestSQLiteJSONEach(t *testing.T) {
 	}
 }
 
-// TestSQLiteContractPublish covers the generation pointer claim inside a
-// transaction plus the datetime-ordered prune helper.
 func TestSQLiteContractPublish(t *testing.T) {
 	s := applyMigrations(t)
 	ctx := context.Background()
@@ -237,7 +219,6 @@ func TestSQLiteContractPublish(t *testing.T) {
 	if err != nil || !pub {
 		t.Fatalf("PublishContractGeneration: %v %v", err, pub)
 	}
-	// Republishing the same generation is a no-op (not newest).
 	if pub, err := s.PublishContractGeneration(ctx, gen); err != nil || pub {
 		t.Fatalf("PublishContractGeneration restate: %v %v", err, pub)
 	}

@@ -15,7 +15,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// HandlerDeps carries everything job bodies need.
 type HandlerDeps struct {
 	Log         *slog.Logger
 	Cache       *cache.Cache
@@ -34,12 +33,9 @@ func (d HandlerDeps) logger() *slog.Logger {
 	return slog.Default()
 }
 
-// assetCacheKeys mirrors the PHP asset cache keys.
 func assetCacheKey(uid int64) string    { return "assets.user." + itoa(uid) }
 func assetCachedAtKey(uid int64) string { return "assets.user." + itoa(uid) + ".cached_at" }
 
-// RefreshCharacterProfile ports RefreshCharacterProfile: refresh one
-// character's affiliation, location, training, skills and roles.
 func RefreshCharacterProfile(ctx context.Context, d HandlerDeps, characterID int64) error {
 	chars, err := d.DB.EsiActiveCharacters(ctx, nil)
 	if err != nil {
@@ -124,7 +120,6 @@ func RefreshCharacterProfile(ctx context.Context, d HandlerDeps, characterID int
 		}
 	}
 	if hasScope(*ch, "esi-skills.read_skills.v1") {
-		// Warm the skills memo so subsequent reads are cached.
 		_, _ = d.ESIChars.GetSkills(ctx, ch.CharacterID)
 	}
 	if hasScope(*ch, "esi-characters.read_corporation_roles.v1") {
@@ -155,8 +150,6 @@ func RefreshCharacterProfile(ctx context.Context, d HandlerDeps, characterID int
 	return nil
 }
 
-// RefreshAssetData ports RefreshAssetData: rebuild one user's asset cache
-// (personal + corporate), skipping users without ESI-active characters.
 func RefreshAssetData(ctx context.Context, d HandlerDeps, userID int64, force bool) error {
 	chars, err := d.DB.EsiActiveCharacters(ctx, &userID)
 	if err != nil {
@@ -186,7 +179,6 @@ func RefreshAssetData(ctx context.Context, d HandlerDeps, userID int64, force bo
 	return nil
 }
 
-// assetRefAdapter maps the SQL reference store to the shared shape.
 type assetRefAdapter struct{ db *store.SQL }
 
 func (a assetRefAdapter) FindStation(ctx context.Context, id uint64) (string, *int, bool) {
@@ -210,8 +202,6 @@ func (a assetRefAdapter) FindSystem(ctx context.Context, id int) (string, bool) 
 	return st.SolarSystemName, true
 }
 
-// RefreshIndustryData ports RefreshIndustryData: recompute and cache the
-// user's availability payload (20-minute TTL).
 func RefreshIndustryData(ctx context.Context, d HandlerDeps, userID int64) error {
 	chars, err := d.DB.EsiActiveCharacters(ctx, &userID)
 	if err != nil {
@@ -241,7 +231,6 @@ func totalsOf(t map[string]map[string]int) map[string]any {
 	return out
 }
 
-// corpAdapter maps the SQL corp store to the shared shape.
 type corpAdapter struct{ db *store.SQL }
 
 func (a corpAdapter) UserCorpCharacters(ctx context.Context, userID, corpID int64) ([]industry.CorpMember, error) {
@@ -259,8 +248,6 @@ func (a corpAdapter) UserCorpCharacters(ctx context.Context, userID, corpID int6
 	return out, nil
 }
 
-// RefreshDashboardStats ports RefreshDashboardStats: industry + planetary
-// stats into the dashboard caches (20-minute TTL).
 func RefreshDashboardStats(ctx context.Context, d HandlerDeps, userID int64) error {
 	if err := RefreshIndustryData(ctx, d, userID); err != nil {
 		return err
@@ -311,8 +298,6 @@ func RefreshDashboardStats(ctx context.Context, d HandlerDeps, userID int64) err
 	return nil
 }
 
-// ActiveUserIDs ports the "recently active users" fan-out: active users with
-// a login in the last 7 days.
 func ActiveUserIDs(ctx context.Context, db *store.SQL) ([]int64, error) {
 	return db.ActiveUserIDs(ctx)
 }

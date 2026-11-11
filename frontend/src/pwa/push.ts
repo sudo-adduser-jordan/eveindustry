@@ -9,7 +9,7 @@ export function pushSupported(): boolean {
     && typeof window !== 'undefined' && 'PushManager' in window && 'Notification' in window
 }
 
-/** The worker registered by registerServiceWorker(); absent in `vite dev` and non-production builds. */
+
 async function registration() {
   return pushSupported() ? navigator.serviceWorker.getRegistration(SCOPE) : undefined
 }
@@ -24,7 +24,7 @@ function keyBytes(base64Url: string): Uint8Array {
   return Uint8Array.from(atob(padded), (char) => char.charCodeAt(0))
 }
 
-/** Asks for permission (call only from a click) and subscribes this browser. */
+
 export async function subscribeBrowser(vapidPublicKey: string): Promise<PushSubscription> {
   const reg = await registration()
   if (!reg) throw new Error('Notifications are only available in the installed or production build of the app.')
@@ -40,7 +40,7 @@ export function subscriptionBody(subscription: PushSubscription) {
   return { endpoint: subscription.endpoint, keys: { p256dh: json.keys?.p256dh ?? '', auth: json.keys?.auth ?? '' } }
 }
 
-/** Whether this browser can receive pushes, and whether it currently does. */
+
 export function useDeviceState() {
   const [state, setState] = useState<DeviceState>('loading')
 

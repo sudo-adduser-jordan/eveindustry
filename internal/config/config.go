@@ -4,8 +4,6 @@ import (
 	"os"
 )
 
-// Config mirrors the subset of .env the Go API needs. The database is an
-// embedded SQLite file (DB_PATH); no MySQL or Redis is required.
 type Config struct {
 	AppEnv    string
 	Port      string
@@ -31,7 +29,6 @@ func getenv(key, fallback string) string {
 	return fallback
 }
 
-// Load reads configuration from the environment.
 func Load() Config {
 	return Config{
 		AppEnv:    getenv("APP_ENV", "local"),
@@ -39,7 +36,6 @@ func Load() Config {
 		AppURL:    getenv("APP_URL", "http://localhost:8080"),
 		SourceURL: getenv("APP_SOURCE_URL", "https://github.com/sudo-adduser-jordan/eveindustry"),
 
-		// Embedded SQLite file. The directory is created on open.
 		DBPath: getenv("DB_PATH", "storage/eveindustry.sqlite"),
 
 		SessionKey:    os.Getenv("SESSION_KEY"),

@@ -113,13 +113,11 @@ func TestPersonalProgress(t *testing.T) {
 	if data["character_names"].([]any)[0] != "Main" {
 		t.Fatalf("names = %v", data["character_names"])
 	}
-	// 3 of 10 Rifters -> 30
 	if data["overall_progress"] != 30.0 {
 		t.Fatalf("overall = %v", data["overall_progress"])
 	}
 	step := data["steps"].([]any)[0].(map[string]any)
 	mat := step["materials"].([]any)[0].(map[string]any)
-	// remaining 7 -> ceil(100*0.7)=70 required, 50 on hand, not enough
 	if mat["required"] != 70.0 || mat["has_enough"] != false {
 		t.Fatalf("mat = %v", mat)
 	}
@@ -134,15 +132,12 @@ func TestPersonalProgress(t *testing.T) {
 	if code, _ := get(t, d, "/api/v1/build-programs/9/progress"); code != http.StatusNotFound {
 		t.Fatalf("foreign = %d", code)
 	}
-	// no characters -> 400
 	d2 := progressTestDeps()
 	d2.Sessions.(*stubAuth).chars = nil
 	d2.Users.(*stubAuth).chars = nil
 	if code, _ := get(t, d2, "/api/v1/build-programs/1/progress"); code != http.StatusBadRequest {
 		t.Fatalf("no chars = %d", code)
 	}
-	// location filter excluding the station -> materials required unscaled? no:
-	// filter active, station not in filter -> quantities 0 -> required full 100
 	code, body = get(t, d, "/api/v1/build-programs/1/progress?location_ids[]=99999999")
 	if code != http.StatusOK {
 		t.Fatalf("filtered = %d %v", code, body)
@@ -151,7 +146,6 @@ func TestPersonalProgress(t *testing.T) {
 	if fmat["required"] != 100.0 || fmat["available"] != 0.0 {
 		t.Fatalf("filtered mat = %v", fmat)
 	}
-	// bad filter -> 422
 	if code, _ := get(t, d, "/api/v1/build-programs/1/progress?location_ids[]=x"); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad filter = %d", code)
 	}
@@ -182,7 +176,6 @@ func TestPersonalAssetLocations(t *testing.T) {
 
 func TestCorpProgress(t *testing.T) {
 	d := progressTestDeps()
-	// need corp char on the user for the corp routes
 	stub := d.Sessions.(*stubAuth)
 	corpID := int64(2001)
 	stub.chars = []auth.Character{{
@@ -201,7 +194,6 @@ func TestCorpProgress(t *testing.T) {
 	if data["character_name"] != "Main" {
 		t.Fatalf("character_name = %v", data)
 	}
-	// corp assets: 500 Tritanium at input, 0 Rifters at output -> overall 0
 	if data["overall_progress"] != 0.0 {
 		t.Fatalf("overall = %v", data["overall_progress"])
 	}

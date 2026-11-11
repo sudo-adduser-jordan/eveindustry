@@ -48,7 +48,7 @@ const STRUCTURES = ['none', 'raitaru', 'azbel', 'sotiyo'] as const
 const RIGS = ['none', 't1', 't2'] as const
 const SECURITIES = ['highsec', 'lowsec', 'nullsec'] as const
 
-/** The structure choices every invention request and plan carries. */
+
 function structureParams(structure: Structure | undefined) {
   return {
     structure_type: pick(structure?.structure_type, STRUCTURES, 'none'),
@@ -60,7 +60,7 @@ function structureParams(structure: Structure | undefined) {
 
 type Skills = NonNullable<ReturnType<typeof useInventionSkills>['data']>['data']['skills']
 
-/** A trained level: the matching entry of `list`, else the full skill map (racial ship skills), else 0. */
+
 function levelOf(skills: Skills, list: Skills['encryption'], skillId: number | null): number {
   if (skillId === null) return 0
   return list.find((s) => s.skill_id === skillId)?.level ?? skills.levels[String(skillId)] ?? 0
@@ -95,7 +95,7 @@ export default function InventionPlanner() {
 
   const [sci, setSci] = useState(0)
 
-  // The chain knows the blueprint's base probability and runs.
+  
   useEffect(() => {
     if (chainData) {
       setBaseProbability(String(chainData.base_probability))
@@ -429,7 +429,7 @@ function SystemIndex({ systemId, onIndex }: { systemId: number; onIndex: (percen
   const percent = indices === undefined ? null : Math.round(indices * 10000) / 100
   useEffect(() => {
     if (percent !== null) onIndex(percent)
-    // onIndex is a state setter.
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [percent])
   return (

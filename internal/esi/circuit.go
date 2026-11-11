@@ -5,19 +5,12 @@ import (
 	"time"
 )
 
-// Circuit ports the shared error circuit in EsiHttpClient::trackEsiErrorLimit
-// / isEsiErrorLimited: any 420, or remaining at/below threshold, opens a
-// conservative circuit until the reset delay elapses.
 type Circuit struct {
 	store CoordStore
 }
 
-// NewCircuit builds a circuit over the coordination store.
 func NewCircuit(store CoordStore) *Circuit { return &Circuit{store: store} }
 
-// TrackResponse records one response's error-limit headers, opening the
-// circuit on 420 or low remaining budgets. status420 with retryAfter forces
-// at least that delay, mirroring the PHP max() with retryAfterSeconds.
 func (c *Circuit) TrackResponse(remain *int, resetSecs int, status420 bool, retryAfter int) {
 	if resetSecs < 1 {
 		resetSecs = ErrorDefaultResetSeconds
@@ -57,8 +50,6 @@ func (c *Circuit) untilLocked() int64 {
 	return v
 }
 
-// ResetsIn mirrors esiErrorResetSeconds(): seconds until the circuit
-// closes, 0 when open-circuit has expired or was never opened.
 func (c *Circuit) ResetsIn() int {
 	left := c.untilLocked() - time.Now().Unix()
 	if left < 0 {
@@ -67,5 +58,4 @@ func (c *Circuit) ResetsIn() int {
 	return int(left)
 }
 
-// IsLimited mirrors isEsiErrorLimited().
 func (c *Circuit) IsLimited() bool { return c.ResetsIn() > 0 }

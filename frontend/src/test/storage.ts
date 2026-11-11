@@ -1,6 +1,4 @@
-/** jsdom in this repo's toolchain does not always provide Web Storage
- *  (e.g. newer Node runtimes); install a minimal in-memory stand-in so
- *  persistence tests run anywhere. A no-op when the real one exists. */
+
 export function ensureLocalStorage(): void {
   if (typeof localStorage !== 'undefined') return
   const store = new Map<string, string>()

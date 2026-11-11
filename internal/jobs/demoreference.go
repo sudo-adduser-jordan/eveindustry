@@ -8,15 +8,12 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// demoReferenceSource is the ESI surface reference seeding needs. The worker
-// universe client satisfies it; tests stub it.
 type demoReferenceSource interface {
 	GetTypeInfo(ctx context.Context, typeID int) (map[string]any, error)
 	GetStation(ctx context.Context, stationID uint64) (map[string]any, error)
 	GetSystem(ctx context.Context, systemID int) (map[string]any, error)
 }
 
-// demoReference is the set of reference rows the demo needs to render.
 type demoReference struct {
 	Types      []store.SdeType
 	Stations   []store.SdeStation
@@ -25,9 +22,6 @@ type demoReference struct {
 	Categories []store.SdeCategory
 }
 
-// demoReferenceTypeIDs lists every static demo type: mineral and isotope
-// stacks plus ships and abyssal modules (sources, mutators, mutated).
-// Sorted for stable seeding order.
 func demoReferenceTypeIDs() []int {
 	seen := map[int]bool{}
 	var out []int
@@ -55,9 +49,6 @@ func demoReferenceTypeIDs() []int {
 	return out
 }
 
-// collectDemoReference fetches the demo's reference rows from ESI. Rows that
-// fail to resolve are skipped: the demo renders with "Type N" fallbacks until
-// the real SDE import fills them in.
 func collectDemoReference(ctx context.Context, src demoReferenceSource) demoReference {
 	var ref demoReference
 	for _, id := range demoReferenceTypeIDs() {
@@ -72,8 +63,6 @@ func collectDemoReference(ctx context.Context, src demoReferenceSource) demoRefe
 		}
 		pub, _ := mapStr(info)["published"].(bool)
 		if name == "" {
-			// Offline fallback: static demo names so ships/abyssal tabs still
-			// render without ESI.
 			if fb, ok := esi.DemoTypeFallbacks[id]; ok {
 				name = fb.Name
 				g := int64(fb.Group)
@@ -87,8 +76,6 @@ func collectDemoReference(ctx context.Context, src demoReferenceSource) demoRefe
 		row := store.SdeType{TypeID: id, Name: name, GroupID: gid, Published: pub}
 		ref.Types = append(ref.Types, row)
 	}
-	// Mutated abyssal types are demo-only: ESI has no such type, so force the
-	// abyssal meta group and a source-matching group for each.
 	meta := int64(15)
 	byID := map[int]*store.SdeType{}
 	for i := range ref.Types {
@@ -154,8 +141,6 @@ func collectDemoReference(ctx context.Context, src demoReferenceSource) demoRefe
 		}
 		ref.Systems = append(ref.Systems, sysRow)
 	}
-	// Ship/module groups and categories: without these GroupsInCategory(6)
-	// is empty and the ships tab renders empty.
 	groupCat := map[int]int{25: 6, 27: 6, 419: 6, 463: 6, 60: 7, 38: 7, 77: 7, 74: 7, 1964: 17}
 	for _, g := range esi.DemoShipGroups {
 		cat := groupCat[g.GroupID]
@@ -168,10 +153,6 @@ func collectDemoReference(ctx context.Context, src demoReferenceSource) demoRefe
 	return ref
 }
 
-// seedDemoReferenceData ensures the reference rows the demo renders exist:
-// type names/groups for demo stocks and ships plus the hub stations/systems.
-// Best effort: failures only degrade labels and grouping until the real SDE
-// import overwrites these rows via upsert. Runs before the cache warms.
 func seedDemoReferenceData(ctx context.Context, h HandlerDeps) {
 	if h.DB == nil || h.ESIUniverse == nil {
 		return

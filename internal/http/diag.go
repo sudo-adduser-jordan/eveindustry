@@ -18,7 +18,6 @@ var diagReasons = map[string]bool{
 	"circuit_open": true, "circuit_expired_inferred": true, "cache": true, "unknown": true,
 }
 
-// registerDiagnostics mounts the admin ESI diagnostics reports.
 func registerDiagnostics(v1 *echo.Group, d Deps) {
 	if d.Diag == nil || d.Users == nil {
 		return
@@ -37,8 +36,6 @@ type diagRange struct {
 	filters  store.DiagFilters
 }
 
-// parseDiagRange validates from/to (defaults to last 24h, max 31 days) and
-// the shared filters.
 func parseDiagRange(c echo.Context) (diagRange, bool) {
 	var r diagRange
 	verrs := validationErrors{}
@@ -161,7 +158,6 @@ func diagSummaryShape(from, to time.Time, s *store.DiagSummary) map[string]any {
 	}
 }
 
-// GET /admin/esi-diagnostics/summary
 func handleDiagSummary(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		r, ok := parseDiagRange(c)
@@ -176,7 +172,6 @@ func handleDiagSummary(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /admin/esi-diagnostics/trends
 func handleDiagTrends(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		r, ok := parseDiagRange(c)
@@ -220,7 +215,6 @@ func handleDiagTrends(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /admin/esi-diagnostics/endpoints
 func handleDiagEndpoints(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		r, ok := parseDiagRange(c)
@@ -254,7 +248,6 @@ func handleDiagEndpoints(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /admin/esi-diagnostics/events — cursor-paged failure detail.
 func handleDiagEvents(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		r, ok := parseDiagRange(c)
@@ -309,7 +302,6 @@ func handleDiagEvents(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /admin/esi-diagnostics/batches
 func handleDiagBatches(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		r, ok := parseDiagRange(c)
@@ -333,9 +325,6 @@ func handleDiagBatches(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /admin/esi-diagnostics/health — collector health. The Go port has no
-// diagnostics pipeline yet, so collection reads disabled with no backlog;
-// the checkpoint (when migrations ran) still reports flush state.
 func handleDiagHealth(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cp, err := d.Diag.DiagCheckpoint(c.Request().Context())

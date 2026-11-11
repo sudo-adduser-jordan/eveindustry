@@ -13,7 +13,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// ProjectESI is the ESI surface corporation projects need.
 type ProjectESI interface {
 	GetCorporationProjects(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error)
 	GetCorporationProjectContributors(ctx context.Context, characterID, corporationID int64, projectID string) ([]map[string]any, error)
@@ -21,7 +20,6 @@ type ProjectESI interface {
 	ClearCorporationProjectContributorsCache(corporationID int64, projectID string)
 }
 
-// registerProjects mounts the corporation projects endpoints.
 func registerProjects(v1 *echo.Group, d Deps) {
 	if d.Projects == nil || d.Users == nil {
 		return
@@ -31,8 +29,6 @@ func registerProjects(v1 *echo.Group, d Deps) {
 	v1.POST("/corporation/projects/refresh", handleProjectsRefresh(d))
 }
 
-// projectsChar mirrors getUserProjectsCharacters: the main character holding
-// the projects scope in a corporation.
 func projectsChar(chars []auth.Character) *auth.Character {
 	for i := range chars {
 		ch := &chars[i]
@@ -52,7 +48,6 @@ func projectsDenial(chars []auth.Character) *string {
 	return nil
 }
 
-// GET /corporation/projects — projects with progress, rewards, contributors.
 func handleProjectsIndex(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		page, perPage, ok := listPage(c)
@@ -178,8 +173,6 @@ func projectContributors(ctx context.Context, d Deps, ch *auth.Character, projec
 	return out
 }
 
-// GET /corporation/projects/contributors — ISK leaderboard over rewarded,
-// closed projects.
 func handleProjectContributors(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		qp := c.QueryParams()
@@ -366,7 +359,6 @@ func projectLeaderboard(ctx context.Context, d Deps, ch *auth.Character, project
 	return out, summary(out, total, rewarded)
 }
 
-// POST /corporation/projects/refresh — forget memoized projects, 204.
 func handleProjectsRefresh(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)

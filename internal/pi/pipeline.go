@@ -8,34 +8,29 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// ColonyCharacters fetches colonies (CharacterClient satisfies it).
 type ColonyCharacters interface {
 	GetCharacterPlanets(ctx context.Context, characterID int64) ([]map[string]any, error)
 	GetCharacterPlanetDetails(ctx context.Context, characterID int64, planetID int) (map[string]any, error)
 	ClearPlanetaryCache(characterID int64)
 }
 
-// ColonyUniverse resolves schematics, planets and types.
 type ColonyUniverse interface {
 	GetPlanetarySchematic(ctx context.Context, schematicID int) (map[string]any, error)
 	GetPlanetInfo(ctx context.Context, planetID int) (map[string]any, error)
 	GetTypeInfo(ctx context.Context, typeID int) (map[string]any, error)
 }
 
-// ColonyIndustry batch-resolves names and volumes.
 type ColonyIndustry interface {
 	TypeNames(ctx context.Context, ids []int) (map[int]string, error)
 	TypeVolumes(ctx context.Context, ids []int) (map[int]float64, error)
 }
 
-// ColonyDeps carries the colony pipeline collaborators.
 type ColonyDeps struct {
 	Characters ColonyCharacters
 	Universe   ColonyUniverse
 	Industry   ColonyIndustry
 }
 
-// Colony is one analyzed planet with its owner.
 type Colony struct {
 	Char     auth.Character
 	PlanetID int
@@ -54,8 +49,6 @@ type rawColony struct {
 	details map[string]any
 }
 
-// AnalyzeColonies ports the fetch + analyze pipeline: colonies with
-// extractor/factory/storage stats, outputs, alerts and routes.
 func AnalyzeColonies(ctx context.Context, d ColonyDeps, chars []auth.Character, now time.Time) ([]Colony, error) {
 	var raw []rawColony
 	for i := range chars {
@@ -122,8 +115,6 @@ func AnalyzeColonies(ctx context.Context, d ColonyDeps, chars []auth.Character, 
 	return out, nil
 }
 
-// batchResolver collects every type id across colonies and resolves names
-// (industry store, ESI fallback) and volumes.
 func batchResolver(ctx context.Context, d ColonyDeps, raw []rawColony) TypeResolver {
 	set := map[int]bool{}
 	var pinIDs, contentIDs []int
@@ -207,7 +198,6 @@ func batchResolver(ctx context.Context, d ColonyDeps, raw []rawColony) TypeResol
 	return TypeResolver{Names: names, Volumes: vols}
 }
 
-// IntOf coerces ESI numbers (int/int64/float64).
 func IntOf(v any) int {
 	switch n := v.(type) {
 	case int:
@@ -220,7 +210,6 @@ func IntOf(v any) int {
 	return 0
 }
 
-// StrOf coerces ESI strings with a default.
 func StrOf(v any, def string) string {
 	if s, ok := v.(string); ok && s != "" {
 		return s
@@ -228,7 +217,6 @@ func StrOf(v any, def string) string {
 	return def
 }
 
-// Itoa formats an int.
 func Itoa(i int) string {
 	if i == 0 {
 		return "0"

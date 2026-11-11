@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,17 +18,14 @@ import (
 	gohttp "github.com/sudo-adduser-jordan/eveindustry/internal/http"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/jobs"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/logx"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// API server: GET /up, GET /api/v1/health (DB + cache probes with 503 on
-// failure, mirroring HealthController) and the /api/v1 JSON surface.
-// Storage is an embedded SQLite file (DB_PATH); a missing database does not
-// crash the process, health just reports failed.
 func main() {
 	cfg := config.Load()
-	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	log := logx.New("api")
 
 	var sqlxDB *sqlx.DB
 	if db, err := store.Connect(cfg.DBPath); err != nil {
@@ -63,8 +59,6 @@ func main() {
 		deps.Users = queries
 		deps.Industry = industry.NewSQL(sqlxDB)
 
-		// ESI stack: shared coordination, token refresher, character client.
-		// Encrypted-at-rest tokens decrypt when APP_KEY decodes to 32 bytes.
 		coord := esi.NewMemStore()
 		limiter := esi.NewLimiter(coord, "eve-industrialist")
 		circuit := esi.NewCircuit(coord)

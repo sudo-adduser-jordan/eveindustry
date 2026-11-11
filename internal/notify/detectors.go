@@ -12,7 +12,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// DetectorDeps carries the data sources detectors need.
 type DetectorDeps struct {
 	Industry  IndustryFinishedJobs
 	Planetary PlanetaryColonies
@@ -20,29 +19,24 @@ type DetectorDeps struct {
 	Windows   func(ctx context.Context, corpIDs []int64) ([]store.StructureWindow, error)
 }
 
-// IndustryFinishedJobs mirrors getFinishedJobsForUser.
 type IndustryFinishedJobs interface {
 	FinishedJobs(ctx context.Context, userID int64, since, until time.Time) ([]industry.FinishedJob, error)
 }
 
-// PlanetaryColonies mirrors getCharacterPlanetaryData per character.
 type PlanetaryColonies interface {
 	CharacterColonies(ctx context.Context, ch auth.Character, now time.Time) ([]PiPlanet, error)
 }
 
-// PiPlanet is one analyzed colony for the extractor detector.
 type PiPlanet struct {
 	PlanetID   int
 	PlanetName string
 	Pins       []PiPin
 }
 
-// PiPin is one pin with optional extractor expiry.
 type PiPin struct {
 	Expiry *time.Time
 }
 
-// DetectIndustryCompleted ports IndustryJobCompletedDetector.
 func DetectIndustryCompleted(jobs []industry.FinishedJob, charIDs map[int64]bool) []Message {
 	var out []Message
 	for _, j := range jobs {
@@ -63,7 +57,6 @@ func DetectIndustryCompleted(jobs []industry.FinishedJob, charIDs map[int64]bool
 	return out
 }
 
-// DetectPiExpiring ports PiExtractorExpiringDetector.
 func DetectPiExpiring(planets []PiPlanetWithChar, charIDs map[int64]bool, lead time.Duration, now, since time.Time) []Message {
 	horizon := now.Add(lead)
 	var out []Message
@@ -104,7 +97,6 @@ func DetectPiExpiring(planets []PiPlanetWithChar, charIDs map[int64]bool, lead t
 	return out
 }
 
-// PiPlanetWithChar carries owner identity for messages.
 type PiPlanetWithChar struct {
 	CharacterID   int64
 	CharacterName string
@@ -113,7 +105,6 @@ type PiPlanetWithChar struct {
 	Pins          []PiPin
 }
 
-// DetectStructureWindows ports StructureWindowDetector (openings + timers).
 func DetectStructureWindows(windows []store.StructureWindow, isTimer bool, lead time.Duration, now time.Time) []Message {
 	horizon := now.Add(lead)
 	var out []Message
@@ -156,7 +147,6 @@ func timerType(isTimer bool) string {
 	return "structure.window_opening"
 }
 
-// nextWindowOpening ports the PHP next-opening math (day 0 = Sunday).
 func parseHM(s string) (int, int) {
 	var h, m int
 	if len(s) >= 5 && s[2] == ':' {

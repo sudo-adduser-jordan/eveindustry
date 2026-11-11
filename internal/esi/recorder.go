@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-// ClassifyReason ports EsiErrorClassifier::classify.
 func ClassifyReason(status *int, message string) string {
 	if status == nil {
 		return "connection"
@@ -57,14 +56,11 @@ func ClassifyReason(status *int, message string) string {
 	}
 }
 
-// StreamSink implements DiagSink over the SQL stream: oversized events and
-// sink failures count as drops, like the PHP sink.
 type StreamSink struct {
 	Stream   *SQLStream
 	MaxBytes int
 }
 
-// Emit appends one event as JSON.
 func (s *StreamSink) Emit(ctx context.Context, e DiagEvent) {
 	raw, err := json.Marshal(diagPayload(e))
 	if err != nil || (s.MaxBytes > 0 && len(raw) > s.MaxBytes) {
@@ -111,8 +107,6 @@ func diagPayload(e DiagEvent) map[string]any {
 	return m
 }
 
-// NormalizeRoute ports EsiRouteNormalizer::normalize: pinned template when
-// the concrete path matches, else numeric segments collapsed to {id}.
 func NormalizeRoute(method, endpoint string) string {
 	m := strings.ToLower(method)
 	path := endpoint
@@ -164,7 +158,6 @@ func urlParse(s string) (string, error) {
 	return s, nil
 }
 
-// newEventID mints a 26-char ULID-shaped id (lexicographically sortable).
 func newEventID() string {
 	const alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 	ms := time.Now().UnixMilli()

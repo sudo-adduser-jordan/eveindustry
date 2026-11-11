@@ -25,11 +25,11 @@ function writeMinimal(on: boolean) {
   try {
     localStorage.setItem(MINIMAL_KEY, on ? '1' : '0')
   } catch {
-    // Private windows can refuse storage; the toggle still works for this visit.
+    
   }
 }
 
-/** "1 - Name - 1,234 ISK" per line, the way the leaderboard is pasted into chat. */
+
 export function leaderboardText(donators: Array<{ donator_name: string; total_amount: number }>): string {
   return donators.map((d, i) => `${i + 1} - ${d.donator_name} - ${Math.round(d.total_amount).toLocaleString('en-US')} ISK`).join('\n')
 }

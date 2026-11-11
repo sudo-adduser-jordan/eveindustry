@@ -60,7 +60,6 @@ func TestManufacturingCalculate(t *testing.T) {
 		t.Fatalf("materials = %v", mats)
 	}
 	fullBuy := data["scenarios"].(map[string]any)["full_buy"].(map[string]any)
-	// 900 x 10.5 = 9450 cost; revenue 0 (no price for 587); profit -9450
 	if fullBuy["material_cost"].(float64) != 9450 || fullBuy["profit"].(float64) != -9450 {
 		t.Fatalf("full_buy = %v", fullBuy)
 	}
@@ -74,7 +73,6 @@ func TestManufacturingCalculateValidation(t *testing.T) {
 	if code, _ := post(t, d, "/api/v1/calculators/manufacturing", `{"runs": 0}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad body = %d", code)
 	}
-	// unknown blueprint with no materials posted -> 422 on blueprint_type_id
 	if code, _ := post(t, d, "/api/v1/calculators/manufacturing", `{
 		"blueprint_type_id": 1, "product_type_id": 587, "runs": 1,
 		"me_level": 0, "te_level": 0, "industry_skill": 0, "advanced_industry_skill": 0
@@ -99,14 +97,12 @@ func TestReactionCalculate(t *testing.T) {
 	}
 	data := body["data"].(map[string]any)
 	mats := data["materials"].([]any)
-	// 50 x 5 runs, no rig: 250
 	if len(mats) != 1 || mats[0].(map[string]any)["adjusted_quantity"].(float64) != 250 {
 		t.Fatalf("materials = %v", mats)
 	}
 	if data["product"].(map[string]any)["total_output"].(float64) != 25 {
 		t.Fatalf("output = %v", data["product"])
 	}
-	// unknown formula -> 422
 	if code, _ := post(t, d, "/api/v1/calculators/reactions", `{
 		"formula_type_id": 1, "product_type_id": 587, "runs": 1, "reactions_skill": 0
 	}`); code != http.StatusUnprocessableEntity {
@@ -148,7 +144,6 @@ func TestReactionPlanner(t *testing.T) {
 	}
 	data := body["data"].(map[string]any)
 	raw := data["raw_materials"].([]any)
-	// 50 x 5 runs = 250 goo @ 10.5 -> input 2625
 	if len(raw) != 1 || raw[0].(map[string]any)["quantity"].(float64) != 250 {
 		t.Fatalf("raw = %v", raw)
 	}
@@ -175,7 +170,6 @@ func TestReactionBrowser(t *testing.T) {
 		t.Fatalf("rows = %v", data)
 	}
 	row := data[0].(map[string]any)
-	// input 250 x 10.5 = 2625; output 25 x 100 = 2500; scc 100; profit -225
 	if row["profit"].(float64) != -225 {
 		t.Fatalf("profit = %v", row)
 	}
@@ -199,16 +193,13 @@ func TestInventionCalculate(t *testing.T) {
 	}
 	data := body["data"].(map[string]any)
 	inv := data["invention"].(map[string]any)
-	// 0.3 * (1 + 5/40 + 5/30 + 5/30) = 0.4375; ceil(1/0.4375) = 3 attempts
 	if inv["probability"].(float64) != 0.4375 || inv["expected_attempts"].(float64) != 3 {
 		t.Fatalf("invention = %v", inv)
 	}
 	mats := data["t2_materials"].([]any)
-	// 100 x (4*1) runs at ME 2: 400 x 0.98 = 392
 	if len(mats) != 1 || mats[0].(map[string]any)["adjusted_quantity"].(float64) != 392 {
 		t.Fatalf("materials = %v", mats)
 	}
-	// unknown item -> 422 on t2_type_id
 	if code, _ := post(t, d, "/api/v1/calculators/invention", `{
 		"t2_type_id": 1, "encryption_skill": 0, "science1_skill": 0,
 		"science2_skill": 0, "invention_runs": 1

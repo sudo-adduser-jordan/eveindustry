@@ -11,7 +11,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// checkPassword verifies a bcrypt hash (PHP 'hashed' cast compat).
 func checkPassword(hash, password string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
 }
@@ -24,8 +23,6 @@ func hashPassword(password string) (string, error) {
 	return string(h), nil
 }
 
-// adminJobsFor ports UserJobsOverviewService::forUser: grouped active jobs
-// with sell values at the hub plus the production summary and grand total.
 func adminJobsFor(ctx context.Context, d Deps, userID int64, regionID int) (map[string]any, error) {
 	now := time.Now().UTC()
 	chars, err := d.Users.CharactersForUser(ctx, userID)

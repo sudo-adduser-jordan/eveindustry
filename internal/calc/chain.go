@@ -6,12 +6,8 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 )
 
-// FuelBlockGroupID mirrors AssetService::FUEL_BLOCK_GROUP_ID: fuel blocks
-// are raw materials, never resolved into sub-steps.
 const FuelBlockGroupID = 1136
 
-// ChainMaterial is one material line fed into the chain resolver.
-// AdjustedQuantity wins over Quantity when both are present.
 type ChainMaterial struct {
 	TypeID           int
 	Name             string
@@ -19,7 +15,6 @@ type ChainMaterial struct {
 	Quantity         int
 }
 
-// ChainStep is one resolved step with its children.
 type ChainStep struct {
 	TypeID           int             `json:"type_id"`
 	Name             string          `json:"name"`
@@ -32,7 +27,6 @@ type ChainStep struct {
 	Children         []ChainStep     `json:"children"`
 }
 
-// ChainResolver supplies SDE lookups for the chain walk.
 type ChainResolver interface {
 	ActivityProducing(ctx context.Context, typeID, activityID int) (*industry.BlueprintActivityRow, error)
 	ActivityByBlueprint(ctx context.Context, blueprintID, activityID int) (*industry.BlueprintActivityRow, error)
@@ -44,10 +38,6 @@ func cint(m map[string]any, key string) int {
 	return v
 }
 
-// ResolveFullMaterialChain ports InventionPlannerService::resolveFullMaterialChain():
-// materials become child steps via their manufacturing (else reaction)
-// blueprint at ME 10 (reactions ME 0), recursing with cycle protection and
-// skipping fuel blocks.
 func ResolveFullMaterialChain(ctx context.Context, st ChainResolver, materials []ChainMaterial, meLevel int, structBonus float64, visited map[int]bool, reactionBonus *float64) ([]ChainStep, error) {
 	effReaction := structBonus
 	if reactionBonus != nil {
@@ -144,22 +134,17 @@ func ResolveFullMaterialChain(ctx context.Context, st ChainResolver, materials [
 	return out, nil
 }
 
-// MergeSection is one merged-program section row.
 type MergeSection struct {
 	Name      string `json:"name"`
 	StepCount int    `json:"step_count"`
 }
 
-// MergeResult mirrors mergeFields(): concatenated steps in id order,
-// settings merged (later wins) plus sections, mixed types collapse to
-// manufacturing.
 type MergeResult struct {
 	Steps       []any          `json:"steps"`
 	Settings    map[string]any `json:"settings"`
 	ProgramType string         `json:"program_type"`
 }
 
-// MergePrograms ports mergeFields() over generic program rows.
 type MergeProgram struct {
 	ID          int
 	Name        string
@@ -209,16 +194,12 @@ func MergePrograms(programs []MergeProgram, order []int) MergeResult {
 	return MergeResult{Steps: steps, Settings: settings, ProgramType: programType}
 }
 
-// ReactionPlanStep is one top-level step built from a plan entry.
 type ReactionPlanStep struct {
 	Step        ChainStep
 	ProductID   int
 	ProductName string
 }
 
-// ReactionPlanSteps ports reactionPlanSteps(): one top-level step per entry
-// with intermediate reactions as children; nil steps when no entry matches
-// a known formula. Also returns the first product as the program header.
 func ReactionPlanSteps(ctx context.Context, st ChainResolver, entries []ReactionPlanEntry, rigBonus float64) ([]ChainStep, *int, *string, error) {
 	var out []ChainStep
 	var firstID *int
@@ -285,7 +266,6 @@ func ReactionPlanSteps(ctx context.Context, st ChainResolver, entries []Reaction
 	return out, firstID, firstName, nil
 }
 
-// ReactionPlanEntry is one planner entry for program creation.
 type ReactionPlanEntry struct {
 	FormulaTypeID int
 	FormulaName   string

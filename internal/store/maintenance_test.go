@@ -8,8 +8,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 )
 
-// Demo characters carry the full demo scope set so scope-gated tabs (assets,
-// industry) serve demo data instead of rendering empty.
 func TestDemoCharacterScopes(t *testing.T) {
 	s := applyMigrations(t)
 	ctx := context.Background()
@@ -34,8 +32,6 @@ func TestDemoCharacterScopes(t *testing.T) {
 		t.Fatalf("scopes = %v, want demo scopes", chars[0].Scopes)
 	}
 
-	// Resets predating the scope fix left characters scopeless; touching the
-	// demo account backfills them so the tabs recover before the next reset.
 	if _, err := s.db.ExecContext(ctx, `UPDATE characters SET scopes = '[]' WHERE user_id = ?`, uid); err != nil {
 		t.Fatal(err)
 	}

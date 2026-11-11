@@ -13,20 +13,16 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// ResearchDeps carries the ESI + research stores.
 type ResearchDeps struct {
 	Characters ResearchESI
 	Research   store.ResearchStore
 }
 
-// ResearchESI is the ESI surface research needs.
 type ResearchESI interface {
 	GetBlueprints(ctx context.Context, characterID int64) ([]map[string]any, error)
 	GetIndustryJobs(ctx context.Context, characterID int64, includeCompleted bool) ([]map[string]any, error)
 }
 
-// registerResearch mounts the research pair. Reaction jobs feed the formula
-// counts; both need live ESI blueprints.
 func registerResearch(v1 *echo.Group, d Deps) {
 	if d.Research.Characters == nil || d.Research.Research == nil || d.Users == nil {
 		return
@@ -35,7 +31,6 @@ func registerResearch(v1 *echo.Group, d Deps) {
 	v1.GET("/industry/reaction-formula-research", handleFormulaResearch(d))
 }
 
-// researchChars returns the user's characters plus scope flags.
 func researchChars(c echo.Context, d Deps, uid int64) ([]auth.Character, error) {
 	return d.Users.CharactersForUser(c.Request().Context(), uid)
 }
@@ -88,8 +83,6 @@ func parseResearchParams(c echo.Context, verrs validationErrors, sortOptions []s
 	return search, filterID, sortBy, sortDir, page, perPage
 }
 
-// ownedBlueprints ports getOwnedBlueprints(): best ME/TE per type over the
-// user's in-scope characters. Characters whose ESI call fails are skipped.
 func ownedBlueprints(ctx context.Context, d Deps, chars []auth.Character) map[int]calc.OwnedBlueprint {
 	var entries []calc.OwnedEntry
 	for _, ch := range chars {
@@ -114,7 +107,6 @@ func ownedBlueprints(ctx context.Context, d Deps, chars []auth.Character) map[in
 	return calc.MergeOwnedBlueprints(entries)
 }
 
-// GET /industry/blueprint-research — mirrors ResearchController@blueprints.
 func handleBlueprintResearch(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -218,9 +210,6 @@ func handleBlueprintResearch(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /industry/reaction-formula-research — mirrors
-// ResearchController@formulas: every published formula with owned counts
-// (hangars + locked in running reaction jobs).
 func handleFormulaResearch(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}

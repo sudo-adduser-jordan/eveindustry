@@ -10,22 +10,16 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// StockReader is the ESI subset the stock endpoints need. *esi.CharacterClient
-// satisfies it; tests stub it.
 type StockReader interface {
 	GetAssets(ctx context.Context, characterID int64) ([]map[string]any, error)
 	GetBlueprints(ctx context.Context, characterID int64) ([]map[string]any, error)
 	GetIndustryJobs(ctx context.Context, characterID int64, includeCompleted bool) ([]map[string]any, error)
 }
 
-// StockDeps carries the reader; nil keeps the endpoints unregistered until
-// the ESI phase wires it.
 type StockDeps struct {
 	Characters StockReader
 }
 
-// registerStock mounts the three stock endpoints (manufacturing, reaction
-// planner asset + formula stock). All are per-user ESI reads.
 func registerStock(v1 *echo.Group, d Deps) {
 	if d.Stock.Characters == nil || d.Users == nil {
 		return
@@ -40,7 +34,6 @@ const assetsScope = "esi-assets.read_assets.v1"
 const blueprintsScope = "esi-characters.read_blueprints.v1"
 const industryJobsScope = "esi-industry.read_character_jobs.v1"
 
-// ESI_ACTIVITY_REACTIONS mirrors ReactionFormulaResearchService.
 const esiActivityReactions = 9
 
 func hasScope(ch auth.Character, scope string) bool {
@@ -52,9 +45,6 @@ func hasScope(ch auth.Character, scope string) bool {
 	return false
 }
 
-// assetStock ports CharacterStockService::assetStock(): summed quantities
-// per requested type over the user's in-scope characters; characters whose
-// ESI call fails are skipped.
 func assetStock(ctx context.Context, d Deps, chars []auth.Character, typeIDs []int) map[int]int {
 	want := map[int]bool{}
 	for _, id := range typeIDs {
@@ -80,8 +70,6 @@ func assetStock(ctx context.Context, d Deps, chars []auth.Character, typeIDs []i
 	return stock
 }
 
-// stockLevels ports CharacterStockService::levels(): one row per requested
-// id in request order, duplicates dropped, 0 when missing.
 func stockLevels(typeIDs []int, stock map[int]int) []any {
 	seen := map[int]bool{}
 	out := []any{}
@@ -123,8 +111,6 @@ func parseTypeIDsBody(c echo.Context, verrs validationErrors, field string) []in
 	return out
 }
 
-// POST /calculators/{manufacturing|reaction-planner}/stock — mirrors the
-// stock actions: owned quantity per requested type id.
 func handleAssetStock(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -141,9 +127,6 @@ func handleAssetStock(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /calculators/reaction-planner/formula-stock — mirrors
-// ReactionPlannerController@formulaStock: owned formulas from blueprints
-// plus active/ready reaction jobs; has_blueprint_scope false yields [].
 func handleFormulaStock(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -175,9 +158,6 @@ func handleFormulaStock(d Deps) echo.HandlerFunc {
 	}
 }
 
-// formulaQuantities ports getOwnedFormulas() restricted to the requested
-// ids: inventory blueprint quantities (max(0, qty)) plus +1 per
-// active/ready reaction job locking that formula.
 func formulaQuantities(ctx context.Context, d Deps, chars []auth.Character, formulaIDs []int) map[int]int {
 	want := map[int]bool{}
 	for _, id := range formulaIDs {
@@ -185,8 +165,6 @@ func formulaQuantities(ctx context.Context, d Deps, chars []auth.Character, form
 	}
 	stock := map[int]int{}
 	for _, ch := range chars {
-		// is_esi_active defaults true in the DB; only a known-inactive
-		// character skips the blueprints call (PHP's !== false check).
 		if hasScope(ch, blueprintsScope) && ch.IsEsiActive {
 			if bps, err := d.Stock.Characters.GetBlueprints(ctx, ch.CharacterID); err == nil {
 				for _, bp := range bps {

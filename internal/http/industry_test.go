@@ -8,7 +8,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// stubIndustryJobs implements IndustryJobReader.
 type stubIndustryJobs struct {
 	jobs     map[int64][]map[string]any
 	corpJobs map[int64][]map[string]any
@@ -27,7 +26,6 @@ func (s *stubIndustryJobs) GetAssets(ctx context.Context, id int64) ([]map[strin
 	return nil, nil
 }
 
-// stubUniverse implements UniverseReader.
 type stubUniverse struct{}
 
 func (stubUniverse) GetTypeInfo(ctx context.Context, id int) (map[string]any, error) {
@@ -98,7 +96,6 @@ func TestIndustryJobsOverview(t *testing.T) {
 	}
 	jobs := groups[0].(map[string]any)["jobs"].([]any)
 	row := jobs[0].(map[string]any)
-	// output 10 x 1 = 10 @ 1000 = 10000
 	if row["expected_output"].(float64) != 10 || row["estimated_value"].(float64) != 10000 {
 		t.Fatalf("row = %v", row)
 	}

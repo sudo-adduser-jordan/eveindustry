@@ -5,15 +5,13 @@ import (
 	"strings"
 )
 
-// ProductionBlueprint is one ESI blueprint entry for can-produce math.
 type ProductionBlueprint struct {
 	TypeID             int
 	MaterialEfficiency int
 	TimeEfficiency     int
-	Runs               int // -1 = BPO (unlimited)
+	Runs               int
 }
 
-// ProductionMaterial is one material line with availability math.
 type ProductionMaterial struct {
 	TypeID         int    `json:"type_id"`
 	Name           string `json:"name"`
@@ -22,7 +20,6 @@ type ProductionMaterial struct {
 	RunsPossible   int    `json:"runs_possible"`
 }
 
-// BuildableItem mirrors one calculateBuildableItems() row (pre-grouping).
 type BuildableItem struct {
 	BlueprintTypeID  int                  `json:"blueprint_type_id"`
 	ProductTypeID    int                  `json:"product_type_id"`
@@ -36,7 +33,6 @@ type BuildableItem struct {
 	Materials        []ProductionMaterial `json:"materials"`
 }
 
-// AggregateAssetMaterials ports aggregateMaterials(): type_id → quantity.
 func AggregateAssetMaterials(assets []map[string]any) map[int]int {
 	out := map[int]int{}
 	for _, a := range assets {
@@ -49,15 +45,11 @@ func AggregateAssetMaterials(assets []map[string]any) map[int]int {
 	return out
 }
 
-// SDEActivity is the material/product data for one blueprint.
 type SDEActivity struct {
 	Materials []BaseMaterial
 	Products  []BaseMaterial
 }
 
-// CalculateBuildableItems ports calculateBuildableItems(): per-blueprint
-// max runs from hangar materials with the copy's ME, BPC-capped, grouped by
-// product+ME and sorted by runs descending.
 func CalculateBuildableItems(bps []ProductionBlueprint, materials map[int]int, activities map[int]SDEActivity) []BuildableItem {
 	var items []BuildableItem
 	for _, bp := range bps {
@@ -78,8 +70,6 @@ func CalculateBuildableItems(bps []ProductionBlueprint, materials map[int]int, a
 			if m.TypeID == 0 || m.Quantity == 0 {
 				continue
 			}
-			// Per-run requirement at the copy's ME (runs=1 form of the ME
-			// formula: max(1, ceil(round(base*(1-me/100), 2)))).
 			adjusted := CalculateMaterials([]BaseMaterial{{TypeID: m.TypeID, Name: m.Name, Quantity: m.Quantity}}, bp.MaterialEfficiency, 1, 0)
 			req := 1
 			if len(adjusted) > 0 {
@@ -116,7 +106,6 @@ func CalculateBuildableItems(bps []ProductionBlueprint, materials map[int]int, a
 		})
 	}
 
-	// Group by product + ME, summing runs/output; any BPO makes max_runs -1.
 	grouped := map[string]*BuildableItem{}
 	var order []string
 	for i := range items {
@@ -144,8 +133,6 @@ func CalculateBuildableItems(bps []ProductionBlueprint, materials map[int]int, a
 	return out
 }
 
-// ResolveMaterialNames ports resolveAvailableMaterials(): names sorted
-// case-insensitively, unknown types as "Type #id".
 func ResolveMaterialNames(materials map[int]int, names map[int]string) []map[string]any {
 	out := make([]map[string]any, 0, len(materials))
 	for id, qty := range materials {

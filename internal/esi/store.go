@@ -6,20 +6,13 @@ import (
 	"time"
 )
 
-// CoordStore is the coordination backend for rate limiting, the error
-// circuit and token-refresh locks. MemStore serves single-host deployments
-// (locks are in-process only); cross-host coordination would need a shared
-// store.
 type CoordStore interface {
 	Get(key string) ([]byte, bool)
 	Put(key string, value []byte, ttl time.Duration)
 	Del(key string)
-	// Lock runs fn while holding key, waiting up to wait for it. Only one
-	// holder across processes (best effort for MemStore: in-process only).
 	Lock(key string, hold, wait time.Duration, fn func() error) error
 }
 
-// MemStore is an in-process CoordStore with TTL expiry.
 type MemStore struct {
 	mu    sync.Mutex
 	vals  map[string]memVal
@@ -31,7 +24,6 @@ type memVal struct {
 	exp  time.Time
 }
 
-// NewMemStore builds an empty store.
 func NewMemStore() *MemStore {
 	return &MemStore{vals: map[string]memVal{}, locks: map[string]time.Time{}}
 }
@@ -79,7 +71,9 @@ func (s *MemStore) Lock(key string, hold, wait time.Duration, fn func() error) e
 		if time.Now().After(deadline) {
 			return &RequestError{Outcome: OutcomeCoordination, RetryAfterSecs: 5}
 		}
-		time.Sleep(10 * time.Millisecond)
+		select {
+		case <-time.After(10 * time.Millisecond):
+		}
 	}
 }
 

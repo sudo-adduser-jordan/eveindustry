@@ -7,11 +7,8 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 )
 
-// SQL implements esi.TypeStore for the universe client: local SDE rows
-// first, ESI fallback inside the client.
 var _ esi.TypeStore = (*SQL)(nil)
 
-// EveTypeByID returns the full eve_types row for UniverseClient.GetTypeInfo.
 func (s *SQL) EveTypeByID(ctx context.Context, typeID int) (*esi.LocalType, error) {
 	var row struct {
 		TypeID         int             `db:"type_id"`
@@ -81,7 +78,6 @@ func (s *SQL) EveTypeByID(ctx context.Context, typeID int) (*esi.LocalType, erro
 	return out, nil
 }
 
-// SdeStationByID returns the sde_stations row for UniverseClient.GetStation.
 func (s *SQL) SdeStationByID(ctx context.Context, stationID uint64) (*esi.LocalStation, error) {
 	var row struct {
 		StationID     uint64        `db:"station_id"`

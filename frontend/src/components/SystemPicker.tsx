@@ -6,10 +6,7 @@ export interface PickedSystem {
   name: string
 }
 
-/**
- * Solar system typeahead: type two or more letters, pick a result. Shows the
- * picked system with a "change" button, so the form always has an id to send.
- */
+
 export function SystemPicker({
   id,
   label,

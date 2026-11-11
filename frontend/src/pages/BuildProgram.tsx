@@ -22,7 +22,7 @@ type Location = components['schemas']['AssetLocationResource']
 const icon = (typeId: number) => typeIconUrl(typeId)
 const volume = (n: number, digits = 1) => n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })
 
-/** EVE multibuy lines ("Tritanium 500"); `missingOnly` lists just what is still short. */
+
 export function multibuyText(items: Array<{ name: string; quantity: number; available: number }>, missingOnly: boolean): string {
   return items
     .filter((m) => !missingOnly || m.quantity > m.available)
@@ -304,7 +304,7 @@ function ProgramBody({ program, volumes }: { program: Detail; volumes: Record<st
     setLocations.mutate(ids)
   }
 
-  // Merged programs: each section owns the next `step_count` top-level steps.
+  
   const sections = program.sections.length > 0 ? program.sections : [{ name: '', step_count: steps.length }]
   let offset = 0
   const blocks = sections.map((s, si) => {

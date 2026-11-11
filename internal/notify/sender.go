@@ -9,8 +9,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// WebPushSender ports WebPushSender via webpush-go. Unconfigured (missing
-// VAPID keys) sends nothing, like the PHP configured() gate.
 type WebPushSender struct {
 	Subject    string
 	PublicKey  string
@@ -18,12 +16,10 @@ type WebPushSender struct {
 	TTL        int
 }
 
-// Configured mirrors WebPushSender::configured.
 func (s *WebPushSender) Configured() bool {
 	return s != nil && s.PublicKey != "" && s.PrivateKey != ""
 }
 
-// Send delivers one payload: sent, gone (expired subscription), or neither.
 func (s *WebPushSender) Send(ctx context.Context, sub store.PushSubscription, payload map[string]any) (sent, gone bool) {
 	if !s.Configured() {
 		return false, false

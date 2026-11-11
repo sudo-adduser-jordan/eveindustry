@@ -11,16 +11,12 @@ import (
 	"errors"
 )
 
-// laravelPayload mirrors Crypt::encryptString output: base64 of JSON with
-// base64 iv/value and a hex HMAC over iv+value.
 type laravelPayload struct {
 	IV    string `json:"iv"`
 	Value string `json:"value"`
 	MAC   string `json:"mac"`
 }
 
-// IsLaravelEncrypted mirrors EsiToken::encrypted(): a base64 JSON envelope
-// with iv, value and mac keys.
 func IsLaravelEncrypted(value string) bool {
 	raw, err := base64.StdEncoding.DecodeString(value)
 	if err != nil {
@@ -33,10 +29,6 @@ func IsLaravelEncrypted(value string) bool {
 	return p.IV != "" && p.Value != "" && p.MAC != ""
 }
 
-// DecryptLaravelToken mirrors Crypt::decryptString for encryptString
-// payloads (raw strings, no PHP serialization): verifies the HMAC, then
-// AES-256-CBC decrypts. key must be the 32-byte APP_KEY (base64: decoded by
-// the caller). Fails closed on any mismatch, like the PHP cast.
 func DecryptLaravelToken(value string, key []byte) (string, error) {
 	raw, err := base64.StdEncoding.DecodeString(value)
 	if err != nil {
@@ -72,7 +64,6 @@ func DecryptLaravelToken(value string, key []byte) (string, error) {
 	}
 	plain := make([]byte, len(ct))
 	cipher.NewCBCDecrypter(block, iv).CryptBlocks(plain, ct)
-	// PKCS#7 unpad, validated.
 	pad := int(plain[len(plain)-1])
 	if pad < 1 || pad > aes.BlockSize || pad > len(plain) {
 		return "", errors.New("bad padding")

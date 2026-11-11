@@ -11,10 +11,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// registerDemoImages mounts the generated demo portraits and logos. Demo ids
-// never resolve on the EVE image server, so the API draws deterministic SVGs
-// instead (like the PHP DemoImageController). Public: <img> tags fetch them
-// without a session.
 func registerDemoImages(e *echo.Echo) {
 	e.GET("/demo/portrait/:id", handleDemoImage(true))
 	e.GET("/demo/logo/:id", handleDemoImage(false))
@@ -56,7 +52,6 @@ func handleDemoImage(portrait bool) echo.HandlerFunc {
 	}
 }
 
-// demoHue derives a stable hue from a demo id.
 func demoHue(id int64) int {
 	h := id % 360
 	if h < 0 {
@@ -65,7 +60,6 @@ func demoHue(id int64) int {
 	return int(h)
 }
 
-// demoPortraitSVG draws a pilot-silhouette avatar on a dark gradient.
 func demoPortraitSVG(id int64, size int) string {
 	h := demoHue(id)
 	h2 := (h + 50) % 360
@@ -83,7 +77,6 @@ func demoPortraitSVG(id int64, size int) string {
 		`</g></svg>`, size, h, h2)
 }
 
-// demoLogoSVG draws a hex emblem for corporations and alliances.
 func demoLogoSVG(id int64, size int) string {
 	h := demoHue(id + 7)
 	return fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%[1]d" height="%[1]d" viewBox="0 0 128 128">`+

@@ -101,7 +101,6 @@ func TestStockReport(t *testing.T) {
 	if len(rows) != 2 {
 		t.Fatalf("rows = %v", rows)
 	}
-	// 150 wanted, 100 on hand -> shortfall 50
 	r0 := rows[0].(map[string]any)
 	if r0["on_hand"].(float64) != 100 || r0["shortfall"].(float64) != 50 {
 		t.Fatalf("row0 = %v", r0)
@@ -109,7 +108,6 @@ func TestStockReport(t *testing.T) {
 	if r0["desired_quantity"].(float64) != 150 {
 		t.Fatalf("desired = %v", r0)
 	}
-	// missing type -> 0 on hand, full shortfall
 	r1 := rows[1].(map[string]any)
 	if r1["on_hand"].(float64) != 0 || r1["shortfall"].(float64) != 10 {
 		t.Fatalf("row1 = %v", r1)
@@ -120,12 +118,10 @@ func TestStockReport(t *testing.T) {
 }
 
 func TestStockReportGateAndWarning(t *testing.T) {
-	// no stock-manager flag -> 403
 	d := stockReportTestDeps(false, []string{"Director"})
 	if code, _ := get(t, d, "/api/v1/stock"); code != http.StatusForbidden {
 		t.Fatalf("gate = %d", code)
 	}
-	// no director role -> warning, zero on-hand
 	d = stockReportTestDeps(true, []string{"Member"})
 	code, body := get(t, d, "/api/v1/stock")
 	if code != http.StatusOK {

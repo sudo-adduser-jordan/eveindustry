@@ -10,7 +10,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// RegisterMaintenanceJobs wires demo:reset + market:snapshots-prune.
 func RegisterMaintenanceJobs(r *Runner, h HandlerDeps) {
 	r.Register("demo-reset", JobDef{
 		Queue: QueueDefault, MaxTries: 1, Timeout: 600 * time.Second,
@@ -26,16 +25,12 @@ func RegisterMaintenanceJobs(r *Runner, h HandlerDeps) {
 	})
 }
 
-// MaintenanceSchedule mirrors demo:reset daily and snapshots prune daily.
-
 var demoFirst = []string{"Kael", "Ryn", "Tavo", "Mira", "Dax", "Selen", "Orrin", "Vexa", "Joren", "Alis", "Brask", "Nyla", "Corvin", "Ilsa", "Thane", "Zora", "Marek", "Eryn", "Valo", "Sunn", "Pike", "Lorn", "Wren", "Davos", "Isko", "Talia", "Hex", "Quill", "Rowan", "Soren"}
 var demoLast = []string{"Vandrel", "Okoro", "Halvane", "Strand", "Mirosh", "Tallen", "Brightwater", "Kessing", "Duvall", "Orlane", "Pryce", "Ashgrove", "Nakamura-Ray", "Velkor", "Harrow", "Ibsen", "Cade", "Lindqvist", "Sarn", "Moreau", "Falk", "Treven", "Yoru", "Grayle", "Dunmere", "Castellan", "Rook", "Thessaly", "Voss", "Amari"}
 var demoCorpA = []string{"Nova", "Ironclad", "Silent", "Gilded", "Northern", "Ember", "Quantum", "Obsidian", "Lunar", "Cobalt", "Veridian", "Apex", "Harbor", "Stellar", "Tidal"}
 var demoCorpB = []string{"Forge", "Freight", "Works", "Extraction", "Logistics", "Syndicate", "Fabrication", "Holdings", "Mining Co", "Industries", "Reclamation", "Dynamics"}
 var demoAlliance = []string{"Aurora", "Meridian", "Ashen Coast", "Fallow Reach", "Kestrel", "Open Horizon"}
 
-// ResetDemoAccount ports DemoDataService::reset (gated on DEMO_ENABLED by
-// the scheduler entry, like the command's config gate).
 func ResetDemoAccount(ctx context.Context, h HandlerDeps) error {
 	uid, err := h.DB.EnsureDemoUser(ctx, "demo@eve-industrialist.invalid")
 	if err != nil {
@@ -127,10 +122,7 @@ func ResetDemoAccount(ctx context.Context, h HandlerDeps) error {
 			return err
 		}
 	}
-	// Seed the reference rows the demo renders (type names/groups, hub
-	// stations/systems) before warming the caches that read them.
 	seedDemoReferenceData(ctx, h)
-	// Warm the caches so the first page load is not empty.
 	_ = RefreshAssetData(ctx, h, uid, true)
 	_ = RefreshIndustryData(ctx, h, uid)
 	_ = RefreshDashboardStats(ctx, h, uid)
@@ -138,8 +130,6 @@ func ResetDemoAccount(ctx context.Context, h HandlerDeps) error {
 	return nil
 }
 
-// PruneSnapshots ports market:snapshots-prune --write: old contract
-// generations and stale market aggregates.
 func PruneSnapshots(ctx context.Context, h HandlerDeps) error {
 	now := time.Now()
 	graceCutoff := now.Add(-3 * time.Hour)
@@ -196,8 +186,6 @@ func PruneSnapshots(ctx context.Context, h HandlerDeps) error {
 
 var _ = strings.TrimSpace
 
-// MaintenanceSchedule mirrors demo:reset (daily 03:30, DEMO_ENABLED-gated
-// at dispatch like the command) and snapshots prune (daily).
 func MaintenanceSchedule(h HandlerDeps, demoEnabled bool, demoResetAt string) []ScheduleEntry {
 	if demoResetAt == "" {
 		demoResetAt = "03:30"

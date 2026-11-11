@@ -1,285 +1,64 @@
 version: "3"
-
-# Eve Industrialist task runner. Every task mirrors the working rules in
-# AGENTS.md. Run `task --list` to see them all.
-
+output: prefixed
+silent: false
 vars:
   GO_TAGS: '{{.GO_TAGS | default ""}}'
-
 tasks:
-  default:
-    desc: Build everything (Go + frontend typecheck)
+  install:
+    desc: Install Go modules and frontend dependencies
     cmds:
-      - task: build
-
-  build:
-    desc: Compile all Go packages
+      - cmd: go mod download
+      - cmd: npm ci
+        dir: frontend
+      - cmd: go build {{if .GO_TAGS}}-tags {{.GO_TAGS}}{{end}} ./...
+  update:
+    desc: Update Go and frontend dependencies
     cmds:
-      - go build {{if .GO_TAGS}}-tags {{.GO_TAGS}}{{end}} ./...
-
-  test:
-    desc: Run the full Go test suite (no cache)
+      - cmd: go get -u ./... && go mod tidy
+      - cmd: npm update
+        dir: frontend
+  remove:
+    desc: Remove build outputs and ephemeral run files
     cmds:
-      - go test -count=1 ./...
-
-  test:race:
-    desc: Run the full Go test suite with the race detector
-    cmds:
-      - go test -race -count=1 ./...
-
-  vet:
-    desc: go vet the whole module
-    cmds:
-      - go vet ./...
-
-  fmt:
-    desc: Report files needing gofmt (fails if any)
-    cmds:
-      - |
-        out=$(gofmt -l cmd internal migrations)
-        if [ -n "$out" ]; then
-          echo "$out"
-          exit 1
-        fi
-
-  fmt:write:
-    desc: Apply gofmt to the Go tree
-    cmds:
-      - gofmt -w cmd internal migrations
-
-  check:
-    desc: vet + gofmt check + full test suite
-    cmds:
-      - task: vet
-      - task: fmt
-      - task: test
-
-  run:api:
-    desc: Run the API server (env from environment, see README)
-    dotenv: ['.env']
-    cmds:
-      - go run ./cmd/api
-
-  run:worker:
-    desc: Run the background job worker
-    dotenv: ['.env']
-    cmds:
-      - go run ./cmd/worker
-
-  run:scheduler:
-    desc: Run the cron tick dispatcher
-    dotenv: ['.env']
-    cmds:
-      - go run ./cmd/scheduler
-
-  start:
-    desc: Install frontend deps, build and start api + worker + scheduler + web UI (.run/)
-    dotenv: ['.env']
-    deps:
-      - frontend:install
-    cmds:
-      - |
-        set -e
-        # Local dev defaults to demo on so "Try the demo" works out of the
-        # box. Explicit env (or .env) still wins: DEMO_ENABLED=false disables.
-        export DEMO_ENABLED="${DEMO_ENABLED:-true}"
-        echo "demo mode: $DEMO_ENABLED"
-        mkdir -p .run/bin .run/log
-        # Kill anything already running: tracked pidfiles plus orphans
-        # (previous runs, crashed starts) matched by binary path.
-        # NOTE: tasks run under gosh, which has no kill/jobs builtins, so
-        # liveness is tested via /proc and signals go through real sh.
-        # The [.] / [n] brackets keep pkill from matching this script itself.
-        for svc in api worker scheduler ui; do
-          if [ -f .run/$svc.pid ]; then
-            pid=$(cat .run/$svc.pid)
-            if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then sh -c 'kill "$1" 2>/dev/null' _ "$pid" || true; fi
-            rm -f .run/$svc.pid
-          fi
-          pkill -f "[.]run/bin/$svc" 2>/dev/null || true
-        done
-        pkill -f "[n]ode_modules/.bin/vite" 2>/dev/null || true
-        sleep 1
-        go build -o .run/bin/api ./cmd/api
-        go build -o .run/bin/worker ./cmd/worker
-        go build -o .run/bin/scheduler ./cmd/scheduler
-        # Fresh checkouts have an empty SQLite file; migrate before launch so
-        # /demo/login (and everything else) has its tables.
-        go run ./cmd/migrate up
-        for svc in api worker scheduler; do
-          nohup sh -c 'echo $$ > .run/$0.pid; exec ./.run/bin/$0' "$svc" >.run/log/$svc.log 2>&1 < /dev/null &
-          sleep 0.5
-          pid=$(cat .run/$svc.pid 2>/dev/null || true)
-          if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then
-            echo "$svc started (pid $pid)"
-          else
-            echo "$svc failed to start:"; tail -5 .run/log/$svc.log; exit 1
-          fi
-        done
-        port="${PORT:-8080}"
-        api_pid=$(cat .run/api.pid)
-        for i in $(seq 1 30); do
-          if curl -fs -o /dev/null "http://localhost:$port/up" 2>/dev/null; then
-            echo "api at http://localhost:$port"
-            break
-          fi
-          if [ -z "$api_pid" ] || [ ! -d "/proc/$api_pid" ]; then
-            echo "api died on startup:"; tail -10 .run/log/api.log; exit 1
-          fi
-          sleep 0.5
-          if [ "$i" = "30" ]; then echo "api did not answer /up (see .run/log/api.log)"; exit 1; fi
-        done
-        # Web UI: vite dev server proxying /api to the Go api.
-        ui_port="${UI_PORT:-5173}"
-        if [ -x frontend/node_modules/.bin/vite ]; then
-          LARAVEL_URL="http://localhost:$port" nohup sh -c 'cd frontend && echo $$ > ../.run/$0.pid; exec ./node_modules/.bin/vite --port "$1" --strictPort' ui "$ui_port" >.run/log/ui.log 2>&1 < /dev/null &
-          sleep 1
-          for i in $(seq 1 30); do
-            if curl -fs -o /dev/null "http://localhost:$ui_port/" 2>/dev/null; then
-              echo "web ui at http://localhost:$ui_port/app/"
-              break
-            fi
-            uipid=$(cat .run/ui.pid 2>/dev/null || true)
-            if [ -z "$uipid" ] || [ ! -d "/proc/$uipid" ]; then
-              echo "ui failed to start (see .run/log/ui.log)"; break
-            fi
-            sleep 0.5
-            if [ "$i" = "30" ]; then echo "ui did not answer (see .run/log/ui.log)"; fi
-          done
-        else
-          echo "web ui missing (frontend/node_modules/.bin/vite not found after frontend:install)"; exit 1
-        fi
-
-  stop:
-    desc: Stop the background api + worker + scheduler + web UI
-    cmds:
-      - |
-        for svc in api worker scheduler ui; do
-          if [ -f .run/$svc.pid ]; then
-            pid=$(cat .run/$svc.pid)
-            if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then
-              sh -c 'kill "$1" 2>/dev/null' _ "$pid" || true
-              for i in $(seq 1 20); do
-                if [ -d "/proc/$pid" ]; then sleep 0.5; else break; fi
-              done
-              if [ -d "/proc/$pid" ]; then sh -c 'kill -9 "$1" 2>/dev/null' _ "$pid" || true; fi
-              echo "$svc stopped (was $pid)"
-            else
-              echo "$svc not running (stale pid $pid)"
-            fi
-            rm -f .run/$svc.pid
-          else
-            echo "$svc not running"
-          fi
-          pkill -f "[.]run/bin/$svc" 2>/dev/null || true
-        done
-        pkill -f "[n]ode_modules/.bin/vite" 2>/dev/null || true
-
-  migrate:
-    desc: "Apply pending SQL migrations (usage: task migrate -- [up|down|status] [n])"
-    dotenv: ['.env']
-    cmds:
-      - go run ./cmd/migrate {{.CLI_ARGS}}
-
-  migrate:test:
-    desc: Verify the migration chain test only
-    cmds:
-      - go test -count=1 ./cmd/migrate/
-
-  deps:
-    desc: Install all dependencies (Go modules + frontend packages)
-    cmds:
-      - go mod download
-      - task: frontend:install
-
-  deps:update:
-    desc: Update Go and frontend dependencies to latest allowed versions
-    cmds:
-      - go get -u ./... && go mod tidy
-      - task: frontend:update
-
-  job:
-    desc: "Run one background job once and exit (usage: task job -- <name> [json-payload]; e.g. sde-import, demo-reset)"
-    dotenv: ['.env']
-    cmds:
-      - go run ./cmd/job {{.CLI_ARGS}}
-
-  setup:sde:
-    desc: Fetch SDE reference data now (same sde:import job the scheduler runs daily)
-    dotenv: ['.env']
-    cmds:
-      - go run ./cmd/job sde-import
-
-  setup:demo:
-    desc: Reset demo data now (same demo:reset job the scheduler runs daily)
-    dotenv: ['.env']
-    cmds:
-      - DEMO_ENABLED="${DEMO_ENABLED:-true}" go run ./cmd/job demo-reset
-
+      - cmd: rm -rf .run/bin .run/log .run/*.pid frontend/node_modules logs/test/app.jsonl logs/errors/app.jsonl public/app
   setup:
-    desc: Fresh-checkout bootstrap (env file, dependencies, migrations, SDE reference data, demo data)
+    desc: Bootstrap fresh checkout
+    dotenv:
+      - .env
     cmds:
-      - '[ -f .env ] || cp .env.example .env'
-      - task: deps
-      - task: migrate
-        vars: {CLI_ARGS: up}
-      - task: setup:sde
-      - task: setup:demo
-
-  frontend:install:
-    desc: Install frontend dependencies
-    dir: frontend
-    sources:
-      - package.json
-      - package-lock.json
-    generates:
-      - node_modules/.bin/vite
+      - cmd: '[ -f .env ] || cp .env.example .env'
+      - task: install
+      - cmd: go run ./cmd/migrate up
+      - cmd: go run ./cmd/job sde-import
+      - cmd: DEMO_ENABLED="${DEMO_ENABLED:-true}" go run ./cmd/job demo-reset
+  migrate:
+    desc: Apply SQL migrations
+    dotenv:
+      - .env
     cmds:
-      - npm ci
-
-  frontend:update:
-    desc: Update frontend dependencies to latest allowed versions
-    dir: frontend
+      - cmd: go run ./cmd/migrate {{.CLI_ARGS}}
+  start:
+    desc: Build and start api worker scheduler ui
+    dotenv:
+      - .env
     cmds:
-      - npm update
-
-  frontend:gen:
-    desc: Regenerate the typed API client from docs/openapi.json
-    dir: frontend
+      - cmd: mkdir -p .run/bin .run/log logs/test logs/errors
+      - cmd: for svc in api worker scheduler ui; do if [ -f .run/$svc.pid ]; then pid=$(cat .run/$svc.pid); if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then kill "$pid" 2>/dev/null || true; timeout 10 tail --pid=$pid -f /dev/null 2>/dev/null || true; fi; rm -f .run/$svc.pid; fi; pkill -f "[.]run/bin/$svc" 2>/dev/null || true; done; pkill -f "[n]ode_modules/.bin/vite" 2>/dev/null || true
+      - cmd: go build -o .run/bin/api ./cmd/api
+      - cmd: go build -o .run/bin/worker ./cmd/worker
+      - cmd: go build -o .run/bin/scheduler ./cmd/scheduler
+      - cmd: go run ./cmd/migrate up
+      - cmd: DEMO_ENABLED="${DEMO_ENABLED:-true}"; export DEMO_ENABLED; for svc in api worker scheduler; do nohup ./.run/bin/$svc >.run/log/$svc.log 2>&1 < /dev/null & echo $! > .run/$svc.pid; pid=$(cat .run/$svc.pid); if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then echo "$svc started (pid $pid)"; else echo "$svc failed to start"; tail -5 .run/log/$svc.log; exit 1; fi; done
+      - cmd: port="${PORT:-8080}"; api_pid=$(cat .run/api.pid); curl --retry 30 --retry-delay 1 --retry-all-errors --max-time 2 -fs -o /dev/null "http://localhost:$port/up" && echo "api at http://localhost:$port" || { echo "api did not answer /up (see .run/log/api.log)"; tail -10 .run/log/api.log; exit 1; }
+      - cmd: port="${PORT:-8080}"; ui_port="${UI_PORT:-5173}"; if [ -x frontend/node_modules/.bin/vite ]; then LARAVEL_URL="http://localhost:$port" nohup ./frontend/node_modules/.bin/vite --port "$ui_port" --strictPort --config ./frontend/vite.config.ts >.run/log/ui.log 2>&1 < /dev/null & echo $! > .run/ui.pid; curl --retry 30 --retry-delay 1 --retry-all-errors --max-time 2 -fs -o /dev/null "http://localhost:$ui_port/" && echo "web ui at http://localhost:$ui_port/app/" || echo "ui did not answer (see .run/log/ui.log)"; else echo "web ui missing (run task install first)"; exit 1; fi
+  stop:
+    desc: Stop background api worker scheduler ui
     cmds:
-      - npm run gen:api
-    sources:
-      - ../docs/openapi.json
-    generates:
-      - src/api/schema.d.ts
-
-  frontend:typecheck:
-    desc: Strict TypeScript check (app + service worker)
-    dir: frontend
+      - cmd: for svc in api worker scheduler ui; do if [ -f .run/$svc.pid ]; then pid=$(cat .run/$svc.pid); if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then kill "$pid" 2>/dev/null || true; timeout 10 tail --pid=$pid -f /dev/null 2>/dev/null || true; if [ -d "/proc/$pid" ]; then kill -9 "$pid" 2>/dev/null || true; fi; echo "$svc stopped (was $pid)"; else echo "$svc not running (stale pid $pid)"; fi; rm -f .run/$svc.pid; else echo "$svc not running"; fi; pkill -f "[.]run/bin/$svc" 2>/dev/null || true; done; pkill -f "[n]ode_modules/.bin/vite" 2>/dev/null || true
+  dev:
+    desc: Run api and web UI for local development
+    dotenv:
+      - .env
     cmds:
-      - npm run typecheck
-
-  frontend:test:
-    desc: Run Vitest suite once
-    dir: frontend
-    cmds:
-      - npm run test
-
-  frontend:build:
-    desc: Typecheck + production Vite build
-    dir: frontend
-    cmds:
-      - npm run build
-
-  frontend:size:
-    desc: size-limit budget check
-    dir: frontend
-    cmds:
-      - npm run size
-
-  frontend:check:
-    desc: gen:api (verifies in sync) + typecheck + tests
-    cmds:
-      - task: frontend:gen
-      - task: frontend:typecheck
-      - task: frontend:test
+      - cmd: mkdir -p logs/test logs/errors
+      - cmd: DEMO_ENABLED="${DEMO_ENABLED:-true}" go run ./cmd/api & echo $! > .run/api.pid; cd frontend && npm run dev & echo $! > ../.run/ui.pid; wait

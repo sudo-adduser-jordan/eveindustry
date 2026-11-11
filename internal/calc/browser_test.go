@@ -13,7 +13,6 @@ func TestFilterManufacturingBlueprints(t *testing.T) {
 		{BlueprintTypeID: 3, Products: []map[string]any{}},
 	}
 	names := map[int]string{1: "Bp A", 2: "Bp B"}
-	// invented + excluded + allow-list
 	got := FilterManufacturingBlueprints(acts, map[int]bool{1: true}, nil, nil, names)
 	if len(got) != 1 || got[0].BlueprintTypeID != 2 {
 		t.Fatalf("invented filter: %+v", got)
@@ -36,7 +35,6 @@ func TestApplyPrecomputedAdjustments(t *testing.T) {
 	if adj.ProfitMargin != 6.7 {
 		t.Fatalf("margin: %+v", adj)
 	}
-	// structure ME scales input: 900*2*0.96 = 1728
 	adj = ApplyPrecomputedAdjustments(900, 1000, 1, 2, 4, 0, 0)
 	if adj.TotalInputCost != 1728 {
 		t.Fatalf("me: %+v", adj)

@@ -11,7 +11,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// stubReference is an in-memory store.ReferenceStore for handler tests.
 type stubReference struct {
 	groups   []store.MarketGroup
 	types    []store.EveType
@@ -187,7 +186,6 @@ func get(t *testing.T, d Deps, path string) (int, map[string]any) {
 
 func TestTypeSearchShortQueryIs422(t *testing.T) {
 	d, _, _ := testDeps()
-	// PHP's SearchRequest requires q (min 2): short/missing q is a 422.
 	code, body := get(t, d, "/api/v1/types?q=x")
 	if code != http.StatusUnprocessableEntity || body["code"] != "validation_failed" {
 		t.Fatalf("short q: %d %v", code, body)

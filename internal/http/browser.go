@@ -11,7 +11,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/market"
 )
 
-// registerBrowser mounts the manufacturing browser pair.
 func registerBrowser(v1 *echo.Group, d Deps) {
 	if d.Market == nil || d.Industry == nil || d.Trading == nil {
 		return
@@ -115,8 +114,6 @@ func parseBrowserParams(c echo.Context, verrs validationErrors, isPost bool) (ma
 	return marketGroupID, categoryID, meLevel, runs, structME, facilityTax, sysIdx, regionID, page, perPage
 }
 
-// GET /calculators/manufacturing-browser — mirrors BrowserController@browse:
-// precomputed costs for a market group with the caller's settings.
 func handleManufacturingBrowse(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -174,8 +171,6 @@ func handleManufacturingBrowse(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /calculators/manufacturing-browser — mirrors BrowserController@calculate:
-// live profitability for a market group or legacy category.
 func handleManufacturingCalculate2(d Deps) echo.HandlerFunc {
 	type input struct {
 		Runs            *int     `json:"runs"`
@@ -277,7 +272,6 @@ func handleManufacturingCalculate2(d Deps) echo.HandlerFunc {
 			if err != nil {
 				return dbError(c, err)
 			}
-			// Product type ids whose group is in the category.
 			var productIDs []int
 			seen := map[int]bool{}
 			for _, a := range acts {
@@ -304,7 +298,6 @@ func handleManufacturingCalculate2(d Deps) echo.HandlerFunc {
 			}
 		}
 
-		// Exclusion set over all product types.
 		var allProductIDs []int
 		seen := map[int]bool{}
 		for _, a := range acts {
@@ -349,7 +342,6 @@ func handleManufacturingCalculate2(d Deps) echo.HandlerFunc {
 		}
 		items := calc.FilterManufacturingBlueprints(acts, invented, allowed, excluded, names)
 
-		// Prices + histories.
 		typeIDs := []int{}
 		seen2 := map[int]bool{}
 		add := func(id int) {
@@ -434,7 +426,6 @@ func manufacturingBrowserShape(r calc.ManufacturingBrowserItem, base map[string]
 	return m
 }
 
-// paginateService mirrors the service-level clamp: page into [1, last_page].
 func paginateService(total, page, perPage int) (int, map[string]any) {
 	lastPage := (total + perPage - 1) / perPage
 	if lastPage < 1 {

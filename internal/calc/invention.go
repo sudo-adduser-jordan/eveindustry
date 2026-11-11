@@ -4,7 +4,6 @@ import (
 	"math"
 )
 
-// BPC base output and clamps mirror InventionPlannerService constants.
 const (
 	BaseBPCME = 2
 	BaseBPCTE = 4
@@ -14,7 +13,6 @@ const (
 	MinTE     = 0
 )
 
-// Structure ME/TE constants mirror ManufacturingCalculatorService.
 const (
 	RaitaruMEBonus = 1.0
 	RaitaruTEBonus = 3.0
@@ -30,8 +28,6 @@ const (
 	ReactSecNull   = 1.1
 )
 
-// CombineMeBonuses ports combineMeBonuses(): independent (1-bonus/100)
-// factors, not a sum.
 func CombineMeBonuses(bonuses ...float64) float64 {
 	factor := 1.0
 	for _, b := range bonuses {
@@ -51,7 +47,6 @@ func secMult(security string) float64 {
 	}
 }
 
-// ManufacturingME ports StructureBonuses::manufacturingMe().
 func ManufacturingME(structureType, rigMe, systemSecurity string) float64 {
 	structBonus := 0.0
 	switch structureType {
@@ -68,7 +63,6 @@ func ManufacturingME(structureType, rigMe, systemSecurity string) float64 {
 	return CombineMeBonuses(structBonus, rigBase*secMult(systemSecurity))
 }
 
-// ManufacturingTE ports StructureBonuses::manufacturingTe().
 func ManufacturingTE(structureType, rigTe, systemSecurity string) float64 {
 	structBonus := 0.0
 	switch structureType {
@@ -85,8 +79,6 @@ func ManufacturingTE(structureType, rigTe, systemSecurity string) float64 {
 	return structBonus + rigBase*secMult(systemSecurity)
 }
 
-// ReactionME ports StructureBonuses::reactionMe() (rig only, Athanor and
-// Tatara have no role ME bonus).
 func ReactionME(rigMe, systemSecurity string) float64 {
 	rigBase := 0.0
 	switch rigMe {
@@ -105,7 +97,6 @@ func ReactionME(rigMe, systemSecurity string) float64 {
 	return rigBase * mult
 }
 
-// Decryptor mirrors one InventionPlannerService::DECRYPTORS entry.
 type Decryptor struct {
 	Key                   string  `json:"key"`
 	Name                  string  `json:"name"`
@@ -116,8 +107,6 @@ type Decryptor struct {
 	RunModifier           int     `json:"run_modifier"`
 }
 
-// Decryptors ports InventionPlannerService::DECRYPTORS in the controller's
-// key order.
 func Decryptors() []Decryptor {
 	intPtr := func(i int) *int { return &i }
 	return []Decryptor{
@@ -131,8 +120,6 @@ func Decryptors() []Decryptor {
 	}
 }
 
-// DecryptorByKey mirrors the PHP `?? DECRYPTORS['none']` fallback: unknown
-// keys silently become 'none'.
 func DecryptorByKey(key string) Decryptor {
 	for _, d := range Decryptors() {
 		if d.Key == key {
@@ -142,15 +129,12 @@ func DecryptorByKey(key string) Decryptor {
 	return Decryptors()[0]
 }
 
-// InventionProbability ports calculateInventionProbability(), clamped to
-// [0, 1] and rounded to 6 decimals.
 func InventionProbability(base float64, encryption, science1, science2 int, decryptorMult float64) float64 {
 	p := base * (1 + float64(encryption)/40 + float64(science1)/30 + float64(science2)/30) * decryptorMult
 	p = math.Round(p*1e6) / 1e6
 	return math.Min(1, math.Max(0, p))
 }
 
-// T2BPC ports calculateT2Bpc(): base ME 2 / TE 4 with decryptor modifiers.
 type T2BPC struct {
 	ME        int       `json:"me"`
 	TE        int       `json:"te"`
@@ -166,7 +150,6 @@ func CalculateT2BPC(baseRuns int, d Decryptor) T2BPC {
 	return T2BPC{ME: me, TE: te, Runs: max(1, baseRuns+d.RunModifier), Decryptor: d}
 }
 
-// InventionDatacore is one datacore with resolved prices.
 type InventionDatacore struct {
 	TypeID        int     `json:"type_id"`
 	Name          string  `json:"name"`
@@ -180,7 +163,6 @@ type InventionDatacore struct {
 	TotalCostAll  float64 `json:"total_quantity_cost"`
 }
 
-// InventionInput carries everything CalculateInventionJob needs.
 type InventionInput struct {
 	T2Materials      []Material
 	T2PortionSize    int
@@ -200,7 +182,6 @@ type InventionInput struct {
 	StructureTEBonus float64
 }
 
-// DatacoreSpec is one chain datacore (quantity per attempt).
 type DatacoreSpec struct {
 	TypeID    int
 	Name      string
@@ -209,7 +190,6 @@ type DatacoreSpec struct {
 	SkillName *string
 }
 
-// InventionResult mirrors InventionJobCalculator::calculate() return keys.
 type InventionResult struct {
 	Probability             float64
 	ExpectedAttempts        int
@@ -250,9 +230,7 @@ type InventionResult struct {
 	StructureTEBonus        float64
 }
 
-// CalculateInventionJob ports InventionJobCalculator::calculate().
 func CalculateInventionJob(in InventionInput, probability float64) InventionResult {
-	// T2 materials with prices and ME10 component builds.
 	totalMatCost, totalBuildCost := 0.0, 0.0
 	mats := make([]PricedMaterial, 0, len(in.T2Materials))
 	for _, m := range in.T2Materials {
@@ -285,7 +263,6 @@ func CalculateInventionJob(in InventionInput, probability float64) InventionResu
 		mats = append(mats, pm)
 	}
 
-	// Datacores per attempt.
 	dcCost := 0.0
 	dcs := make([]InventionDatacore, 0, len(in.Datacores))
 	for _, dc := range in.Datacores {
@@ -322,7 +299,6 @@ func CalculateInventionJob(in InventionInput, probability float64) InventionResu
 		decQty = int(math.Ceil(float64(totalAttempts)))
 	}
 
-	// T2 manufacturing job fee.
 	t2Fee := totalMatCost * (in.SystemCostIndex / 100)
 	t2Tax := t2Fee * (in.FacilityTaxRate / 100)
 	t2TotalFee := t2Fee + t2Tax

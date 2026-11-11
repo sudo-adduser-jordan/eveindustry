@@ -49,7 +49,7 @@ describe('FactoryPlanner', () => {
     ])
     expect(screen.getByText('Biotech Research Reports')).toBeInTheDocument()
     expect(screen.getByText('Missing price data')).toBeInTheDocument()
-    // Best daily profit: 2.16M
+    
     expect(screen.getAllByText('2.16M ISK').length).toBeGreaterThan(0)
     expect(screen.getByText('Total products').previousSibling).toHaveTextContent('2')
     fireEvent.click(screen.getByText('Biotech Research Reports'))
@@ -83,10 +83,10 @@ describe('FactoryPlanner', () => {
       daily_profit_after_tax: 204000,
     }
     renderWithData(<FactoryPlanner />, [[key('p2_to_p3'), response('p2_to_p3', [])]])
-    // The default tier has no rows: says so instead of showing a table.
+    
     expect(screen.getByText('No market price data available.')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('tab', { name: /P1 → P3/ }))
-    // Not seeded, so it loads; the chain table itself is covered by summarise below.
+    
     expect(screen.getByRole('tab', { name: /P1 → P3/ })).toHaveAttribute('aria-selected', 'true')
     expect(summarise([chain], 0)).toEqual({ bestProfit: 204000, profitable: 1, total: 1, bestMargin: 1700 })
   })
@@ -111,7 +111,7 @@ describe('formatCycle', () => {
 
 describe('FactoryPlanner tier switch', () => {
   it('renders rows by the shape of the response, not the selected tab', () => {
-    // The previous tier's rows stay on screen while the new tier loads.
+    
     const chain = {
       output_type_id: 2358,
       output_name: 'Biotech Research Reports',

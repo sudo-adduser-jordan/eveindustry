@@ -9,10 +9,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// ContractsStore covers the contract browser and appraisal reads. All
-// contract data comes from the active snapshot generation; no active
-// generation means empty results, mirroring the PHP global scope
-// (whereRaw('1 = 0')) and the appraisal's early return.
 type ContractsStore interface {
 	ActiveGeneration(ctx context.Context) (*uint64, error)
 	TypesByName(ctx context.Context, names []string) (map[string]TypedName, error)
@@ -25,14 +21,11 @@ type ContractsStore interface {
 	ContractsFreshnessTime(ctx context.Context, generation uint64) (*time.Time, error)
 }
 
-// TypedName is one eve_types row for name resolution.
 type TypedName struct {
 	TypeID int    `db:"type_id"`
 	Name   string `db:"name"`
 }
 
-// SnapshotContract mirrors public_contract_snapshot_contracts columns read
-// by the browser.
 type SnapshotContract struct {
 	ContractID  uint64          `db:"contract_id"`
 	RegionID    int             `db:"region_id"`
@@ -49,8 +42,6 @@ type SnapshotContract struct {
 	ItemsCount  int             `db:"items_count"`
 }
 
-// SnapshotItem mirrors public_contract_snapshot_items columns read by the
-// detail endpoint.
 type SnapshotItem struct {
 	TypeID             int           `db:"type_id"`
 	Quantity           int           `db:"quantity"`
@@ -94,7 +85,6 @@ func (s *SQL) TypesByName(ctx context.Context, names []string) (map[string]Typed
 	return out, nil
 }
 
-// TypesByID resolves SDE type names for item lines.
 func (s *SQL) TypesByID(ctx context.Context, typeIDs []int) (map[int]string, error) {
 	out := map[int]string{}
 	if len(typeIDs) == 0 {
@@ -114,10 +104,6 @@ func (s *SQL) TypesByID(ctx context.Context, typeIDs []int) (map[int]string, err
 	return out, nil
 }
 
-// ContractPricing ports getContractPricing(): item_exchange contracts of the
-// active generation where typeID is the only item type; AVG or MIN of the
-// per-unit contract price (price / total quantity). The aggregate is
-// whitelisted in Go, never interpolated from input.
 func (s *SQL) ContractPricing(ctx context.Context, generation uint64, typeID int, sellOnly, buyOnly bool, lowest bool) (float64, int, error) {
 	agg := "AVG"
 	if lowest {
@@ -134,7 +120,6 @@ func (s *SQL) ContractPricing(ctx context.Context, generation uint64, typeID int
 		Count     int      `db:"contract_count"`
 		UnitPrice *float64 `db:"unit_price"`
 	}
-	// agg is internal only (AVG/MIN): safe to interpolate.
 	err := s.db.GetContext(ctx, &row, `
 		SELECT COUNT(*) AS contract_count, `+agg+`(pc.price / NULLIF(
 			(SELECT SUM(pci2.quantity) FROM public_contract_snapshot_items pci2

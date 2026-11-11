@@ -54,7 +54,7 @@ function useFormulaHits(q: string) {
   return { data: r.data?.data, isFetching: r.isFetching, isError: r.isError }
 }
 
-/** The structure choices every planner request and plan carries. */
+
 function structureParams(structure: Structure | undefined) {
   return {
     structure_type: structure?.structure_type === 'tatara' ? ('tatara' as const) : ('athanor' as const),

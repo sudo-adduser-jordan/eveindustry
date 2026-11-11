@@ -12,9 +12,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/market"
 )
 
-// registerCalculators mounts the stateless calculator POSTs. The skills and
-// stock endpoints need an authenticated character, so they stay on PHP until
-// the auth phase.
 func registerCalculators(v1 *echo.Group, d Deps) {
 	if d.Market == nil || d.Industry == nil || d.Trading == nil {
 		return
@@ -27,7 +24,6 @@ func registerCalculators(v1 *echo.Group, d Deps) {
 	calcGroup.POST("/reaction-browser", handleReactionBrowser(d))
 }
 
-// manufacturingInput mirrors ManufacturingCalculateRequest rules.
 type manufacturingInput struct {
 	BlueprintTypeID       *int             `json:"blueprint_type_id"`
 	ProductTypeID         *int             `json:"product_type_id"`
@@ -81,11 +77,6 @@ func numField(verrs validationErrors, field string, v *float64, min, max float64
 	return *v, true
 }
 
-// POST /calculators/manufacturing — mirrors ManufacturingController@calculate.
-// SDE auto-resolves materials/time/portion when not posted; a blueprint with
-// no materials is a 422 on blueprint_type_id. Live ESI inputs (regional
-// price seeding, adjusted prices, cost indices) are skipped until the ESI
-// phase: prices resolve from local tables and fee blocks compute to zero.
 func handleManufacturingCalculate(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var in manufacturingInput
@@ -146,7 +137,6 @@ func handleManufacturingCalculate(d Deps) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 
-		// Auto-resolve materials/time/portion from the SDE activity.
 		baseMaterials := make([]calc.BaseMaterial, 0, len(in.Materials))
 		for _, m := range in.Materials {
 			name := ""
@@ -190,7 +180,6 @@ func handleManufacturingCalculate(d Deps) echo.HandlerFunc {
 		materials := calc.CalculateMaterials(baseMaterials, meLevel, runs, structME)
 		jobTime := calc.CalculateProductionTime(baseTime, teLevel, runs, indSkill, advSkill, structTE)
 
-		// Component build data at ME 10, like the PHP planner call.
 		reactionMEBonus := reactionME
 		if in.ReactionMEBonus == nil {
 			reactionMEBonus = structME
@@ -200,7 +189,6 @@ func handleManufacturingCalculate(d Deps) echo.HandlerFunc {
 			return dbError(c, err)
 		}
 
-		// Prices for materials, product and sub-materials.
 		typeIDs := []int{productID}
 		for _, m := range materials {
 			typeIDs = append(typeIDs, m.TypeID)
@@ -247,7 +235,6 @@ func handleManufacturingCalculate(d Deps) echo.HandlerFunc {
 	}
 }
 
-// manufacturingPayload shapes a calc.JobResult like ManufacturingJobResource.
 func manufacturingPayload(r calc.JobResult) map[string]any {
 	mats := make([]any, 0, len(r.Materials))
 	for _, m := range r.Materials {
@@ -334,9 +321,6 @@ func intVal(v any, fallback int) int {
 	return fallback
 }
 
-// POST /calculators/reactions — mirrors ReactionsController@calculate.
-// SDE auto-resolves materials/time/portion when not posted; a formula with
-// no materials is a 422 on formula_type_id.
 func handleReactionCalculate(d Deps) echo.HandlerFunc {
 	type input struct {
 		FormulaTypeID    *int             `json:"formula_type_id"`
@@ -482,10 +466,6 @@ func handleReactionCalculate(d Deps) echo.HandlerFunc {
 	}
 }
 
-// resolveComponents ports InventionPlannerService::resolveComponentBuildData()
-// at ME 10 for sub-component blueprints (reactions at ME 0): for each
-// material, the manufacturing activity producing it (else the reaction
-// formula), portion size, runs needed and ME-adjusted sub-materials.
 func resolveComponents(ctx context.Context, st industry.IndustryStore, materials []calc.Material, structureME, reactionME float64) (map[int]*calc.ComponentData, error) {
 	components := map[int]*calc.ComponentData{}
 	for _, m := range materials {
@@ -535,9 +515,6 @@ func resolveComponents(ctx context.Context, st industry.IndustryStore, materials
 	return components, nil
 }
 
-// POST /calculators/reaction-browser — mirrors BrowserController@reactions:
-// every reaction formula priced with the caller's settings, sorted by
-// profit, paginated.
 func handleReactionBrowser(d Deps) echo.HandlerFunc {
 	type input struct {
 		Runs            *int     `json:"runs"`
@@ -688,8 +665,6 @@ func handleReactionBrowser(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /calculators/manufacturing/queue-summary — mirrors
-// ManufacturingController@queueSummary (pure maths, no store needed).
 func handleQueueSummary(c echo.Context) error {
 	var body struct {
 		Items []calc.QueueItem `json:"items"`

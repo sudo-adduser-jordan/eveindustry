@@ -47,7 +47,6 @@ func TestEndpointAggMath(t *testing.T) {
 		"dataset": "d", "source_identity": "s", "limiter_group": "g",
 		"duration_ms": 80,
 	}, intPtrTest(500))
-	// status is part of the dimension hash: two buckets
 	if len(rows) != 2 {
 		t.Fatalf("rows = %d", len(rows))
 	}

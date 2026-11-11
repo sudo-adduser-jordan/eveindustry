@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 
-/** A bundled look. Colours live in `styles/themes/<id>.css`, scoped to
- *  `:root[data-theme='<id>']`; this registry only carries metadata. */
+
 export interface ThemeDefinition {
   id: string
   label: string
   blurb: string
   themeColor: string
-  /** Optgroup heading in the picker. */
+  
   group: string
 }
 
@@ -34,7 +33,7 @@ export const THEMES: ThemeDefinition[] = [
   { id: 'light', label: 'Light', group: 'Neutral', blurb: 'Soft daylight: rounded cards, gentle shadows, pill buttons.', themeColor: '#f2f4f9' },
 ]
 
-/** Theme groups in first-seen order, for the picker's optgroups. */
+
 export const THEME_GROUPS: string[] = THEMES.reduce<string[]>((groups, theme) => {
   if (!groups.includes(theme.group)) groups.push(theme.group)
   return groups
@@ -49,7 +48,7 @@ export function readTheme(): string {
     const saved = localStorage.getItem(THEME_STORAGE_KEY)
     if (isThemeId(saved)) return saved
   } catch {
-    // Storage unavailable (private mode): fall through to the default.
+    
   }
   return DEFAULT_THEME
 }
@@ -58,8 +57,7 @@ export function themeColorFor(id: string): string {
   return THEMES.find((theme) => theme.id === id)?.themeColor ?? THEMES[0]?.themeColor ?? '#0d1520'
 }
 
-/** Apply a theme now: `data-theme` selects the token overrides, the
- *  `theme-color` meta tints the browser chrome, and the choice persists. */
+
 export function applyTheme(id: string): void {
   const theme = isThemeId(id) ? id : DEFAULT_THEME
   document.documentElement.dataset.theme = theme
@@ -68,7 +66,7 @@ export function applyTheme(id: string): void {
   try {
     localStorage.setItem(THEME_STORAGE_KEY, theme)
   } catch {
-    // Storage unavailable: the theme still applies for this page.
+    
   }
 }
 

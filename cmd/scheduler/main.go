@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,16 +12,14 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/jobs"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/logx"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// Command scheduler ticks every minute and dispatches due entries, mirroring
-// routes/console.php (single scheduler per environment; the SQLite locks
-// implement withoutOverlapping + onOneServer).
 func main() {
 	cfg := config.Load()
-	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	log := logx.New("scheduler")
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 

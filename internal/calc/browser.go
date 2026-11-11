@@ -8,14 +8,12 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/market"
 )
 
-// Reaction formula SDE group IDs mirror ReactionBrowserService.
 const (
 	GroupCompositeReactions   = 1888
 	GroupBiochemicalReactions = 1889
 	GroupHybridReactions      = 4097
 )
 
-// ReactionCategory ports resolveReactionCategory().
 func ReactionCategory(groupID *int) string {
 	if groupID == nil {
 		return "other"
@@ -32,8 +30,6 @@ func ReactionCategory(groupID *int) string {
 	}
 }
 
-// ReactionComplexity ports resolveReactionComplexity(): "complex" when any
-// input is itself a reaction product, else "intermediate".
 func ReactionComplexity(materials []industry.Item, productIDs map[int]bool) string {
 	for _, m := range materials {
 		if productIDs[m.TypeID] {
@@ -43,14 +39,11 @@ func ReactionComplexity(materials []industry.Item, productIDs map[int]bool) stri
 	return "intermediate"
 }
 
-// SellScoreInput is one product's 30-day history, newest first.
 type SellScoreInput struct {
 	Volumes     []uint64
 	OrderCounts []uint64
 }
 
-// SellScore ports calculateSellScore(): volume ratio (0-6), consistency
-// (0-2), order activity (0-2), capped at 10.
 type SellScore struct {
 	Score          int     `json:"score"`
 	AvgDailyVolume float64 `json:"avg_daily_volume"`
@@ -100,8 +93,6 @@ func CalculateSellScore(in SellScoreInput, totalOutput int) SellScore {
 	}
 }
 
-// ReactionBrowserItem is one priced reaction row (formatted display strings
-// omitted, as v1's clean() does).
 type ReactionBrowserItem struct {
 	BlueprintTypeID    int       `json:"blueprint_type_id"`
 	FormulaName        string    `json:"formula_name"`
@@ -125,7 +116,6 @@ type ReactionBrowserItem struct {
 	SellScore          SellScore `json:"sell_score"`
 }
 
-// BrowserReactionInput carries everything CalculateReactionBrowser needs.
 type BrowserReactionInput struct {
 	Formulas      []industry.ReactionFormula
 	Prices        map[int]float64
@@ -136,8 +126,6 @@ type BrowserReactionInput struct {
 	SystemCostIdx float64
 }
 
-// CalculateReactionBrowser ports calculateAllProfitability(): every formula
-// priced, fee'd and scored, sorted by profit descending.
 func CalculateReactionBrowser(in BrowserReactionInput) []ReactionBrowserItem {
 	productIDs := map[int]bool{}
 	for _, f := range in.Formulas {
@@ -223,7 +211,6 @@ func asInt(v any) (int, bool) {
 	return 0, false
 }
 
-// BrowserBlueprint is one T1 blueprint with SDE materials/products.
 type BrowserBlueprint struct {
 	BlueprintTypeID int
 	BlueprintName   string
@@ -232,9 +219,6 @@ type BrowserBlueprint struct {
 	Time            int
 }
 
-// FilterManufacturingBlueprints ports getAllManufacturingBlueprints() and
-// getManufacturingBlueprintsForMarketGroup(): drop invented BPOs, optional
-// category allow-list, drop T2 modules and T2/T3 ships, name and sort.
 func FilterManufacturingBlueprints(acts []industry.MfgActivity, invented map[int]bool, allowedProducts map[int]bool, excluded map[int]bool, names map[int]string) []BrowserBlueprint {
 	out := []BrowserBlueprint{}
 	for _, a := range acts {
@@ -284,8 +268,6 @@ func FilterManufacturingBlueprints(acts []industry.MfgActivity, invented map[int
 	return out
 }
 
-// ExcludedBrowserProducts ports getExcludedManufacturingProductTypeIds():
-// T2 modules (category 7 + meta 2) and T2/T3 ships (category 6 + meta 2/14).
 func ExcludedBrowserProducts(metas []industry.TypeGroupMeta, groupCats map[int]int) map[int]bool {
 	out := map[int]bool{}
 	for _, m := range metas {
@@ -304,7 +286,6 @@ func ExcludedBrowserProducts(metas []industry.TypeGroupMeta, groupCats map[int]i
 	return out
 }
 
-// ManufacturingBrowserItem is one live-priced browser row.
 type ManufacturingBrowserItem struct {
 	BlueprintTypeID  int       `json:"blueprint_type_id"`
 	BlueprintName    string    `json:"blueprint_name"`
@@ -326,8 +307,6 @@ type ManufacturingBrowserItem struct {
 	SellScore        SellScore `json:"sell_score"`
 }
 
-// CalculateManufacturingBrowser ports calculateAllProfitability(): ME
-// materials, fees, SCC, sell scores, profit-desc sort.
 type BrowserManufacturingInput struct {
 	Items         []BrowserBlueprint
 	Prices        map[int]float64
@@ -383,8 +362,6 @@ func CalculateManufacturingBrowser(in BrowserManufacturingInput) []Manufacturing
 	return out
 }
 
-// PrecomputedAdjustment ports applyUserAdjustments(): scale a base row
-// (1 run, no bonus/fees) to the caller's runs, structure ME and fees.
 type PrecomputedAdjustment struct {
 	TotalOutput      float64 `json:"total_output"`
 	TotalInputCost   float64 `json:"total_input_cost"`

@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// MarketHistoryImportRow mirrors one market_history row for import.
 type MarketHistoryImportRow struct {
 	RegionID   int
 	TypeID     int
@@ -18,7 +17,6 @@ type MarketHistoryImportRow struct {
 	OrderCount int64
 }
 
-// ImportStore covers the market/contract import writers.
 type ImportStore interface {
 	UpsertMarketHistory(ctx context.Context, rows []MarketHistoryRow) (int64, error)
 	UpsertGlobalPrices(ctx context.Context, regionID int, prices []GlobalPrice, fetchedAt time.Time) (int64, error)
@@ -30,14 +28,12 @@ type ImportStore interface {
 	OrphanSnapshotItems(ctx context.Context, generationID int64) (int64, error)
 }
 
-// GlobalPrice is one ESI /markets/prices entry for storage.
 type GlobalPrice struct {
 	TypeID   int
 	Average  *float64
 	Adjusted *float64
 }
 
-// UpsertMarketHistory ports the everef daily import batch.
 func (s *SQL) UpsertMarketHistory(ctx context.Context, rows []MarketHistoryImportRow) (int64, error) {
 	var total int64
 	for _, chunk := range chunkMarketHistory(rows, 1000) {
@@ -74,7 +70,6 @@ func chunkMarketHistory(in []MarketHistoryImportRow, n int) [][]MarketHistoryImp
 	return out
 }
 
-// UpsertGlobalPrices ports fetchAndStoreGlobalPrices (Forge rows).
 func (s *SQL) UpsertGlobalPrices(ctx context.Context, regionID int, prices []GlobalPrice, fetchedAt time.Time) (int64, error) {
 	var total int64
 	for _, chunk := range chunkGlobalPrices(prices, 500) {
@@ -111,7 +106,6 @@ func chunkGlobalPrices(in []GlobalPrice, n int) [][]GlobalPrice {
 	return out
 }
 
-// SnapshotContractRow mirrors the everef contracts.csv shape for staging.
 type SnapshotContractRow struct {
 	ContractID      int64
 	RegionID        int
@@ -136,7 +130,6 @@ type SnapshotContractRow struct {
 	HTTPModified    *time.Time
 }
 
-// SnapshotItemRow mirrors the everef contract_items.csv shape.
 type SnapshotItemRow struct {
 	ContractID         int64
 	TypeID             int
@@ -151,7 +144,6 @@ type SnapshotItemRow struct {
 	HTTPModified       *time.Time
 }
 
-// CreateContractGeneration stages a building generation.
 func (s *SQL) CreateContractGeneration(ctx context.Context) (int64, error) {
 	res, err := s.db.ExecContext(ctx, `INSERT INTO public_contract_generations
 		(status, contract_count, item_count, created_at) VALUES ('building', 0, 0, CURRENT_TIMESTAMP)`)
@@ -161,7 +153,6 @@ func (s *SQL) CreateContractGeneration(ctx context.Context) (int64, error) {
 	return res.LastInsertId()
 }
 
-// MarkContractGeneration sets a generation status (complete/failed/superseded).
 func (s *SQL) MarkContractGeneration(ctx context.Context, id int64, status string, contracts, items int64) error {
 	if status == "complete" {
 		_, err := s.db.ExecContext(ctx, `UPDATE public_contract_generations SET status = ?,
@@ -172,7 +163,6 @@ func (s *SQL) MarkContractGeneration(ctx context.Context, id int64, status strin
 	return err
 }
 
-// PublishContractGeneration atomically publishes when still newest.
 func (s *SQL) PublishContractGeneration(ctx context.Context, id int64) (bool, error) {
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -206,7 +196,6 @@ func (s *SQL) PublishContractGeneration(ctx context.Context, id int64) (bool, er
 	return true, tx.Commit()
 }
 
-// InsertSnapshotContracts stages contracts.csv rows.
 func (s *SQL) InsertSnapshotContracts(ctx context.Context, generationID int64, rows []SnapshotContractRow) error {
 	for _, chunk := range chunkSnapshotContracts(rows, 500) {
 		q := `INSERT INTO public_contract_snapshot_contracts (generation_id, contract_id, region_id, type, title,
@@ -243,7 +232,6 @@ func chunkSnapshotContracts(in []SnapshotContractRow, n int) [][]SnapshotContrac
 	return out
 }
 
-// InsertSnapshotItems stages contract_items.csv rows.
 func (s *SQL) InsertSnapshotItems(ctx context.Context, generationID int64, rows []SnapshotItemRow) error {
 	for _, chunk := range chunkSnapshotItems(rows, 500) {
 		q := `INSERT INTO public_contract_snapshot_items (generation_id, contract_id, type_id, quantity,
@@ -277,7 +265,6 @@ func chunkSnapshotItems(in []SnapshotItemRow, n int) [][]SnapshotItemRow {
 	return out
 }
 
-// OrphanSnapshotItems counts staged items without a contract.
 func (s *SQL) OrphanSnapshotItems(ctx context.Context, generationID int64) (int64, error) {
 	var n int64
 	err := s.db.GetContext(ctx, &n, `SELECT COUNT(*) FROM public_contract_snapshot_items i

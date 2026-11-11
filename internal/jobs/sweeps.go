@@ -10,7 +10,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// Sweep cadence mirrors the PHP constants.
 const (
 	sweepFastCadenceMinutes = 15
 	sweepFastCadenceMaxSecs = 600
@@ -25,9 +24,6 @@ type sweepPageCache struct {
 	Pages    int     `json:"pages"`
 }
 
-// RegisterSweepJobs wires FetchRegionOrders (market, 2 tries, 300s),
-// FetchRegionOrderPages (market, 10 tries, 60s) and CompleteMarketOrderSweep
-// (market, 2 tries, 300s).
 func RegisterSweepJobs(r *Runner, h HandlerDeps) {
 	r.Register("fetch-region-orders", JobDef{
 		Queue: QueueMarket, MaxTries: 2, Timeout: 300 * time.Second,
@@ -71,8 +67,6 @@ func RegisterSweepJobs(r *Runner, h HandlerDeps) {
 	})
 }
 
-// SweepSchedule mirrors the two sweep cadences: Jita every 15 minutes while
-// due, the other four hubs hourly.
 func SweepSchedule(h HandlerDeps, forgeID int) []ScheduleEntry {
 	return []ScheduleEntry{
 		{
@@ -93,16 +87,12 @@ func SweepSchedule(h HandlerDeps, forgeID int) []ScheduleEntry {
 	}
 }
 
-// hubRegions mirrors MarketTradingService::REGIONS trade hubs.
 var hubRegions = []int{10000002, 10000043, 10000032, 10000042, 10000030}
 
-// SweepIsDue ports isDue: minute % cadence < 15.
 func SweepIsDue(ctx context.Context, h HandlerDeps, regionID int) bool {
 	return time.Now().Minute()%SweepCadenceMinutes(ctx, h, regionID) < sweepFastCadenceMinutes
 }
 
-// SweepCadenceMinutes ports cadenceMinutes: 15 while the last completed sweep
-// took under 10 minutes, else 30 (30 until one completes).
 func SweepCadenceMinutes(ctx context.Context, h HandlerDeps, regionID int) int {
 	last, err := h.DB.LastCompletedSweep(ctx, regionID)
 	if err != nil || last == nil || !last.DurationSeconds.Valid {
@@ -114,10 +104,6 @@ func SweepCadenceMinutes(ctx context.Context, h HandlerDeps, regionID int) int {
 	return 30
 }
 
-// FetchRegionOrders ports the job: page 1 decides NOT_MODIFIED vs sweep;
-// otherwise starts the sweep and fans out page jobs (sequentially through
-// the queue; the Go runner has no batch primitive, so completion is driven
-// by the pages-total/pages-fetched counters instead).
 func FetchRegionOrders(ctx context.Context, h HandlerDeps, regionID int, excludeRegion bool) error {
 	if excludeRegion {
 		for _, id := range hubRegions {
@@ -180,14 +166,10 @@ func fetchOneRegion(ctx context.Context, h HandlerDeps, regionID int) error {
 	return CompleteMarketOrderSweep(ctx, h, sweep.SweepID, true)
 }
 
-// dispatchInline runs page jobs inline (the Go runner has no batch/finally
-// primitive; a page failure fails the sweep like allowFailures-off).
 func dispatchInline(ctx context.Context, h HandlerDeps, regionID, page int, sweepID string) error {
 	return FetchRegionOrderPages(ctx, h, regionID, page, sweepID)
 }
 
-// FetchRegionOrderPages ports the page job: ETag revalidation against the
-// cached page, storing OK pages and marking 304/404s.
 func FetchRegionOrderPages(ctx context.Context, h HandlerDeps, regionID, page int, sweepID string) error {
 	cached := cachedSweepPage(ctx, h, regionID, page)
 	result := h.ESIMarket.FetchRegionOrdersPage(ctx, regionID, page, cached.ETag)
@@ -253,8 +235,6 @@ func storeSweepPage(ctx context.Context, h HandlerDeps, sweepID string, regionID
 	return nil
 }
 
-// CompleteMarketOrderSweep ports the completion job: fail keeps orders;
-// complete deletes unseen, rebuilds aggregates and publishes.
 func CompleteMarketOrderSweep(ctx context.Context, h HandlerDeps, sweepID string, complete bool) error {
 	if !complete {
 		h.DB.FailSweep(ctx, sweepID, "Page receipt count is incomplete; retaining the active aggregate generation")
@@ -296,7 +276,6 @@ func CompleteMarketOrderSweep(ctx context.Context, h HandlerDeps, sweepID string
 	return nil
 }
 
-// RebuildAggregates ports MarketAggregateService::rebuild.
 func RebuildAggregates(ctx context.Context, h HandlerDeps, regionID int, sweepID string, snapshotAt time.Time) (int, error) {
 	cutoff := time.Now().AddDate(0, 0, -90)
 	sides, err := h.DB.AggregateSides(ctx, regionID, cutoff)

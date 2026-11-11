@@ -5,7 +5,7 @@ import { typeIconUrl, iconFallback } from '../components/typeIcon'
 
 type Item = components['schemas']['AbyssalItemResource']
 
-/** Roll quality: above +10 is a keeper, below 0 is worse than the base module. */
+
 export function scoreTier(score: number): 'best' | 'good' | 'bad' {
   return score > 10 ? 'best' : score >= 0 ? 'good' : 'bad'
 }

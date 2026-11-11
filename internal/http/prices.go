@@ -8,10 +8,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// resolvePrices ports MarketService::getSellPricesWithSource() over the
-// MarketStore: active-sweep aggregates when the region was swept, else raw
-// orders at the 90-day/5% defaults, with market_prices fallback for
-// [region, Jita]. Shared by the price and calculator endpoints.
 func resolvePrices(ctx context.Context, ms store.MarketStore, typeIDs []int, regionID int) (map[int]market.ResolvedPrice, error) {
 	dedup := map[int]bool{}
 	var ordered []int

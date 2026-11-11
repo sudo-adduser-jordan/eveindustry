@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// DiagCheckpoint mirrors the collector checkpoint row.
 type DiagCheckpoint struct {
 	Name            string         `db:"name"`
 	StreamEpoch     sql.NullString `db:"stream_epoch"`
@@ -20,7 +19,6 @@ type DiagCheckpoint struct {
 	EntriesConsumed int64          `db:"entries_consumed"`
 }
 
-// DiagFlushStore covers the diagnostics drain (flush) and retention (prune).
 type DiagFlushStore interface {
 	EnsureDiagCheckpoint(ctx context.Context) error
 	DiagCheckpointForUpdate(ctx context.Context, tx *sql.Tx) (*DiagCheckpoint, error)
@@ -32,7 +30,6 @@ type DiagFlushStore interface {
 	PruneDiagTable(ctx context.Context, table, column string, granularity *string, cutoff time.Time, batch int) (int64, error)
 }
 
-// DiagEventRow is one esi_diagnostic_events insert.
 type DiagEventRow struct {
 	EventID          string
 	OccurredAt       time.Time
@@ -62,7 +59,6 @@ type DiagEventRow struct {
 	Release          *string
 }
 
-// EndpointMetricDelta is one merged endpoint bucket increment.
 type EndpointMetricDelta struct {
 	DimensionHash string
 	BucketAt      time.Time
@@ -83,7 +79,6 @@ type EndpointMetricDelta struct {
 	LastSeen      time.Time
 }
 
-// BudgetMetricDelta is one merged budget bucket increment.
 type BudgetMetricDelta struct {
 	DimensionHash  string
 	BucketAt       time.Time
@@ -105,14 +100,11 @@ type BudgetMetricDelta struct {
 	PauseSeconds   int64
 }
 
-// EnsureDiagCheckpoint inserts the collector row when missing.
 func (s *SQL) EnsureDiagCheckpoint(ctx context.Context) error {
 	_, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO esi_telemetry_checkpoints (name, updated_at) VALUES ('collector', CURRENT_TIMESTAMP)`)
 	return err
 }
 
-// DiagCheckpointForUpdate reads the collector row. Inside a transaction the
-// SQLite write lock serializes concurrent flushers (no FOR UPDATE).
 func (s *SQL) DiagCheckpointForUpdate(ctx context.Context, tx *sql.Tx) (*DiagCheckpoint, error) {
 	var out DiagCheckpoint
 	var err error
@@ -134,7 +126,6 @@ func (s *SQL) DiagCheckpointForUpdate(ctx context.Context, tx *sql.Tx) (*DiagChe
 	return &out, err
 }
 
-// UpdateDiagCheckpoint writes the post-batch checkpoint.
 func (s *SQL) UpdateDiagCheckpoint(ctx context.Context, checkpoint DiagCheckpoint) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE esi_telemetry_checkpoints SET stream_epoch = ?,
 		last_stream_id = ?, last_flushed_at = CURRENT_TIMESTAMP, gap_count = ?, last_gap_at = ?,
@@ -145,7 +136,6 @@ func (s *SQL) UpdateDiagCheckpoint(ctx context.Context, checkpoint DiagCheckpoin
 	return err
 }
 
-// BumpDiagExpired tracks deliberate expiry apart from capture loss.
 func (s *SQL) BumpDiagExpired(ctx context.Context, total int64) error {
 	if _, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO esi_telemetry_checkpoints (name, updated_at) VALUES ('collector', CURRENT_TIMESTAMP)`); err != nil {
 		return err
@@ -154,7 +144,6 @@ func (s *SQL) BumpDiagExpired(ctx context.Context, total int64) error {
 	return err
 }
 
-// InsertDiagEvents batch-inserts validated detail rows (25 per chunk).
 func (s *SQL) InsertDiagEvents(ctx context.Context, rows []DiagEventRow) error {
 	for _, chunk := range chunkDiagEvents(rows, 25) {
 		q := `INSERT OR IGNORE INTO esi_diagnostic_events (event_id, occurred_at, kind, method, operation_key,
@@ -193,8 +182,6 @@ func chunkDiagEvents(in []DiagEventRow, n int) [][]DiagEventRow {
 	return out
 }
 
-// MergeEndpointMetric ports mergeEndpoint: one atomic upsert that inserts
-// the bucket or adds onto it (dimension_hash + bucket_at is unique).
 func (s *SQL) MergeEndpointMetric(ctx context.Context, m EndpointMetricDelta) error {
 	_, err := s.db.ExecContext(ctx, `INSERT INTO esi_endpoint_metrics (dimension_hash, bucket_at,
 		operation_key, event_kind, http_status, reason, dataset, source_identity, limiter_group,
@@ -215,7 +202,6 @@ func (s *SQL) MergeEndpointMetric(ctx context.Context, m EndpointMetricDelta) er
 	return err
 }
 
-// MergeBudgetMetric ports mergeBudget: same atomic insert-or-add shape.
 func (s *SQL) MergeBudgetMetric(ctx context.Context, m BudgetMetricDelta) error {
 	_, err := s.db.ExecContext(ctx, `INSERT INTO esi_budget_metrics (dimension_hash, bucket_at, granularity,
 		source_identity, application_id, mechanism, limiter_group, observations, remaining_min, remaining_max,
@@ -237,7 +223,6 @@ func (s *SQL) MergeBudgetMetric(ctx context.Context, m BudgetMetricDelta) error 
 	return err
 }
 
-// PruneDiagTable deletes expired rows in id batches (500 default).
 func (s *SQL) PruneDiagTable(ctx context.Context, table, column string, granularity *string, cutoff time.Time, batch int) (int64, error) {
 	var total int64
 	for {

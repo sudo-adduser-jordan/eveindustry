@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useCorporateExport } from '../../api/calculators'
 import { useCreateReactionProgram, type ReactionProgramRequest } from '../../api/reactions'
 
-/** Creates a build program from a reaction plan and opens it (Blade page for now). */
+
 export function ReactionExport({
   label,
   corporate = false,
@@ -45,7 +45,7 @@ export function ReactionExport({
   )
 }
 
-/** The corporate variant, rendered only when the user may manage corporate programs. */
+
 export function CorporateReactionExport({ label, build }: { label: string; build: () => ReactionProgramRequest }) {
   const access = useCorporateExport()
   if (!access.data?.data.available) return null

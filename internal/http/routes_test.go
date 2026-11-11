@@ -85,9 +85,6 @@ func TestMeIsUnauthenticatedStub(t *testing.T) {
 }
 
 func TestUnknownV1RouteIsJSONNotFound(t *testing.T) {
-	// Unknown paths under /api/v1 run the group middleware: anonymous
-	// callers get 401 (unlike PHP, which 404s before auth runs), while
-	// authenticated callers get the JSON 404.
 	e := New(Deps{})
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/nope", nil)
 	rec := httptest.NewRecorder()

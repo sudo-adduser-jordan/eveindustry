@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// payload helpers.
 func charPayload(id int64) json.RawMessage {
 	raw, _ := json.Marshal(map[string]int64{"character_id": id})
 	return raw
@@ -38,11 +37,6 @@ func decodeCharPayload(raw json.RawMessage) (int64, bool) {
 	return p.CharacterID, true
 }
 
-// RegisterRefreshJobs wires the four refresh jobs:
-// RefreshCharacterProfile (default, 3 tries, 180s, unique per character),
-// RefreshAssetData (default, 3 tries, 180s, unique per user),
-// RefreshIndustryData (default, 2 tries, 120s, unique per user),
-// RefreshDashboardStats (default, 3 tries, 180s, unique per user).
 func RegisterRefreshJobs(r *Runner, h HandlerDeps) {
 	r.Register("refresh-character-profile", JobDef{
 		Queue: QueueDefault, MaxTries: 3, Timeout: 180 * time.Second, Unique: time.Hour,
@@ -86,10 +80,6 @@ func RegisterRefreshJobs(r *Runner, h HandlerDeps) {
 	})
 }
 
-// RefreshSchedule returns the four refresh cadences from routes/console.php:
-// characters + industry + assets every 30 min, dashboard every 15 min.
-// Fan-out is staggered by dispatching with small delays like the PHP
-// commands (index * fixed step, capped).
 func RefreshSchedule(h HandlerDeps) []ScheduleEntry {
 	return []ScheduleEntry{
 		{

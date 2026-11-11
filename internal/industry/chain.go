@@ -5,8 +5,6 @@ import (
 	"sort"
 )
 
-// Datacore is one invention material with its science skill, mirroring the
-// datacores list in resolveInventionChain().
 type Datacore struct {
 	TypeID    int     `json:"type_id"`
 	Name      string  `json:"name"`
@@ -15,16 +13,12 @@ type Datacore struct {
 	SkillName *string `json:"skill_name"`
 }
 
-// Activity is one {time, materials, products} block.
 type Activity struct {
 	Time      int    `json:"time"`
 	Materials []Item `json:"materials"`
 	Products  []Item `json:"products"`
 }
 
-// Chain mirrors the InventionChainResource payload built by
-// InventionPlannerService::resolveInventionChain(). Nil means "no invention
-// chain for this item" (the PHP 404 case).
 type Chain struct {
 	T2ItemTypeID        int        `json:"t2_item_type_id"`
 	T2BlueprintTypeID   int        `json:"t2_blueprint_type_id"`
@@ -56,12 +50,7 @@ func nullStr(s *string) *string {
 	return s
 }
 
-// ResolveChain ports InventionPlannerService::resolveInventionChain() over
-// the IndustryStore. The Fuzzwork SDE fallback (live HTTP for base
-// probability/encryption skill when local rows are thin) is skipped: the Go
-// API serves local blueprint_activities rows only.
 func ResolveChain(ctx context.Context, st IndustryStore, t2ItemTypeID int) (*Chain, error) {
-	// 1. T2 manufacturing blueprint.
 	t2mfg, err := st.ActivityProducingType(ctx, t2ItemTypeID, ActivityManufacturing)
 	if err != nil || t2mfg == nil {
 		return nil, err
@@ -70,8 +59,6 @@ func ResolveChain(ctx context.Context, st IndustryStore, t2ItemTypeID int) (*Cha
 	t2Materials := DecodeJSONList(nullString(t2mfg.Materials))
 	t2Products := DecodeJSONList(nullString(t2mfg.Products))
 
-	// 2. T1 item: first T2 material whose own blueprint has invention,
-	// else the invention activity producing the T2 blueprint (T2 rigs).
 	t1ItemID, t1ItemName, t1BlueprintID := 0, "Unknown", 0
 	for _, m := range t2Materials {
 		matID := intVal(m["type_id"], 0)
@@ -128,7 +115,6 @@ func ResolveChain(ctx context.Context, st IndustryStore, t2ItemTypeID int) (*Cha
 		return nil, nil
 	}
 
-	// 3. T1 manufacturing.
 	var t1mfgOut *Activity
 	if t1mfg, err := st.ActivityByBlueprint(ctx, t1BlueprintID, ActivityManufacturing); err != nil {
 		return nil, err
@@ -140,7 +126,6 @@ func ResolveChain(ctx context.Context, st IndustryStore, t2ItemTypeID int) (*Cha
 		}
 	}
 
-	// 4. Invention inputs: datacores + skills.
 	inv, err := st.ActivityByBlueprint(ctx, t1BlueprintID, ActivityInvention)
 	if err != nil {
 		return nil, err
@@ -186,7 +171,6 @@ func ResolveChain(ctx context.Context, st IndustryStore, t2ItemTypeID int) (*Cha
 	}
 	chain.ScienceSkillIDs = scienceIDs
 
-	// Local invention products set probability and base runs.
 	for _, p := range DecodeJSONList(nullString(inv.Products)) {
 		if prob, ok := numVal(p["probability"]); ok && prob > 0 {
 			chain.BaseProbability = prob
@@ -196,7 +180,6 @@ func ResolveChain(ctx context.Context, st IndustryStore, t2ItemTypeID int) (*Cha
 		}
 	}
 
-	// Local invention skills: encryption + up to two science skills.
 	skills := DecodeJSONList(nullString(inv.Skills))
 	unknownIDs := []int{}
 	for _, s := range skills {
@@ -284,9 +267,6 @@ func numVal(v any) (float64, bool) {
 	return 0, false
 }
 
-// HasTechChain ports InventionPlannerService::hasTechChain(): some T2
-// material has a blueprint with invention, else some invention activity
-// produces the T2 blueprint.
 func HasTechChain(ctx context.Context, st IndustryStore, t2mfg *BlueprintActivityRow) (bool, error) {
 	for _, m := range DecodeJSONList(nullString(t2mfg.Materials)) {
 		matID := intVal(m["type_id"], 0)
@@ -315,7 +295,6 @@ func HasTechChain(ctx context.Context, st IndustryStore, t2mfg *BlueprintActivit
 	return inv != nil, nil
 }
 
-// ProductCategories ports ManufacturingBrowserService::getAvailableProductCategories().
 func ProductCategories(ctx context.Context, st IndustryStore) ([]CategoryCount, error) {
 	productIDs, err := st.ProductTypeIDsExcludingInvented(ctx)
 	if err != nil {
@@ -362,7 +341,6 @@ func ProductCategories(ctx context.Context, st IndustryStore) ([]CategoryCount, 
 	return out, nil
 }
 
-// CategoryCount mirrors one ProductCategoryResource row.
 type CategoryCount struct {
 	CategoryID int    `json:"category_id"`
 	Name       string `json:"name"`

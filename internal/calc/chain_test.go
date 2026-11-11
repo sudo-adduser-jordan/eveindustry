@@ -10,7 +10,6 @@ import (
 
 func sqlNull(s string) sql.NullString { return sql.NullString{String: s, Valid: true} }
 
-// chainTestStore implements ChainResolver with canned activities.
 type chainTestStore struct {
 	byBP   map[[2]int]*industry.BlueprintActivityRow
 	groups map[int]int
@@ -71,8 +70,6 @@ func TestResolveFullMaterialChain(t *testing.T) {
 	if err != nil || len(steps) != 1 {
 		t.Fatalf("got %+v %v", steps, err)
 	}
-	// 3 runs need 3 T1 (@1/run ME10) and 2700 trit; only the buildable T1
-	// becomes a child, raw trit stays a material line.
 	if len(steps[0].Children) != 1 || steps[0].Children[0].TypeID != 588 {
 		t.Fatalf("children: %+v", steps[0].Children)
 	}
@@ -80,8 +77,6 @@ func TestResolveFullMaterialChain(t *testing.T) {
 	if len(t1.Materials) != 1 || t1.Materials[0].AdjustedQuantity != 270 || len(t1.Children) != 0 {
 		t.Fatalf("t1: %+v", t1)
 	}
-	// fuel group skipped: T1 (group 1136) is no longer buildable, and raw
-	// trit has no blueprint, so no children at all.
 	fuel := chainFixture()
 	fuel.groups[588] = 1136
 	steps, err = ResolveFullMaterialChain(context.Background(), fuel,
@@ -100,7 +95,6 @@ func TestReactionPlanSteps(t *testing.T) {
 	if *firstID != 587 || *firstName != "Comp" || steps[0].RunsNeeded != 5 {
 		t.Fatalf("header: %v %v %+v", *firstID, *firstName, steps[0])
 	}
-	// unknown formula -> nil
 	steps, _, _, err = ReactionPlanSteps(context.Background(), chainFixture(),
 		[]ReactionPlanEntry{{FormulaTypeID: 4242, Slots: 1, RunsPerSlot: 5}}, 0)
 	if err != nil || steps != nil {

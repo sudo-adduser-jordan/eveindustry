@@ -9,7 +9,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 )
 
-// stubIndustry implements industry.IndustryStore for handler tests.
 type stubIndustry struct {
 	hits             []industry.BlueprintTypeHit
 	t2cands          []industry.BlueprintTypeHit

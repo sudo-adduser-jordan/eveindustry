@@ -14,12 +14,12 @@ export type UsersQuery = NonNullable<paths['/admin/users']['get']['parameters'][
 export type UserAction = 'status' | 'admin' | 'stock-manager'
 export type SponsorValues = { name: string; url: string; sort_order: number; is_active: boolean; image: File | null }
 
-/** First message for a field from a 422, else undefined. */
+
 export function fieldError(error: unknown, field: string): string | undefined {
   return error instanceof ApiError ? error.errors?.[field]?.[0] : undefined
 }
 
-/** Message of a failed write, with a fallback for network errors. */
+
 export function errorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError ? error.message : fallback
 }
@@ -29,7 +29,7 @@ async function noContent(request: Promise<{ response: Response; error?: unknown 
   if (!response.ok) throw new ApiError(response.status, error as ApiErrorBody | undefined)
 }
 
-/** A 403 means the signed-in user is not an admin: final, never retried. */
+
 const retryUnlessForbidden = (failures: number, error: unknown) =>
   !(error instanceof ApiError && (error.status === 403 || error.status === 404)) && failures < 1
 
@@ -50,7 +50,7 @@ export function useAdminUsers(query: UsersQuery) {
   })
 }
 
-/** Toggle a user's status, admin flag or stock manager. Resolves with the updated user. */
+
 export function useUserAction() {
   const client = useQueryClient()
   return useMutation({
@@ -109,7 +109,7 @@ export function useSponsor(id: number | null) {
   })
 }
 
-/** Multipart body; booleans go as 1/0 because Laravel does not read "true". */
+
 export function sponsorFormData(values: SponsorValues): FormData {
   const form = new FormData()
   form.set('name', values.name)
@@ -120,7 +120,7 @@ export function sponsorFormData(values: SponsorValues): FormData {
   return form
 }
 
-/** Create (id null) or update a sponsor. Updates go over POST, see the API docs. */
+
 export function useSaveSponsor(id: number | null) {
   const client = useQueryClient()
   return useMutation({
@@ -209,7 +209,7 @@ export function useEsiDiagnosticsHealth() {
   })
 }
 
-/** Failure detail, newest first, 50 at a time; each page's `meta.next_cursor` is the next `before_id`. */
+
 export function useEsiDiagnosticsEvents(query: DiagnosticsQuery) {
   return useInfiniteQuery({
     queryKey: diagnostics('events', query),

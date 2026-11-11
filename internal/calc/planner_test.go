@@ -10,7 +10,6 @@ import (
 
 func sql2(s string) sql.NullString { return sql.NullString{String: s, Valid: true} }
 
-// chainStub implements industry.IndustryStore with canned activities.
 type chainStub struct {
 	byBP map[[2]int]*industry.BlueprintActivityRow
 }
@@ -125,12 +124,9 @@ func TestResolveReactionChain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// composite: 5 runs, portion 5 -> output 25
 	if len(chain.CompositeOutputs) != 1 || chain.CompositeOutputs[0].TotalOutput != 25 {
 		t.Fatalf("outputs: %+v", chain.CompositeOutputs)
 	}
-	// composite materials for 5 runs: 100x10x5=50 intermediate, 34x5x5=25 goo
-	// intermediate 50 needed, portion 2 -> 25 runs -> raw 35x20x25=500
 	if len(chain.RawMaterials) != 2 {
 		t.Fatalf("raw: %+v", chain.RawMaterials)
 	}
@@ -141,11 +137,9 @@ func TestResolveReactionChain(t *testing.T) {
 	if byID[34] != 25 || byID[35] != 500 {
 		t.Fatalf("raw qtys: %+v", byID)
 	}
-	// intermediate 25 runs at 5/slot -> 5 slots; total 1 + 5 = 6
 	if chain.TotalSlots != 6 || chain.TotalIntermediateSlots != 5 {
 		t.Fatalf("slots: %+v", chain)
 	}
-	// unknown formula is skipped, not an error
 	chain, err = ResolveReactionChain(context.Background(), st,
 		[]PlanEntry{{FormulaTypeID: 1, Slots: 1, RunsPerSlot: 5}}, 0)
 	if err != nil || len(chain.CompositeOutputs) != 0 {
@@ -168,7 +162,6 @@ func TestJobCostAndRigBonus(t *testing.T) {
 
 func TestCalculateSellScore(t *testing.T) {
 	s := CalculateSellScore(SellScoreInput{Volumes: []uint64{100, 200}, OrderCounts: []uint64{10, 20}}, 25)
-	// avg vol 150, ratio 6 -> min(6, 18) = 6; consistency 2; orders 15 -> 1; total 9
 	if s.Score != 9 || s.AvgDailyVolume != 150 || s.TotalDays != 2 || s.ActiveDays != 2 {
 		t.Fatalf("got %+v", s)
 	}

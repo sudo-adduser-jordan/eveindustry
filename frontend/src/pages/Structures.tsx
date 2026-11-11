@@ -76,7 +76,7 @@ function toDraft(s: Structure): Draft {
   }
 }
 
-/** Search the SDE for a solar system; shows the pick with a clear button. */
+
 function SystemPicker({
   value,
   onChange,
@@ -148,7 +148,7 @@ function StructureForm({ editing, onDone }: { editing: Structure | null; onDone:
   }
 
   function setActivity(activity: Activity) {
-    // Reactions run in refineries, everything else in engineering complexes.
+    
     const allowed = (activity === 'reaction' ? REFINERIES : ENGINEERING).map(([v]) => v)
     setDraft((d) => ({
       ...d,
@@ -343,7 +343,7 @@ function StructureCard({ s, onEdit }: { s: Structure; onEdit: () => void }) {
 
 export default function Structures() {
   const structures = useStructures()
-  // `null` adds a new structure; a structure edits it. Keyed so the form resets.
+  
   const [editing, setEditing] = useState<Structure | null>(null)
 
   const list = structures.data?.data ?? []

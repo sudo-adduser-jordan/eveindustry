@@ -39,17 +39,14 @@ func TestGetTypeInfoLocalFirst(t *testing.T) {
 	}))
 	defer srv.Close()
 	uv, _ := universeTestStack(srv, nil)
-	// local hit: no HTTP needed (server would 404 unknown paths anyway)
 	info, err := uv.GetTypeInfo(context.Background(), 34)
 	if err != nil || info["name"] != "Tritanium" {
 		t.Fatalf("local: %+v %v", info, err)
 	}
-	// miss falls back to ESI
 	info, err = uv.GetTypeInfo(context.Background(), 35)
 	if err != nil || info["name"] != "Pyerite" {
 		t.Fatalf("esi: %+v %v", info, err)
 	}
-	// cached: server gone still works
 	srv.Close()
 	if _, err := uv.GetTypeInfo(context.Background(), 35); err != nil {
 		t.Fatalf("cache: %v", err)
@@ -68,7 +65,6 @@ func TestGetBestTypeImageUrl(t *testing.T) {
 	}))
 	defer srv.Close()
 	uv, _ := universeTestStack(srv, nil)
-	// point image check at the test server by shadowing: call probe paths directly
 	if !uv.imageOK(context.Background(), srv.URL+"/types/34/icon?size=64") {
 		t.Fatal("HEAD 200 should pass")
 	}

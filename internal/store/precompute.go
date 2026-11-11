@@ -7,7 +7,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// PrecomputedCost mirrors one manufacturing_costs row for import.
 type PrecomputedCost struct {
 	ProductID      int
 	BlueprintID    int
@@ -28,13 +27,11 @@ type PrecomputedCost struct {
 	PricesAsOf     *time.Time
 }
 
-// PrecomputeStore covers the manufacturing cost precompute writer.
 type PrecomputeStore interface {
 	UpsertManufacturingCosts(ctx context.Context, rows []PrecomputedCost) error
 	RecentHistoryByTypes(ctx context.Context, typeIDs []int, regionID, days int) (map[int][]MarketHistoryRow, error)
 }
 
-// UpsertManufacturingCosts ports the precompute writer (chunked upserts).
 func (s *SQL) UpsertManufacturingCosts(ctx context.Context, rows []PrecomputedCost) error {
 	for _, chunk := range chunkPrecomputed(rows, 500) {
 		q := `INSERT INTO manufacturing_costs (product_type_id, blueprint_type_id, region_id, me_level,
@@ -78,7 +75,6 @@ func chunkPrecomputed(in []PrecomputedCost, n int) [][]PrecomputedCost {
 	return out
 }
 
-// HistoryPoint is one market_history row for sell scores.
 type HistoryPoint struct {
 	TypeID     int       `db:"type_id"`
 	Date       time.Time `db:"date"`
@@ -86,8 +82,6 @@ type HistoryPoint struct {
 	OrderCount uint64    `db:"order_count"`
 }
 
-// RecentHistoryByTypes ports recentHistoryByType: latest `days` rows per
-// type, newest first.
 func (s *SQL) RecentHistoryByTypes(ctx context.Context, typeIDs []int, regionID, days int) (map[int][]MarketHistoryRow, error) {
 	out := map[int][]MarketHistoryRow{}
 	if len(typeIDs) == 0 {

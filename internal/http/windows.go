@@ -13,7 +13,6 @@ import (
 
 var validWindowTypes = map[string]bool{"upwell": true, "skyhook": true}
 
-// registerWindows mounts the corporation structure vulnerability windows.
 func registerWindows(v1 *echo.Group, d Deps) {
 	if d.Windows == nil || d.Users == nil || d.Reference == nil {
 		return
@@ -49,7 +48,6 @@ func windowShape(w store.StructureWindow) map[string]any {
 	}
 }
 
-// GET — the corporation's windows by system, type and name.
 func handleWindowsIndex(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		page, perPage, ok := listPage(c)
@@ -188,7 +186,6 @@ func decodeWindow(c echo.Context) (windowInput, bool) {
 	return in, true
 }
 
-// POST — add a window, 201.
 func handleWindowStore(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		in, ok := decodeWindow(c)
@@ -228,7 +225,6 @@ func handleWindowStore(d Deps) echo.HandlerFunc {
 	}
 }
 
-// PUT — edit a window; foreign ones 404.
 func handleWindowUpdate(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := essID(c)
@@ -278,7 +274,6 @@ func handleWindowUpdate(d Deps) echo.HandlerFunc {
 	}
 }
 
-// DELETE — 204; foreign ones 404.
 func handleWindowDestroy(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := essID(c)

@@ -1,11 +1,3 @@
-// Package industry holds manufacturing/blueprint/invention reference logic
-// ported from BlueprintLookupService, InventionPlannerService (chain parts),
-// ManufacturingBrowserService (categories) and SdeClient (local paths).
-//
-// Live fallbacks (ESI type search, Fuzzwork SDE API, authenticated ESI
-// corporation search) are not ported yet: with no ESI client the Go API
-// serves local SDE rows only, and corporation search returns [] exactly as
-// the PHP endpoint does for a user with no character.
 package industry
 
 import (
@@ -21,10 +13,8 @@ func nullString(ns sql.NullString) *string {
 	return &ns.String
 }
 
-// StrVal exposes nullString for other packages (raw JSON columns).
 func StrVal(ns sql.NullString) *string { return nullString(ns) }
 
-// Activity IDs mirror BlueprintActivity::ACTIVITY_*.
 const (
 	ActivityManufacturing = 1
 	ActivityCopying       = 5
@@ -32,14 +22,12 @@ const (
 	ActivityReaction      = 11
 )
 
-// Meta groups mirror EveType::META_GROUP_*.
 const (
 	MetaGroupTechI   = 1
 	MetaGroupTechII  = 2
 	MetaGroupTechIII = 14
 )
 
-// Search limits mirror the reference controllers.
 const (
 	BlueprintSearchLimit   = 20
 	ReactionSearchLimit    = 20
@@ -47,7 +35,6 @@ const (
 	CorporationSearchLimit = 10
 )
 
-// Encryption skill names mirror InventionPlannerService::ENCRYPTION_SKILLS.
 var EncryptionSkills = map[int]string{
 	23087: "Amarr Encryption Methods",
 	21790: "Caldari Encryption Methods",
@@ -55,7 +42,6 @@ var EncryptionSkills = map[int]string{
 	21791: "Minmatar Encryption Methods",
 }
 
-// DatacoreSkills mirrors InventionPlannerService::DATACORE_SKILLS.
 var DatacoreSkills = map[int]string{
 	11433: "Electromagnetic Physics",
 	11443: "Electronic Engineering",
@@ -72,7 +58,6 @@ var DatacoreSkills = map[int]string{
 	11455: "Nanite Engineering",
 }
 
-// DatacoreToSkill mirrors InventionPlannerService::DATACORE_TO_SKILL.
 var DatacoreToSkill = map[int]int{
 	20172: 11433, 20171: 11443, 20173: 11441, 20174: 11449,
 	20175: 11451, 20176: 11448, 20424: 11452, 20418: 11442,
@@ -80,21 +65,16 @@ var DatacoreToSkill = map[int]int{
 	25887: 11455,
 }
 
-// EscapeLike ports addcslashes($query, '%_') for LIKE patterns (plus a
-// backslash escape the PHP version lacks, so literal backslashes match).
 func EscapeLike(q string) string {
 	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(q)
 }
 
-// Item is one material/product entry: {type_id, name, quantity}.
 type Item struct {
 	TypeID   int     `json:"type_id"`
 	Name     *string `json:"name"`
 	Quantity int     `json:"quantity"`
 }
 
-// NormalizeItems ports ActivityResource::items(): type_id/typeid/typeID
-// keys, nullable names, int quantities.
 func NormalizeItems(raw []map[string]any) []Item {
 	out := make([]Item, 0, len(raw))
 	for _, m := range raw {
@@ -124,8 +104,6 @@ func intVal(v any, fallback int) int {
 	return fallback
 }
 
-// DedupeMaterials ports SdeClient::dropDuplicateMaterials(): first entry
-// wins per type_id, unknown shapes dropped.
 func DedupeMaterials(raw []map[string]any) []Item {
 	seen := map[int]bool{}
 	out := []Item{}
@@ -147,8 +125,6 @@ func DedupeMaterials(raw []map[string]any) []Item {
 	return out
 }
 
-// DecodeJSONList parses a blueprint_activities JSON column (materials,
-// products, skills) into generic maps. NULL/empty/invalid yields [].
 func DecodeJSONList(raw *string) []map[string]any {
 	if raw == nil || *raw == "" {
 		return nil

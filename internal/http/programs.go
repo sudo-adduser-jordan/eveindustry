@@ -13,8 +13,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerPrograms mounts personal build programs (create, merge, rename,
-// location filter, delete, show, index).
 func registerPrograms(v1 *echo.Group, d Deps) {
 	if d.Programs == nil {
 		return
@@ -52,7 +50,6 @@ func nullStrVal(v sql.NullString) any {
 	return nil
 }
 
-// programSummaryShape mirrors BuildProgramSummaryResource.
 func programSummaryShape(p store.BuildProgram) map[string]any {
 	steps := decodeSteps(p.StepsJSON)
 	settings := decodeSettings(p.SettingsJSON)
@@ -80,7 +77,6 @@ func programSummaryShape(p store.BuildProgram) map[string]any {
 	}
 }
 
-// programDetailShape mirrors BuildProgramDetailResource (show endpoint).
 func programDetailShape(p store.BuildProgram) (map[string]any, map[string]any) {
 	steps := decodeSteps(p.StepsJSON)
 	settings := decodeSettings(p.SettingsJSON)
@@ -141,8 +137,6 @@ func programDetailShape(p store.BuildProgram) (map[string]any, map[string]any) {
 	return data, volumes
 }
 
-// programResourceShape mirrors BuildProgramResource (store/update/merge/
-// location-filter): steps shaped, settings as an object.
 func programResourceShape(p store.BuildProgram) map[string]any {
 	return map[string]any{
 		"id": p.ID, "name": p.Name, "program_type": p.ProgramType,
@@ -168,8 +162,6 @@ func sqlNullStr(v *string) sql.NullString {
 	return sql.NullString{String: *v, Valid: true}
 }
 
-// reactionBonusFromSettings mirrors writer reactionMeBonus: nil without a
-// reaction structure, else rig x security multiplier.
 func reactionBonusFromSettings(settings map[string]any) *float64 {
 	st, _ := settings["reaction_structure_type"].(string)
 	if st == "" {
@@ -199,7 +191,6 @@ func calcReactionME(rig, sec string) float64 {
 	return base * mult
 }
 
-// GET /build-programs — newest first, summaries without steps.
 func handleBuildProgramsIndex(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -215,7 +206,6 @@ func handleBuildProgramsIndex(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /build-programs/:id — detail with step tree + volumes meta.
 func handleBuildProgramShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := programID(c)
@@ -358,7 +348,6 @@ func toFloat(v any) (float64, bool) {
 	return 0, false
 }
 
-// POST /build-programs — nest steps, 201.
 func handleBuildProgramStore(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -405,7 +394,6 @@ func nestProgramSteps(ctx context.Context, d Deps, steps []map[string]any, react
 		metas = append(metas, s)
 	}
 	_ = metas
-	// resolve per top-level step to keep children attached to the right step
 	out := make([]any, 0, len(steps))
 	for _, s := range steps {
 		sub := []calc.ChainMaterial{}
@@ -436,7 +424,6 @@ func nestProgramSteps(ctx context.Context, d Deps, steps []map[string]any, react
 				entry["runs_needed"] = int(n)
 			}
 		}
-		// tag with the producing blueprint, manufacturing first
 		act, err := d.Industry.ActivityProducing(ctx, int(tid), 1)
 		if err != nil {
 			return nil, err
@@ -493,7 +480,6 @@ func chainStepShape(s calc.ChainStep) map[string]any {
 	}
 }
 
-// POST /build-programs/from-reaction-plan — 201 or 422 when nothing matches.
 func handleBuildProgramFromReactionPlan(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -578,7 +564,6 @@ func handleBuildProgramFromReactionPlan(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /build-programs/merge — 201 or 422 when fewer than two are the user's.
 func handleBuildProgramMerge(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -640,7 +625,6 @@ func handleBuildProgramMerge(d Deps) echo.HandlerFunc {
 	}
 }
 
-// PUT /build-programs/:id — rename.
 func handleBuildProgramUpdate(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := programID(c)
@@ -671,7 +655,6 @@ func handleBuildProgramUpdate(d Deps) echo.HandlerFunc {
 	}
 }
 
-// PATCH /build-programs/:id/location-filter — missing/empty clears.
 func handleBuildProgramLocationFilter(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := programID(c)
@@ -728,7 +711,6 @@ func handleBuildProgramLocationFilter(d Deps) echo.HandlerFunc {
 	}
 }
 
-// DELETE /build-programs/:id — 204.
 func handleBuildProgramDestroy(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := programID(c)

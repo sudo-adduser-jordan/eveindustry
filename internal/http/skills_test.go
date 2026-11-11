@@ -33,11 +33,9 @@ func TestManufacturingSkills(t *testing.T) {
 	if skills["industry"].(float64) != 5 || skills["advanced_industry"].(float64) != 4 {
 		t.Fatalf("skills = %v", skills)
 	}
-	// another user's character -> 404
 	if code, _ := get(t, d, "/api/v1/calculators/manufacturing/skills?character_id=99"); code != http.StatusNotFound {
 		t.Fatalf("foreign char = %d", code)
 	}
-	// missing id -> 422
 	if code, _ := get(t, d, "/api/v1/calculators/manufacturing/skills"); code != http.StatusUnprocessableEntity {
 		t.Fatalf("missing id = %d", code)
 	}

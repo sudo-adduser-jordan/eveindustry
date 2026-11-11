@@ -8,7 +8,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// stubProduction implements ProductionESI.
 type stubProduction struct {
 	blueprints     map[int64][]map[string]any
 	assets         map[int64][]map[string]any

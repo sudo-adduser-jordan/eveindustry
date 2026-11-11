@@ -13,9 +13,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerContracts mounts POST /market/appraisals and the contract browser,
-// mirroring routes/api_v1/market.php. Freshness here describes the public
-// contract snapshot, not regional orders.
 func registerContracts(v1 *echo.Group, d Deps) {
 	if d.Contracts == nil {
 		return
@@ -25,9 +22,6 @@ func registerContracts(v1 *echo.Group, d Deps) {
 	v1.GET("/market/contracts/:contractId", handleContractShow(d))
 }
 
-// POST /market/appraisals — mirrors AppraisalController@store. Item names
-// come from the JSON `items` string (one per line); each type is priced from
-// single-type item exchange contracts across all regions. Nothing is stored.
 func handleAppraisal(d Deps) echo.HandlerFunc {
 	type input struct {
 		Items  *string `json:"items"`
@@ -99,8 +93,6 @@ func handleAppraisal(d Deps) echo.HandlerFunc {
 				})
 			}
 		} else if in.Items != nil {
-			// No active generation: every name is unmatched, like the PHP
-			// early return that finds no pricing.
 			_, counts := market.ParseAppraisalItems(*in.Items)
 			for name := range counts {
 				unmatched = append(unmatched, name)
@@ -114,8 +106,6 @@ func handleAppraisal(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /market/contracts — mirrors ContractController@index: active-generation
-// contracts newest first, stats over the whole generation.
 func handleContractIndex(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -175,7 +165,6 @@ func handleContractIndex(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /market/contracts/:contractId — mirrors ContractController@show.
 func handleContractShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, err := strconv.ParseUint(c.Param("contractId"), 10, 64)
@@ -248,8 +237,6 @@ func contractShape(cc store.SnapshotContract, items []any) map[string]any {
 	return m
 }
 
-// contractsFreshness mirrors MarketFreshnessService::contractsFreshnessMeta():
-// the snapshot's source timestamp, costs always null.
 func contractsFreshness(c echo.Context, d Deps, gen *uint64) map[string]any {
 	if gen == nil {
 		return map[string]any{

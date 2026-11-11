@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-// PushSubscription mirrors one push_subscriptions row.
 type PushSubscription struct {
 	ID              int64          `db:"id"`
 	UserID          int64          `db:"user_id"`
@@ -21,7 +20,6 @@ type PushSubscription struct {
 	SubscribedAt    time.Time      `db:"subscribed_at"`
 }
 
-// NotificationPref mirrors one notification_preferences row.
 type NotificationPref struct {
 	UserID       int64         `db:"user_id"`
 	Type         string        `db:"type"`
@@ -30,7 +28,6 @@ type NotificationPref struct {
 	CharacterIDs string        `db:"character_ids"`
 }
 
-// QuietHours mirrors one notification_settings row.
 type QuietHours struct {
 	UserID   int64          `db:"user_id"`
 	Start    sql.NullString `db:"quiet_start"`
@@ -38,7 +35,6 @@ type QuietHours struct {
 	Timezone string         `db:"timezone"`
 }
 
-// NotifyStore covers push subscriptions and notification preferences.
 type NotifyStore interface {
 	PushSubscriptions(ctx context.Context, userID int64) ([]PushSubscription, error)
 	UpdateSubscriptionUsed(ctx context.Context, id int64, at time.Time) error
@@ -55,7 +51,6 @@ type NotifyStore interface {
 	UpdateQuietHours(ctx context.Context, q QuietHours) error
 }
 
-// HashEndpoint mirrors PushSubscription::hashEndpoint.
 func HashEndpoint(endpoint string) string {
 	sum := sha256.Sum256([]byte(endpoint))
 	return hex.EncodeToString(sum[:])
@@ -64,7 +59,6 @@ func HashEndpoint(endpoint string) string {
 const pushCols = `id, user_id, endpoint, endpoint_hash, public_key, auth_token,
 	content_encoding, user_agent, subscribed_at`
 
-// UpsertPushSubscription ports subscribe: same endpoint takes over the user.
 func (s *SQL) UpsertPushSubscription(ctx context.Context, sub PushSubscription) error {
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO push_subscriptions
@@ -133,7 +127,6 @@ func (s *SQL) UpdateQuietHours(ctx context.Context, q QuietHours) error {
 	return err
 }
 
-// PushSubscriptions lists a user's devices.
 func (s *SQL) PushSubscriptions(ctx context.Context, userID int64) ([]PushSubscription, error) {
 	var out []PushSubscription
 	err := s.db.SelectContext(ctx, &out, `SELECT `+pushCols+`
@@ -144,20 +137,16 @@ func (s *SQL) PushSubscriptions(ctx context.Context, userID int64) ([]PushSubscr
 	return out, err
 }
 
-// UpdateSubscriptionUsed stamps last_used_at after a delivery.
 func (s *SQL) UpdateSubscriptionUsed(ctx context.Context, id int64, at time.Time) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE push_subscriptions SET last_used_at = ? WHERE id = ?`, at, id)
 	return err
 }
 
-// DeleteSubscription removes one device.
 func (s *SQL) DeleteSubscription(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM push_subscriptions WHERE id = ?`, id)
 	return err
 }
 
-// ClaimNotification ports the deliver() claim: insertOrIgnore on the
-// (user, dedupe) key. False means already sent.
 func (s *SQL) ClaimNotification(ctx context.Context, userID int64, typ, dedupe string, at time.Time) (bool, error) {
 	res, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO notification_log (user_id, type, dedupe_key, sent_at)
 		VALUES (?, ?, ?, ?)`, userID, typ, dedupe, at)
@@ -168,13 +157,11 @@ func (s *SQL) ClaimNotification(ctx context.Context, userID int64, typ, dedupe s
 	return n > 0, err
 }
 
-// ReleaseNotificationClaim drops the claim so the next run retries.
 func (s *SQL) ReleaseNotificationClaim(ctx context.Context, userID int64, dedupe string) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM notification_log WHERE user_id = ? AND dedupe_key = ?`, userID, dedupe)
 	return err
 }
 
-// PruneNotificationLog deletes entries older than 14 days.
 func (s *SQL) PruneNotificationLog(ctx context.Context) (int64, error) {
 	res, err := s.db.ExecContext(ctx, `DELETE FROM notification_log WHERE sent_at < datetime('now', '-14 days')`)
 	if err != nil {
@@ -183,7 +170,6 @@ func (s *SQL) PruneNotificationLog(ctx context.Context) (int64, error) {
 	return res.RowsAffected()
 }
 
-// NotifyCorporationIDs lists distinct non-zero corporation ids of a user.
 func (s *SQL) NotifyCorporationIDs(ctx context.Context, userID int64) ([]int64, error) {
 	var out []int64
 	err := s.db.SelectContext(ctx, &out, `SELECT DISTINCT corporation_id FROM characters

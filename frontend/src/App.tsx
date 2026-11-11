@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AdminGuard } from './components/AdminGuard'
 import { Shell } from './components/Shell'
 
-// One chunk per route keeps the shell under its size budget.
+
 const Overview = lazy(() => import('./pages/Overview'))
 const Login = lazy(() => import('./pages/Login'))
 const Characters = lazy(() => import('./pages/Characters'))
@@ -57,14 +57,14 @@ export function App() {
   return (
     <Suspense fallback={<p className="muted">Loading…</p>}>
       <Routes>
-        {/* Public entry point: no app sidebar, like the legacy login page. */}
+        {}
         <Route path="login" element={<Login />} />
         <Route element={<Shell />}>
           <Route index element={<Overview />} />
           <Route path="characters" element={<Characters />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="market-status" element={<MarketStatus />} />
-          {/* Keyed so search and refresh state reset between the two. */}
+          {}
           <Route path="assets" element={<Assets key="personal" scope="personal" />} />
           <Route path="assets/corporation" element={<Assets key="corporate" scope="corporate" />} />
           <Route path="assets/materials" element={<AssetMaterials />} />

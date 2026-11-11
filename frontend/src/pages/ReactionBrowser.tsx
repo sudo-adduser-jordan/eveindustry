@@ -30,7 +30,7 @@ export default function ReactionBrowser() {
   const [region, setRegion] = useState<string>(DEFAULT_REGION)
   const [category, setCategory] = useState<Category>('all')
   const [complexity, setComplexity] = useState<Complexity>('all')
-  // The saved structure's system supplies the cost index; without one the index is 0.
+  
   const costIndices = useCostIndices(structure?.solar_system_id ?? null)
   const sci = costIndices.data ? Math.round(costIndices.data.data.cost_indices.reaction * 10000) / 100 : 0
   const [applied, setApplied] = useState<{ runs: number; region: number; rig: 'none' | 't1' | 't2'; security: 'lowsec' | 'nullsec'; tax: number; sci: number } | null>(null)

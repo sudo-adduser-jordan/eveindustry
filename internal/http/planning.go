@@ -10,7 +10,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerPlanning mounts the station-configs CRUD.
 func registerPlanning(v1 *echo.Group, d Deps) {
 	if d.Planning == nil {
 		return
@@ -109,7 +108,6 @@ func stationConfigInput(c echo.Context, verrs validationErrors, required bool) s
 	return in
 }
 
-// GET /station-configs — default first, then by name, paginated.
 func handleStationConfigsIndex(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -131,7 +129,6 @@ func handleStationConfigsIndex(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /station-configs — 201 with the created config.
 func handleStationConfigStore(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -157,7 +154,6 @@ func stationConfigID(c echo.Context) (int64, bool) {
 	return id, true
 }
 
-// PUT /station-configs/:id — partial update; foreign configs 404.
 func handleStationConfigUpdate(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := stationConfigID(c)
@@ -181,7 +177,6 @@ func handleStationConfigUpdate(d Deps) echo.HandlerFunc {
 	}
 }
 
-// DELETE /station-configs/:id — 204.
 func handleStationConfigDestroy(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := stationConfigID(c)
@@ -200,7 +195,6 @@ func handleStationConfigDestroy(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /station-configs/:id/default — clears the flag on the user's others.
 func handleStationConfigDefault(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := stationConfigID(c)

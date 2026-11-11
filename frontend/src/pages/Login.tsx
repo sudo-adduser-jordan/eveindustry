@@ -5,9 +5,7 @@ import logoIcon from '../assets/logo-icon.svg'
 
 type DemoState = 'idle' | 'busy' | 'off' | 'error'
 
-/** Public sign-in page. Mirrors the legacy Blade login: a narrow centered
- *  panel with the EVE SSO entry point first and the demo sign-in below it.
- *  Signed-in visitors bounce straight to the dashboard. */
+
 export default function Login() {
   const me = useMe()
   const [demo, setDemo] = useState<DemoState>('idle')

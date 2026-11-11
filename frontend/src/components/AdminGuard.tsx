@@ -3,7 +3,7 @@ import { Link, Outlet } from 'react-router-dom'
 import { useMe } from '../api/queries'
 import { ApiError } from '../api/client'
 
-/** What every admin page shows for a 403 from the API (or a non-admin /me). */
+
 export function AdminDenied() {
   return (
     <section className="panel warn" role="alert">
@@ -13,13 +13,13 @@ export function AdminDenied() {
   )
 }
 
-/** A failed admin query: the denial page for 403, else a short message. */
+
 export function AdminError({ error, what }: { error: unknown; what: string }) {
   if (error instanceof ApiError && error.status === 403) return <AdminDenied />
   return <p role="alert">Could not load {what}.</p>
 }
 
-/** Admin routes render only for admins; /me says who is one, the API enforces it. */
+
 export function AdminGuard({ children }: { children?: ReactNode }) {
   const me = useMe()
   if (me.isPending) return <p>Loading…</p>

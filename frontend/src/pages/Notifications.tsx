@@ -19,7 +19,7 @@ function TypeRow({ type, characters, onChange, pending }: {
   onChange: (change: Change) => void
   pending: boolean
 }) {
-  // An empty list means every character.
+  
   const selected = type.character_ids.length === 0 ? characters.map((c) => c.character_id) : type.character_ids
   const toggleCharacter = (id: number) => {
     const next = selected.includes(id) ? selected.filter((other) => other !== id) : [...selected, id]

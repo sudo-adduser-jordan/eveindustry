@@ -13,8 +13,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// registerAssets mounts the asset browser: personal/corporate lists,
-// by-location groupings, and the refresh queue stub.
 func registerAssets(v1 *echo.Group, d Deps) {
 	if d.AssetBrowser.Characters == nil || d.Users == nil || d.Industry == nil {
 		return
@@ -26,8 +24,6 @@ func registerAssets(v1 *echo.Group, d Deps) {
 	v1.POST("/assets/refresh", handleAssetsRefresh(d))
 }
 
-// cachedOrLiveAssets ports the getAssetsForUser cache: warmed rows plus the
-// fill time, or live ESI when the cache is empty.
 func cachedOrLiveAssets(ctx context.Context, d Deps, uid int64, chars []auth.Character, corpOK bool) ([]assets.Asset, *time.Time) {
 	if d.Cache != nil {
 		var cached []assets.Asset
@@ -44,23 +40,19 @@ func cachedOrLiveAssets(ctx context.Context, d Deps, uid int64, chars []auth.Cha
 	return assets.FetchUserAssets(ctx, assetDeps(d), chars, corpOK), nil
 }
 
-// enrichedAsset aliases the shared asset row so the tree code is untouched.
 type enrichedAsset = assets.Asset
 
-// AssetBrowserDeps carries the asset browser ESI + reference surface.
 type AssetBrowserDeps struct {
 	Characters assets.Characters
 	Universe   UniverseReader
 	Reference  ProgressReference
 }
 
-// assetSortFields mirrors the PHP sort allow-list.
 var assetSortFields = map[string]bool{
 	"type_name": true, "quantity": true, "location_name": true,
 	"character_name": true, "owner_type": true,
 }
 
-// assetDeps adapts the handler Deps to the shared fetch surface.
 func assetDeps(d Deps) assets.Deps {
 	return assets.Deps{
 		Characters: d.AssetBrowser.Characters, Universe: d.AssetBrowser.Universe,
@@ -68,7 +60,6 @@ func assetDeps(d Deps) assets.Deps {
 	}
 }
 
-// assetRefAdapter maps the store-shaped reference to the shared one.
 type assetRefAdapter struct{ r ProgressReference }
 
 func (a assetRefAdapter) FindStation(ctx context.Context, id uint64) (string, *int, bool) {
@@ -98,10 +89,6 @@ func (a assetRefAdapter) FindSystem(ctx context.Context, id int) (string, bool) 
 	return st.SolarSystemName, true
 }
 
-// warmDemoAssets rebuilds one demo user's asset cache inline at demo login.
-// RefreshAssetData only runs every 30 minutes, so without this a stale empty
-// snapshot (or none at all) would greet first-time demo visitors. Best
-// effort: failures leave the background refresh to heal the cache later.
 func warmDemoAssets(ctx context.Context, d Deps, uid int64) {
 	if d.Cache == nil || d.Users == nil || d.Industry == nil || d.AssetBrowser.Characters == nil {
 		return
@@ -115,8 +102,6 @@ func warmDemoAssets(ctx context.Context, d Deps, uid int64) {
 	d.Cache.SetJSON(ctx, "assets.user."+itoaProg(int(uid))+".cached_at", time.Now().Unix(), 0)
 }
 
-// GET /assets or /corporation/assets — paginated tree with search, sort,
-// parent/location filters and the children toggle.
 func handleAssetsIndex(d Deps, corporate bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		qp := c.QueryParams()
@@ -382,7 +367,6 @@ func assetNodeShape(n assetNode) map[string]any {
 	}
 }
 
-// GET /assets/by-location — grouped by system then station with a summary.
 func handleAssetsByLocation(d Deps, corporate bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		qp := c.QueryParams()
@@ -457,10 +441,6 @@ type systemGroup struct {
 	stations []stationGroup
 }
 
-// groupAssetsByLocation ports getSolarSystemGroupedAssets: top-level tree
-// items grouped by root location, stations grouped under their solar system
-// (NPC stations via SDE, systems via ESI, structures stay unknown), both
-// sorted by name.
 func groupAssetsByLocation(ctx context.Context, d Deps, tree []assetNode) []systemGroup {
 	stationMap := map[int64]*stationGroup{}
 	var order []int64
@@ -504,8 +484,6 @@ func groupAssetsByLocation(ctx context.Context, d Deps, tree []assetNode) []syst
 	return systems
 }
 
-// stationSystem ports resolveStationSolarSystem (without the ESI structure
-// cache: structures resolve through a scoped live lookup instead).
 func stationSystem(ctx context.Context, d Deps, locID int64) (*int, string) {
 	if locID >= 60000000 && locID < 64000000 && d.AssetBrowser.Reference != nil {
 		if st, err := d.AssetBrowser.Reference.FindStation(ctx, uint64(locID)); err == nil && st != nil {
@@ -552,7 +530,6 @@ func (g systemGroup) shape(includeItems bool) map[string]any {
 	return map[string]any{"solar_system_id": sysID, "solar_system_name": g.name, "stations": sts}
 }
 
-// POST /assets/refresh — jobs-phase stub: answers 202 at once.
 func handleAssetsRefresh(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		return c.NoContent(http.StatusAccepted)

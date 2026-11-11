@@ -1,8 +1,5 @@
 package esi
 
-// routeGroups ports config/esi_routes.php (generated from ESI OpenAPI
-// x-rate-limit): pinned method+template to rate-limit group. Do not infer
-// groups from URL prefixes.
 var routeGroups = map[string]string{
 	"get /alliances/{alliance_id}/contacts":                                                "alliance-social",
 	"get /alliances/{alliance_id}/contacts/labels":                                         "alliance-social",

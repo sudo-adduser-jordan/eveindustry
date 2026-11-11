@@ -1,9 +1,3 @@
-// Package auth holds the user/character session model for the Go API.
-//
-// Sessions are HMAC-signed JSON cookies (stdlib only): tamper-evident, 120
-// minute expiry mirroring SESSION_LIFETIME, cookie name eve_auth_session
-// mirroring SESSION_COOKIE. They are NOT compatible with the PHP sessions:
-// cutover is a flag-day for logins (users sign in again via EVE SSO).
 package auth
 
 import (
@@ -12,16 +6,13 @@ import (
 	"time"
 )
 
-// Demo ID range mirrors DemoIds: reserved ids far above CCP-issued ones.
 const (
 	DemoBase    = 99_000_000_000
 	DemoCeiling = 99_300_000_000
 )
 
-// IsDemoID mirrors DemoIds::isDemo().
 func IsDemoID(id int64) bool { return id >= DemoBase && id < DemoCeiling }
 
-// PortraitURL mirrors Character::portrait_url: demo ids serve local SVGs.
 func PortraitURL(characterID int64) string {
 	if IsDemoID(characterID) {
 		return fmt.Sprintf("/demo/portrait/%d.svg?size=128", characterID)
@@ -29,7 +20,6 @@ func PortraitURL(characterID int64) string {
 	return fmt.Sprintf("https://images.evetech.net/characters/%d/portrait?size=128", characterID)
 }
 
-// User mirrors the App\Models\User fields the API exposes.
 type User struct {
 	ID             int64
 	Name           string
@@ -38,16 +28,12 @@ type User struct {
 	IsActive       bool
 	IsStockManager bool
 	IsDemo         bool
-	// CreatedAt/LastLoginAt back the dashboard account resource. Nil when
-	// the row predates the columns or the lookup did not select them.
-	CreatedAt   *time.Time
-	LastLoginAt *time.Time
+	CreatedAt      *time.Time
+	LastLoginAt    *time.Time
 }
 
-// Admin mirrors User::isAdmin().
 func (u *User) Admin() bool { return u != nil && (u.IsAdmin || u.IsSuperAdmin) }
 
-// Character mirrors the CharacterResource fields (tokens never leave the DB).
 type Character struct {
 	CharacterID     int64
 	Name            string
@@ -64,12 +50,8 @@ type Character struct {
 	Roles           []string
 }
 
-// PortraitURL mirrors the Character::portrait_url accessor.
 func (c Character) PortraitURL() string { return PortraitURL(c.CharacterID) }
 
-// MePayload mirrors MeResource::toArray(): the user, main-first characters
-// and feature flags. DisplayName falls back to the account name without a
-// main character; AvatarURL is the main character portrait (nil without one).
 func MePayload(u *User, characters []Character, sourceURL string) map[string]any {
 	display := u.Name
 	var avatar any
@@ -107,8 +89,6 @@ func nonNilStrings(in []string) []any {
 	return out
 }
 
-// DemoWriteBlocked mirrors BlockDemoUser: safe methods and allow-listed
-// write paths pass; other demo writes get a 403 with code demo_restricted.
 var demoAllowedWritePrefixes = []string{
 	"api/v1/logout",
 	"api/v1/calculators/",
@@ -130,7 +110,6 @@ var demoAllowedWritePrefixes = []string{
 	"api/v1/corporation/donations/refresh",
 }
 
-// DemoWriteBlocked reports whether a demo user's request must be rejected.
 func DemoWriteBlocked(isDemo bool, method, path string) bool {
 	if !isDemo {
 		return false

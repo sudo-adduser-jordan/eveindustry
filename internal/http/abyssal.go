@@ -14,7 +14,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// AbyssalESI fetches mutated-item data (CharacterClient satisfies it).
 type AbyssalESI interface {
 	GetDynamicItem(ctx context.Context, typeID int, itemID int64, characterID int64) (map[string]any, error)
 }
@@ -27,13 +26,11 @@ var abyssalSkipIDs = map[int]bool{
 var abyssalMillisecondNames = map[string]bool{"duration": true, "speed": true, "reloadTime": true}
 var abyssalCubicMeterNames = map[string]bool{"miningAmount": true}
 
-// AbyssalUniverse is UniverseReader plus the dogma lookups.
 type AbyssalUniverse interface {
 	UniverseReader
 	DogmaReader
 }
 
-// AbyssalDeps reuses the asset browser ESI surface plus dogma lookups.
 type AbyssalDeps struct {
 	Characters assets.Characters
 	Reference  ProgressReference
@@ -41,7 +38,6 @@ type AbyssalDeps struct {
 	Dogma      AbyssalESI
 }
 
-// registerAbyssal mounts the mutated-module browser.
 func registerAbyssal(v1 *echo.Group, d Deps) {
 	if d.Abyssal.Characters == nil || d.Abyssal.Universe == nil || d.Abyssal.Dogma == nil || d.Users == nil || d.Industry == nil {
 		return
@@ -49,8 +45,6 @@ func registerAbyssal(v1 *echo.Group, d Deps) {
 	v1.GET("/assets/abyssal", handleAbyssal(d))
 }
 
-// GET /assets/abyssal — mutated modules grouped by base type, ranked by roll
-// quality. Slow on a cold cache: it asks ESI about every item.
 func handleAbyssal(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -190,7 +184,6 @@ func (it abyssalItem) shape() map[string]any {
 	}
 }
 
-// analyzeAbyssalItem ports the per-item dogma comparison.
 func analyzeAbyssalItem(ctx context.Context, uni AbyssalUniverse, a enrichedAsset, dyn map[string]any, srcID int, byID map[int64]enrichedAsset) *abyssalItem {
 	base, err := uni.DogmaTypeAttributes(ctx, srcID)
 	if err != nil {
@@ -266,7 +259,6 @@ func analyzeAbyssalItem(ctx context.Context, uni AbyssalUniverse, a enrichedAsse
 				}
 			}
 		} else if highGood == (val >= baseVal) {
-			// zero base: direction only
 		}
 		name := "Attribute #" + itoaProg(id)
 		if meta != nil {
@@ -281,7 +273,6 @@ func analyzeAbyssalItem(ctx context.Context, uni AbyssalUniverse, a enrichedAsse
 		byAttr[id] = c
 		order = append(order, id)
 	}
-	// effective mining speed
 	mining := findAbyssMining(byAttr, dynAttrs, attrMeta, base)
 	duration := findAbyssDuration(byAttr, dynAttrs, attrMeta, base)
 	if mining != nil && duration != nil && duration.value > 0 && duration.base > 0 {
@@ -429,7 +420,6 @@ func intOfAbyss(v any) int {
 	return int(n)
 }
 
-// abyssFormat ports formatAttributeValue.
 func abyssFormat(value float64, unit *int) string {
 	u := -1
 	if unit != nil {
@@ -473,7 +463,6 @@ func abyssFormat(value float64, unit *int) string {
 	}
 }
 
-// abyssChange ports formatAttributeChange.
 func abyssChange(value, base float64, unit *int) string {
 	u := -1
 	if unit != nil {
@@ -524,8 +513,6 @@ func abyssChange(value, base float64, unit *int) string {
 	}
 }
 
-// numFmt mirrors PHP number_format with thousands separators: round to an
-// integer count of the smallest unit first so float noise never leaks.
 func numFmt(v float64, decimals int) string {
 	neg := v < 0
 	if neg {

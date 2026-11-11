@@ -11,7 +11,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/market"
 )
 
-// registerCorporateExport mounts GET /calculators/corporate-export.
 func registerCorporateExport(v1 *echo.Group, d Deps) {
 	if d.Users == nil || d.Corp == nil {
 		return
@@ -19,9 +18,6 @@ func registerCorporateExport(v1 *echo.Group, d Deps) {
 	v1.Group("/calculators").GET("/corporate-export", handleCorporateExport(d))
 }
 
-// GET /calculators/corporate-export — mirrors CorporateExportController@show:
-// whether the calculators may export to a corporate build program (active
-// corp config plus a Director/CEO/Factory_Manager character there).
 func handleCorporateExport(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		if _, ok := CurrentUser(c); !ok {
@@ -87,7 +83,6 @@ func registerInvention(v1 *echo.Group, d Deps) {
 	calcGroup.GET("/invention/decryptors", handleDecryptors)
 }
 
-// handleDecryptors mirrors InventionController@decryptors: static list, no store.
 func handleDecryptors(c echo.Context) error {
 	out := make([]any, 0, len(calc.Decryptors()))
 	for _, d := range calc.Decryptors() {
@@ -96,9 +91,6 @@ func handleDecryptors(c echo.Context) error {
 	return Success(c, http.StatusOK, out, nil)
 }
 
-// POST /calculators/invention — mirrors InventionController@calculate: the
-// full invention + T2 manufacturing chain. An unresolvable chain is a 422 on
-// t2_type_id.
 func handleInventionCalculate(d Deps) echo.HandlerFunc {
 	type input struct {
 		T2TypeID               *int     `json:"t2_type_id"`
@@ -210,7 +202,6 @@ func handleInventionCalculate(d Deps) echo.HandlerFunc {
 			reactionMEBonus = calc.ReactionME(reactRigME, reactSysSec)
 		}
 
-		// T2 materials at the invented BPC's ME over all planned runs.
 		baseMats := make([]calc.BaseMaterial, 0, len(chain.T2Manufacturing.Materials))
 		for _, m := range chain.T2Manufacturing.Materials {
 			name := ""
@@ -225,7 +216,6 @@ func handleInventionCalculate(d Deps) echo.HandlerFunc {
 			return dbError(c, err)
 		}
 
-		// Prices and volumes.
 		typeIDs := []int{chain.T2ItemTypeID, chain.T1ItemTypeID}
 		for _, m := range t2Materials {
 			typeIDs = append(typeIDs, m.TypeID)
@@ -289,7 +279,6 @@ func handleInventionCalculate(d Deps) echo.HandlerFunc {
 	}
 }
 
-// inventionPayload shapes a calc.InventionResult like InventionJobResource.
 func inventionPayload(r calc.InventionResult, chain *industry.Chain) map[string]any {
 	mats := make([]any, 0, len(r.T2Materials))
 	for _, m := range r.T2Materials {

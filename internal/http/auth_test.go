@@ -16,8 +16,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/migrations"
 )
 
-// stubAuth implements auth.Sessions + store.AuthStore for handler tests: a
-// fixed logged-in user (uid 0 = anonymous).
 type stubAuth struct {
 	uid     int64
 	user    *auth.User
@@ -71,21 +69,17 @@ func TestMeAuthenticated(t *testing.T) {
 }
 
 func TestMeUnauthenticatedVariants(t *testing.T) {
-	// no session store at all
 	if code, _ := get(t, Deps{}, "/api/v1/me"); code != http.StatusUnauthorized {
 		t.Fatalf("nil store = %d", code)
 	}
-	// anonymous cookie
 	stub := &stubAuth{}
 	if code, _ := get(t, Deps{Sessions: stub, Users: stub}, "/api/v1/me"); code != http.StatusUnauthorized {
 		t.Fatalf("anon = %d", code)
 	}
-	// unknown user id
 	stub = &stubAuth{uid: 99}
 	if code, _ := get(t, Deps{Sessions: stub, Users: stub}, "/api/v1/me"); code != http.StatusUnauthorized {
 		t.Fatalf("unknown user = %d", code)
 	}
-	// data route also guarded
 	if code, _ := get(t, Deps{}, "/api/v1/types?q=abc"); code != http.StatusUnauthorized {
 		t.Fatalf("data route = %d", code)
 	}
@@ -101,7 +95,6 @@ func TestLogoutAndAccountDelete(t *testing.T) {
 	if rec.Code != http.StatusNoContent {
 		t.Fatalf("logout = %d", rec.Code)
 	}
-	// demo user blocked from account deletion
 	stub.user.IsDemo = true
 	req = httptest.NewRequest(http.MethodDelete, "/api/v1/account", nil)
 	rec = httptest.NewRecorder()
@@ -118,7 +111,6 @@ func TestLogoutAndAccountDelete(t *testing.T) {
 	}
 }
 
-// stubDemo implements DemoUsers for handler tests.
 type stubDemo struct {
 	id      int64
 	email   string
@@ -145,7 +137,6 @@ func getRaw(t *testing.T, d Deps, method, path string) *httptest.ResponseRecorde
 }
 
 func TestLoginPageAnonymous(t *testing.T) {
-	// The SPA owns the login UI: anonymous visits bounce to /app/login.
 	rec := getRaw(t, Deps{}, "GET", "/login")
 	if rec.Code != http.StatusFound {
 		t.Fatalf("GET /login = %d, want 302", rec.Code)
@@ -164,7 +155,6 @@ func TestLoginRedirectsWhenAuthenticated(t *testing.T) {
 	if loc := rec.Header().Get("Location"); loc != "/app/dashboard" {
 		t.Fatalf("location = %q, want /app/dashboard", loc)
 	}
-	// Unknown user id bounces to the SPA login instead of redirecting in.
 	rec = getRaw(t, Deps{Sessions: &stubAuth{uid: 99}, Users: stub}, "GET", "/login")
 	if rec.Code != http.StatusFound {
 		t.Fatalf("GET /login unknown user = %d, want 302", rec.Code)
@@ -190,7 +180,6 @@ func TestWelcomePage(t *testing.T) {
 }
 
 func TestDemoLoginDisabledIs404(t *testing.T) {
-	// Flag off: 404 like the PHP route.
 	e := New(Deps{})
 	req := httptest.NewRequest(http.MethodPost, "/demo/login", nil)
 	rec := httptest.NewRecorder()
@@ -205,7 +194,6 @@ func TestDemoLoginDisabledIs404(t *testing.T) {
 	if body["code"] != "not_found" {
 		t.Fatalf("code = %v, want not_found", body)
 	}
-	// Flag on but no stores: still 404, never 500.
 	e = New(Deps{DemoEnabled: true})
 	req = httptest.NewRequest(http.MethodPost, "/demo/login", nil)
 	rec = httptest.NewRecorder()
@@ -237,9 +225,6 @@ func TestDemoLoginEnabledIssuesSession(t *testing.T) {
 	}
 }
 
-// TestDemoLoginFlowEndToEnd runs the real demo sign-in path: POST
-// /demo/login issues a session cookie against SQLite, and the SPA's /me
-// call resolves the demo account.
 func TestDemoLoginFlowEndToEnd(t *testing.T) {
 	db, err := store.Connect(filepath.Join(t.TempDir(), "demo.sqlite"))
 	if err != nil {
@@ -309,10 +294,6 @@ func TestDemoLoginFlowEndToEnd(t *testing.T) {
 	}
 }
 
-// TestDemoLoginWarmsAssetCache posts /demo/login for a demo account that
-// already has a character: the handler rebuilds the asset cache inline so
-// the assets tab has data on first paint instead of waiting for the next
-// 30-minute background refresh.
 func TestDemoLoginWarmsAssetCache(t *testing.T) {
 	db, err := store.Connect(filepath.Join(t.TempDir(), "warm.sqlite"))
 	if err != nil {
@@ -397,8 +378,6 @@ func TestDemoLoginWarmsAssetCache(t *testing.T) {
 }
 
 func TestDemoLoginJSONReturnsRedirectBody(t *testing.T) {
-	// The SPA login page posts with Accept: application/json and navigates
-	// itself, so the handler answers 200 with the redirect target.
 	authStub := testAuth()
 	demo := &stubDemo{id: 7}
 	d := Deps{Sessions: authStub, Users: authStub, DemoUsers: demo, DemoEnabled: true}
@@ -440,7 +419,6 @@ func TestCookieSessions(t *testing.T) {
 	if !ok || uid != 42 {
 		t.Fatalf("round trip: %v %v", uid, ok)
 	}
-	// tampered value rejected
 	bad := *cookies[0]
 	bad.Value += "x"
 	r2 := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -448,7 +426,6 @@ func TestCookieSessions(t *testing.T) {
 	if _, ok := s.UserID(r2); ok {
 		t.Fatal("tampered cookie accepted")
 	}
-	// expired rejected: issue from a store whose TTL is already negative
 	expired := auth.NewCookieSessions([]byte("test-key-0123456789abcdef"), -time.Minute, false, "")
 	ew := httptest.NewRecorder()
 	expired.Issue(ew, 7)
@@ -457,7 +434,6 @@ func TestCookieSessions(t *testing.T) {
 	if _, ok := expired.UserID(er); ok {
 		t.Fatal("expired cookie accepted")
 	}
-	// session key resolution
 	if _, eph := auth.SessionKeyFromEnv("k", ""); eph {
 		t.Fatal("explicit key must not be ephemeral")
 	}
@@ -480,8 +456,6 @@ func TestDemoWriteBlocked(t *testing.T) {
 	if auth.DemoWriteBlocked(true, "POST", "/api/v1/calculators/manufacturing") {
 		t.Fatal("calculators allowed")
 	}
-	// PHP's allow-list has 'api/v1/appraisals' (legacy path), so the v1
-	// market appraisal endpoint stays blocked for demo users. Faithful port.
 	if !auth.DemoWriteBlocked(true, "POST", "/api/v1/market/appraisals") {
 		t.Fatal("market appraisals blocked like PHP")
 	}
@@ -500,7 +474,6 @@ func (s *stubAuth) UpdateCharacterLocation(ctx context.Context, userID, characte
 func (s *stubAuth) CharacterOwner(ctx context.Context, id int64) (int64, bool, int, error) {
 	for _, ch := range s.chars {
 		if ch.CharacterID == id {
-			// test characters belong to user 1.
 			return 1, ch.IsMain, len(s.chars), nil
 		}
 	}

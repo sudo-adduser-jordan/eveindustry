@@ -15,15 +15,11 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// SponsorStorage persists banner uploads. The disk impl stores under dir;
-// tests inject memory.
 type SponsorStorage interface {
 	Save(filename string, data []byte) (string, error)
 	Delete(path string) error
 }
 
-// DiskSponsorStorage writes banners under dir, served by the deployment at
-// /storage/sponsors (like the PHP uploads disk + storage link).
 type DiskSponsorStorage struct {
 	Dir string
 }
@@ -50,7 +46,6 @@ func (d DiskSponsorStorage) Delete(path string) error {
 	return os.Remove(filepath.Join(filepath.Dir(d.Dir), clean))
 }
 
-// registerSponsors mounts the sponsor manager + admin dashboard.
 func registerSponsors(v1 *echo.Group, d Deps) {
 	if d.Sponsors == nil || d.AdminStats == nil {
 		return
@@ -72,7 +67,6 @@ func sponsorShape(s store.Sponsor) map[string]any {
 	}
 }
 
-// GET /admin/dashboard — counters + 30-day registration/login series.
 func handleAdminDashboard(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -108,7 +102,6 @@ func handleAdminDashboard(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /admin/sponsors — all, ordered.
 func handleSponsorIndex(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		rows, err := d.Sponsors.Sponsors(c.Request().Context())
@@ -123,7 +116,6 @@ func handleSponsorIndex(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /admin/sponsors/:id — one sponsor.
 func handleSponsorShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := essID(c)
@@ -141,7 +133,6 @@ func handleSponsorShow(d Deps) echo.HandlerFunc {
 	}
 }
 
-// sponsorForm parses multipart fields shared by store/update.
 func sponsorForm(c echo.Context, imageRequired bool) (name, url string, image []byte, filename string, active bool, order int, ok bool) {
 	verrs := validationErrors{}
 	active = true
@@ -225,7 +216,6 @@ func sniffSponsorImage(data []byte) bool {
 	return false
 }
 
-// POST /admin/sponsors — multipart create, 201.
 func handleSponsorStore(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		if d.SponsorImages == nil {
@@ -250,7 +240,6 @@ func handleSponsorStore(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /admin/sponsors/:id — multipart update (new banner replaces).
 func handleSponsorUpdate(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := essID(c)
@@ -290,7 +279,6 @@ func handleSponsorUpdate(d Deps) echo.HandlerFunc {
 	}
 }
 
-// DELETE /admin/sponsors/:id — row + banner, 204.
 func handleSponsorDestroy(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := essID(c)

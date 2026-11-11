@@ -11,8 +11,7 @@ export interface NavigationGroup {
   links: NavigationLink[]
 }
 
-// Keep the original site's section order and page names. New tools live in
-// the corresponding section instead of extending the top-level menu.
+
 export const navigationGroups: NavigationGroup[] = [
   { id: 'assets', label: 'Assets', links: [
     { label: 'Character Assets', to: '/assets' },

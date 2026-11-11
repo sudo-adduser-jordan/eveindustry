@@ -23,7 +23,6 @@ func TestAssembleJob(t *testing.T) {
 	if got.ExpectedOutput != 10 || got.EndDate != "2026-11-08T15:00:00Z" {
 		t.Fatalf("out: %+v", got)
 	}
-	// invention with probability
 	prob := 0.3
 	raw2 := RawJob{JobID: 2, ActivityID: ActivityInvention, Runs: 4, Status: "active",
 		StartDate: now, EndDate: now.Add(time.Hour), Probability: &prob}

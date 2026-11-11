@@ -193,7 +193,7 @@ describe('AdminUserJobs', () => {
     expect(screen.getAllByText('1.50M ISK').length).toBeGreaterThan(0)
     expect(screen.getByText('Ready')).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Rifter progress' })).toHaveAttribute('aria-valuenow', '50')
-    // A job with no price shows a dash, never 0 ISK.
+    
     expect(screen.queryByText('0.00 ISK')).not.toBeInTheDocument()
   })
 

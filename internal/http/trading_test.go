@@ -48,7 +48,6 @@ func TestStationTrading(t *testing.T) {
 		t.Fatalf("rows = %v", rows)
 	}
 	row := rows[0].(map[string]any)
-	// daily volume (10+20+30)/3 = 20 >= default floor 5; net 9.08 * 20 = 181.6 -> 182
 	if row["daily_isk_profit"].(float64) != 182 {
 		t.Fatalf("row = %v", row)
 	}
@@ -78,7 +77,6 @@ func TestRegionArbitrage(t *testing.T) {
 	if _, ok := meta["freshness_by_region"].(map[string]any)["10000002"]; !ok {
 		t.Fatalf("freshness_by_region = %v", meta)
 	}
-	// same region must 422
 	if code, _ := get(t, d, "/api/v1/market/region-arbitrage?buy_region_id=10000002&sell_region_id=10000002"); code != http.StatusUnprocessableEntity {
 		t.Fatalf("same region = %d", code)
 	}

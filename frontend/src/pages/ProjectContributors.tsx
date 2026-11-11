@@ -6,7 +6,7 @@ import { formatQty } from '../components/format'
 import { ScopeWarning } from '../components/ScopeWarning'
 import { PROJECT_SCOPES } from './Projects'
 
-/** 1,234.56 ISK */
+
 export function formatIsk2(n: number): string {
   return `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ISK`
 }

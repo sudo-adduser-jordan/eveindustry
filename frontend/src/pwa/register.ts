@@ -9,7 +9,7 @@ export function registerServiceWorker() {
   const update = registerSW({
     onNeedRefresh() { markUpdateReady(() => update(true)) },
     onRegisteredSW(_url, registration) {
-      // Long-lived installed apps rarely navigate, so poll for a new build.
+      
       if (registration) setInterval(() => { void registration.update() }, UPDATE_CHECK_MS)
     },
   })

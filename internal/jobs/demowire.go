@@ -9,20 +9,14 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// DemoCharStore lists demo characters for the responder.
 type DemoCharStore interface {
 	DemoCharacters(ctx context.Context) ([]store.DemoCharacterRow, error)
 }
 
-// DemoPoolStore returns priced blueprint pairs for deterministic demo picks.
 type DemoPoolStore interface {
 	DemoBlueprintPool(ctx context.Context) ([][2]int, error)
 }
 
-// DemoResponder builds the ESI stand-in for demo characters from live stores.
-// A nil char store disables it; a nil pool just leaves picks empty. One
-// factory wires cmd/api, cmd/worker, cmd/scheduler and cmd/job so demo data
-// flows identically in every process.
 func DemoResponder(chars DemoCharStore, pool DemoPoolStore) *esi.DemoResponder {
 	if chars == nil {
 		return nil
@@ -67,8 +61,6 @@ func DemoResponder(chars DemoCharStore, pool DemoPoolStore) *esi.DemoResponder {
 	}
 }
 
-// WireDemo attaches the responder to already-built ESI clients. No-op when
-// the handler has no database or no character client.
 func WireDemo(h *HandlerDeps) {
 	if h == nil || h.DB == nil || h.ESIChars == nil {
 		return
@@ -84,7 +76,6 @@ func WireDemo(h *HandlerDeps) {
 	}
 }
 
-// compile-time surface checks: the concrete stores satisfy the factory.
 var (
 	_ DemoCharStore = (*store.SQL)(nil)
 	_ DemoPoolStore = (*industry.SQL)(nil)

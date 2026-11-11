@@ -3,10 +3,10 @@ import type { components } from '../api/schema'
 type Trends = components['schemas']['EsiDiagnosticsTrendsResource']
 export type Zone = 'utc' | 'local'
 
-/** The application pauses ESI work at this many remaining legacy errors (EsiService::ESI_ERROR_LIMIT_THRESHOLD). */
+
 export const PAUSE_THRESHOLD = 20
 
-/** 2026-10-24 13:05 UTC, or the browser's local time; the zone is always named. */
+
 export function formatTime(iso: string | null | undefined, zone: Zone): string {
   if (!iso) return '—'
   const date = new Date(iso)
@@ -30,7 +30,7 @@ function xFor(iso: string, from: number, to: number): number {
   return ((new Date(iso).getTime() - from) / Math.max(1, to - from)) * WIDTH
 }
 
-/** Errors per hour stacked by status, with a marker where a release first appeared on a failure. */
+
 export function ErrorTrendChart({ buckets, from, to, releases, zone }: {
   buckets: Trends['buckets']
   from: string
@@ -85,7 +85,7 @@ export function ErrorTrendChart({ buckets, from, to, releases, zone }: {
   )
 }
 
-/** Lowest remaining budget per bucket. Unknown values leave a gap; they are never drawn as zero. */
+
 export function BudgetChart({ title, points, from, to, zone, threshold }: {
   title: string
   points: Array<{ at: string; remaining_min: number | null }>
@@ -100,7 +100,7 @@ export function BudgetChart({ title, points, from, to, zone, threshold }: {
   const max = Math.max(threshold ?? 0, 1, ...known.map((p) => p.remaining_min))
   const y = (v: number) => HEIGHT - 6 - (v / max) * (HEIGHT - 12)
   const lowest = known.length ? Math.min(...known.map((p) => p.remaining_min)) : null
-  // Break the line at unknown buckets so a gap never reads as a dip to zero.
+  
   const runs: Array<Array<{ at: string; remaining_min: number }>> = []
   let run: Array<{ at: string; remaining_min: number }> = []
   for (const p of points) {

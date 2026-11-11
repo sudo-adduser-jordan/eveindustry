@@ -5,7 +5,6 @@ import (
 	"database/sql"
 )
 
-// SdeType mirrors the eve_types upsert shape.
 type SdeType struct {
 	TypeID         int
 	Name           string
@@ -23,7 +22,6 @@ type SdeType struct {
 	Published      bool
 }
 
-// SdeStore covers static-data imports.
 type SdeStore interface {
 	UpsertEveTypes(ctx context.Context, rows []SdeType) error
 	UpsertStations(ctx context.Context, rows []SdeStation) error
@@ -37,7 +35,6 @@ type SdeStore interface {
 	MaxBlueprintTypeID(ctx context.Context) (int64, error)
 }
 
-// SdeStation mirrors one sde_stations row.
 type SdeStation struct {
 	StationID       uint64
 	Name            string
@@ -50,7 +47,6 @@ type SdeStation struct {
 	Security        *float64
 }
 
-// SdeSystem mirrors one sde_solar_systems row.
 type SdeSystem struct {
 	SystemID        int
 	Name            string
@@ -60,7 +56,6 @@ type SdeSystem struct {
 	SecurityClass   *string
 }
 
-// SdeStargate mirrors one sde_stargates row.
 type SdeStargate struct {
 	GateID     uint64
 	SystemID   *int
@@ -68,14 +63,12 @@ type SdeStargate struct {
 	TypeID     *int
 }
 
-// SdeMaterial mirrors one type_materials row.
 type SdeMaterial struct {
 	TypeID         int
 	MaterialTypeID int
 	Quantity       int
 }
 
-// SdeBlueprint mirrors one blueprint_activities row.
 type SdeBlueprint struct {
 	BlueprintTypeID int
 	ActivityID      int
@@ -84,7 +77,6 @@ type SdeBlueprint struct {
 	Time            int
 }
 
-// SdeMarketGroup mirrors one market_groups row.
 type SdeMarketGroup struct {
 	GroupID       int
 	Name          string
@@ -94,7 +86,6 @@ type SdeMarketGroup struct {
 	HasTypes      bool
 }
 
-// SdeGroup mirrors one inv_groups row.
 type SdeGroup struct {
 	GroupID    int
 	Name       string
@@ -102,7 +93,6 @@ type SdeGroup struct {
 	Published  bool
 }
 
-// SdeCategory mirrors one inv_categories row.
 type SdeCategory struct {
 	CategoryID int
 	Name       string
@@ -114,7 +104,6 @@ func execChunks(ctx context.Context, db *sql.DB, query string, args []any) error
 	return err
 }
 
-// UpsertEveTypes bulk-upserts eve_types rows.
 func (s *SQL) UpsertEveTypes(ctx context.Context, rows []SdeType) error {
 	for _, chunk := range chunkSdeTypes(rows, 500) {
 		q := `INSERT INTO eve_types (type_id, name, description, group_id, market_group_id, volume,
@@ -151,7 +140,6 @@ func chunkSdeTypes(in []SdeType, n int) [][]SdeType {
 	return out
 }
 
-// UpsertStations bulk-upserts sde_stations rows.
 func (s *SQL) UpsertStations(ctx context.Context, rows []SdeStation) error {
 	for _, chunk := range chunkSdeStations(rows, 500) {
 		q := `INSERT INTO sde_stations (station_id, station_name, solar_system_id, constellation_id, region_id,
@@ -188,7 +176,6 @@ func chunkSdeStations(in []SdeStation, n int) [][]SdeStation {
 	return out
 }
 
-// UpsertSolarSystems bulk-upserts sde_solar_systems rows.
 func (s *SQL) UpsertSolarSystems(ctx context.Context, rows []SdeSystem) error {
 	for _, chunk := range chunkSdeSystems(rows, 500) {
 		q := `INSERT INTO sde_solar_systems (solar_system_id, solar_system_name, constellation_id, region_id,
@@ -223,7 +210,6 @@ func chunkSdeSystems(in []SdeSystem, n int) [][]SdeSystem {
 	return out
 }
 
-// UpsertStargates bulk-upserts sde_stargates rows.
 func (s *SQL) UpsertStargates(ctx context.Context, rows []SdeStargate) error {
 	for _, chunk := range chunkSdeStargates(rows, 500) {
 		q := `INSERT INTO sde_stargates (stargate_id, solar_system_id, destination_stargate_id, type_id, created_at, updated_at) VALUES `
@@ -256,7 +242,6 @@ func chunkSdeStargates(in []SdeStargate, n int) [][]SdeStargate {
 	return out
 }
 
-// UpsertTypeMaterials bulk-upserts type_materials rows.
 func (s *SQL) UpsertTypeMaterials(ctx context.Context, rows []SdeMaterial) error {
 	for _, chunk := range chunkSdeMaterials(rows, 1000) {
 		q := `INSERT INTO type_materials (type_id, material_type_id, quantity, created_at, updated_at) VALUES `
@@ -288,7 +273,6 @@ func chunkSdeMaterials(in []SdeMaterial, n int) [][]SdeMaterial {
 	return out
 }
 
-// UpsertBlueprintActivities bulk-upserts blueprint_activities rows.
 func (s *SQL) UpsertBlueprintActivities(ctx context.Context, rows []SdeBlueprint) error {
 	for _, chunk := range chunkSdeBlueprints(rows, 500) {
 		q := `INSERT INTO blueprint_activities (blueprint_type_id, activity_id, materials, products, time, created_at, updated_at) VALUES `
@@ -321,7 +305,6 @@ func chunkSdeBlueprints(in []SdeBlueprint, n int) [][]SdeBlueprint {
 	return out
 }
 
-// UpsertMarketGroups bulk-upserts market_groups rows.
 func (s *SQL) UpsertMarketGroups(ctx context.Context, rows []SdeMarketGroup) error {
 	for _, chunk := range chunkSdeMarketGroups(rows, 500) {
 		q := `INSERT INTO market_groups (market_group_id, name, description, parent_group_id, icon_id, has_types, created_at, updated_at) VALUES `
@@ -354,7 +337,6 @@ func chunkSdeMarketGroups(in []SdeMarketGroup, n int) [][]SdeMarketGroup {
 	return out
 }
 
-// UpsertInvGroups bulk-upserts inv_groups rows.
 func (s *SQL) UpsertInvGroups(ctx context.Context, rows []SdeGroup) error {
 	for _, chunk := range chunkSdeGroups(rows, 500) {
 		q := `INSERT INTO inv_groups (group_id, name, category_id, published, created_at, updated_at) VALUES `
@@ -387,7 +369,6 @@ func chunkSdeGroups(in []SdeGroup, n int) [][]SdeGroup {
 	return out
 }
 
-// UpsertInvCategories bulk-upserts inv_categories rows.
 func (s *SQL) UpsertInvCategories(ctx context.Context, rows []SdeCategory) error {
 	for _, chunk := range chunkSdeCategories(rows, 500) {
 		q := `INSERT INTO inv_categories (category_id, name, published, created_at, updated_at) VALUES `
@@ -419,7 +400,6 @@ func chunkSdeCategories(in []SdeCategory, n int) [][]SdeCategory {
 	return out
 }
 
-// MaxBlueprintTypeID returns the highest blueprint id (chunk fan-out bound).
 func (s *SQL) MaxBlueprintTypeID(ctx context.Context) (int64, error) {
 	var max sql.NullInt64
 	err := s.db.GetContext(ctx, &max, `SELECT MAX(blueprint_type_id) FROM blueprint_activities`)
@@ -429,7 +409,6 @@ func (s *SQL) MaxBlueprintTypeID(ctx context.Context) (int64, error) {
 	return max.Int64, nil
 }
 
-// EveTypeName resolves one type name for SDE enrichment.
 func (s *SQL) EveTypeName(ctx context.Context, typeID int) (string, error) {
 	var name sql.NullString
 	err := s.db.GetContext(ctx, &name, `SELECT name FROM eve_types WHERE type_id = ?`, typeID)

@@ -22,9 +22,6 @@ func (s stubIndustry) TypeNames(ctx context.Context, ids []int) (map[int]string,
 	return out, nil
 }
 
-// The demo assets tab: ResetDemoAccount characters carry the demo scopes, so
-// FetchUserAssets serves personal stacks plus corporate hangar stock through
-// the demo responder without touching live ESI.
 func TestFetchUserAssetsDemo(t *testing.T) {
 	now := time.Date(2026, 11, 8, 12, 0, 0, 0, time.UTC)
 	mkChar := func(id int64, name string, main bool) esi.DemoCharacter {

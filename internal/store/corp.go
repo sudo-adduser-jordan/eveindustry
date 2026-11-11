@@ -8,26 +8,20 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// CorpStore covers the corporate-export availability check: active corp
-// configs and the user's director/Factory_Manager standing.
 type CorpStore interface {
 	ActiveCorpConfig(ctx context.Context, corporationID int64) (*CorpConfig, error)
 	UserCorpCharacters(ctx context.Context, userID, corporationID int64) ([]CorpCharacter, error)
-	// CorpConfigForCorps returns the active feature config for the first
-	// matching corporation, else nil.
 	CorpConfigForCorps(ctx context.Context, corpIDs []int64) (*CorpConfigFull, error)
 	UpsertCorpConfig(ctx context.Context, corpID int64, corpName string, characterID, userID int64) (*CorpConfigFull, error)
 	DeactivateCorpConfig(ctx context.Context, corpID int64) error
 }
 
-// CorpConfig mirrors the corporation_build_program_configs row the endpoint reads.
 type CorpConfig struct {
 	CorporationID   int64  `db:"corporation_id"`
 	CorporationName string `db:"corporation_name"`
 	IsActive        bool   `db:"is_active"`
 }
 
-// CorpCharacter is one user character in a corporation with corp standing.
 type CorpCharacter struct {
 	CharacterID   int64
 	IsEsiActive   bool
@@ -36,7 +30,6 @@ type CorpCharacter struct {
 	Roles         []string
 }
 
-// ActiveCorpConfig ports findActiveForCorporation().
 func (s *SQL) ActiveCorpConfig(ctx context.Context, corporationID int64) (*CorpConfig, error) {
 	var c CorpConfig
 	err := s.db.GetContext(ctx, &c, `
@@ -86,7 +79,6 @@ func (s *SQL) UserCorpCharacters(ctx context.Context, userID, corporationID int6
 	return out, nil
 }
 
-// CorpConfigFull mirrors one corporation_build_program_configs row.
 type CorpConfigFull struct {
 	ID              int64          `db:"id"`
 	CorporationID   int64          `db:"corporation_id"`
@@ -96,8 +88,6 @@ type CorpConfigFull struct {
 	IsActive        bool           `db:"is_active"`
 }
 
-// CorpPageStore covers the corporate build-program feature flag: the active
-// config for the user's corporations, enable (upsert) and disable.
 type CorpPageStore interface {
 	CorpConfigForCorps(ctx context.Context, corpIDs []int64) (*CorpConfigFull, error)
 	UpsertCorpConfig(ctx context.Context, corpID int64, corpName string, characterID, userID int64) (*CorpConfigFull, error)
@@ -106,8 +96,6 @@ type CorpPageStore interface {
 
 const corpConfigFullCols = `id, corporation_id, corporation_name, character_id, enabled_by_user_id, is_active`
 
-// CorpConfigForCorps returns the active config for the first matching
-// corporation (caller order = user's character order), else nil.
 func (s *SQL) CorpConfigForCorps(ctx context.Context, corpIDs []int64) (*CorpConfigFull, error) {
 	if len(corpIDs) == 0 {
 		return nil, nil
@@ -137,7 +125,6 @@ func (s *SQL) CorpConfigForCorps(ctx context.Context, corpIDs []int64) (*CorpCon
 	return nil, nil
 }
 
-// UpsertCorpConfig mirrors CorporationBuildProgramService::enable.
 func (s *SQL) UpsertCorpConfig(ctx context.Context, corpID int64, corpName string, characterID, userID int64) (*CorpConfigFull, error) {
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO corporation_build_program_configs
@@ -158,8 +145,6 @@ func (s *SQL) UpsertCorpConfig(ctx context.Context, corpID int64, corpName strin
 	return &out, nil
 }
 
-// DeactivateCorpConfig mirrors CorporationBuildProgramService::disable:
-// the row stays (programs are kept) but goes inactive.
 func (s *SQL) DeactivateCorpConfig(ctx context.Context, corpID int64) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE corporation_build_program_configs
 		SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE corporation_id = ?`, corpID)

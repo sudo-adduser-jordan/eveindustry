@@ -7,14 +7,12 @@ import (
 	"time"
 )
 
-// Industry-specific activity IDs not covered by the blueprint constants.
 const (
 	ActivityResearchTE = 3
 	ActivityResearchME = 4
 	ActivityReactions  = 9
 )
 
-// ActivityNames mirrors the buildJobsOverview() label map.
 var ActivityNames = map[int]string{
 	ActivityManufacturing: "Manufacturing",
 	ActivityResearchTE:    "Time Efficiency Research",
@@ -24,11 +22,8 @@ var ActivityNames = map[int]string{
 	ActivityReactions:     "Reactions",
 }
 
-// ValueActivities mirrors JobsOverviewService::VALUE_ACTIVITIES.
 var ValueActivities = map[string]bool{"Manufacturing": true, "Reactions": true}
 
-// RawJob is one ESI industry job row (character jobs) with the fields the
-// overview needs.
 type RawJob struct {
 	JobID           int64
 	ActivityID      int
@@ -44,7 +39,6 @@ type RawJob struct {
 	SolarSystemID   *int
 }
 
-// JobRow is one assembled overview job, mirroring buildJobsOverview rows.
 type JobRow struct {
 	JobID            int64    `json:"job_id"`
 	ActivityID       int      `json:"activity_id"`
@@ -64,9 +58,6 @@ type JobRow struct {
 	Location         string   `json:"location"`
 }
 
-// AssembleJob ports the per-job half of buildJobsOverview(): progress, time
-// remaining, expected output and the record shape. Names, images, portions
-// and locations are resolved by the caller (ESI/store).
 func AssembleJob(job RawJob, characterName, itemName string, imageURL *string, outputPerRun int, location string, probabilityPct *float64, now time.Time) JobRow {
 	total := job.EndDate.Sub(job.StartDate).Seconds()
 	elapsed := now.Sub(job.StartDate).Seconds()
@@ -118,8 +109,6 @@ func AssembleJob(job RawJob, characterName, itemName string, imageURL *string, o
 	}
 }
 
-// GroupJobs ports the grouping tail: known activities only, each group by
-// seconds remaining ascending.
 func GroupJobs(rows []JobRow) []JobGroup {
 	byName := map[string][]JobRow{}
 	for _, r := range rows {
@@ -137,13 +126,11 @@ func GroupJobs(rows []JobRow) []JobGroup {
 	return out
 }
 
-// JobGroup is one activity group.
 type JobGroup struct {
 	ActivityName string   `json:"activity_name"`
 	Jobs         []JobRow `json:"jobs"`
 }
 
-// SummaryItem mirrors one buildProductionSummary() row.
 type SummaryItem struct {
 	TypeID              *int     `json:"type_id"`
 	ItemName            string   `json:"item_name"`
@@ -154,8 +141,6 @@ type SummaryItem struct {
 	EstimatedValue      *float64 `json:"estimated_value"`
 }
 
-// BuildSummary ports buildProductionSummary(): manufacturing + reaction
-// output totalled per item name, totals floored, sorted by name.
 func BuildSummary(rows []JobRow) []SummaryItem {
 	type agg struct {
 		typeID *int
@@ -193,8 +178,6 @@ func BuildSummary(rows []JobRow) []SummaryItem {
 	return out
 }
 
-// FinishedJob mirrors getFinishedJobsForUser rows: active or ready jobs
-// whose end date fell in (since, until] and still await delivery.
 type FinishedJob struct {
 	JobID         int64  `json:"job_id"`
 	CharacterID   int64  `json:"character_id"`

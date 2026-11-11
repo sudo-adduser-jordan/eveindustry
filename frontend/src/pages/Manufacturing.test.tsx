@@ -87,7 +87,7 @@ describe('combineMaterials', () => {
       ['Tritanium', 2000],
     ])
     expect(combined.buy).toBe(25000)
-    // The buildable component is priced at its build cost, plain materials at their buy cost.
+    
     expect(combined.build).toBe(5000 + 10000)
   })
 })
@@ -119,7 +119,7 @@ describe('JobSummary', () => {
 
     expect(screen.queryByText('Build fee breakdown')).not.toBeInTheDocument()
     expect(screen.getByText('✓ Building components is cheaper')).toBeInTheDocument()
-    // Without job fees the plain profit is shown in the scenario summaries.
+    
     const buy = screen.getByRole('region', { name: 'Summary (full buy)' })
     expect(within(buy).getByText('5.00K ISK')).toBeInTheDocument()
   })

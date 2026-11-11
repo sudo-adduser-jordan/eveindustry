@@ -9,14 +9,11 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/market"
 )
 
-// Pagination defaults mirror ApiRequest::DEFAULT_PER_PAGE / MAX_PER_PAGE.
 const (
 	defaultPerPage = 50
 	maxPerPage     = 200
 )
 
-// validationErrors collects field errors; invalid() writes the 422 envelope
-// mirroring Laravel's {"message": "The given data was invalid.", "errors"}.
 type validationErrors map[string][]string
 
 func (v validationErrors) add(field, msg string) {
@@ -31,8 +28,6 @@ func (v validationErrors) invalid(c echo.Context) error {
 	})
 }
 
-// parseRegionID validates ?region_id= against the five trade hubs, defaulting
-// to Jita. Mirrors MarketRequest::regionRules() + regionInput().
 func parseRegionID(c echo.Context, verrs validationErrors) int {
 	raw := c.QueryParam("region_id")
 	if raw == "" {
@@ -46,8 +41,6 @@ func parseRegionID(c echo.Context, verrs validationErrors) int {
 	return id
 }
 
-// parseSearchTerm validates ?q= per SearchRequest rules: required, 2 to 100
-// characters. Mirrors the 422s the PHP search endpoints return.
 func parseSearchTerm(c echo.Context, verrs validationErrors) (string, bool) {
 	q := c.QueryParam("q")
 	if q == "" {
@@ -65,8 +58,6 @@ func parseSearchTerm(c echo.Context, verrs validationErrors) (string, bool) {
 	return q, true
 }
 
-// parsePagination mirrors ApiRequest::page()/perPage(): page >= 1,
-// 1 <= per_page <= 200.
 func parsePagination(c echo.Context, verrs validationErrors) (page, perPage int) {
 	page, perPage = 1, defaultPerPage
 	if raw := c.QueryParam("page"); raw != "" {
@@ -88,8 +79,6 @@ func parsePagination(c echo.Context, verrs validationErrors) (page, perPage int)
 	return page, perPage
 }
 
-// parseTypeIDs validates ?type_ids[]= (1..200 unique ints >= 1), preserving
-// request order. Mirrors PricesRequest::typeIds().
 func parseTypeIDs(c echo.Context, verrs validationErrors) []int {
 	raws, ok := c.QueryParams()["type_ids[]"]
 	if !ok {
@@ -119,8 +108,6 @@ func parseTypeIDs(c echo.Context, verrs validationErrors) []int {
 	return out
 }
 
-// paginate slices an in-memory list like ApiResponse::paginatedArray() and
-// returns the page items plus the meta.pagination block.
 func paginate(total int, page, perPage int) (offset int, meta map[string]any) {
 	lastPage := (total + perPage - 1) / perPage
 	if lastPage < 1 {

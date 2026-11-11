@@ -14,7 +14,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// stubCorpPrograms implements store.CorpProgramStore in memory.
 type stubCorpPrograms struct {
 	rows map[int64]store.CorpProgram
 	next int64
@@ -151,7 +150,6 @@ func TestCorpProgramCRUD(t *testing.T) {
 
 func TestStockItemCRUD(t *testing.T) {
 	base := programsTestDeps()
-	// stock manager gate: programsTestDeps user is not stock manager by default
 	ind := base.Industry.(*stubIndustry)
 	ind.names = map[int]string{34: "Tritanium"}
 	d := Deps{Sessions: base.Sessions, Users: base.Users,
@@ -272,7 +270,6 @@ func corpPagesNoConfigDeps() Deps {
 
 func TestCorpProgramPages(t *testing.T) {
 	d := corpWritesTestDeps()
-	// index: enabled overview with programs
 	code, body := get(t, d, "/api/v1/corporation/build-programs")
 	if code != http.StatusOK {
 		t.Fatalf("index = %d %v", code, body)
@@ -284,16 +281,13 @@ func TestCorpProgramPages(t *testing.T) {
 	if len(data["programs"].([]any)) != 2 {
 		t.Fatalf("programs = %v", data["programs"])
 	}
-	// show: program + volumes
 	code, body = get(t, d, "/api/v1/corporation/build-programs/1")
 	if code != http.StatusOK {
 		t.Fatalf("show = %d %v", code, body)
 	}
-	// show foreign -> 404
 	if code, _ := get(t, d, "/api/v1/corporation/build-programs/9"); code != http.StatusNotFound {
 		t.Fatalf("foreign show = %d", code)
 	}
-	// disable by non-enabler -> 403
 	d2 := corpWritesTestDeps()
 	stub2 := d2.Sessions.(*stubAuth)
 	stub2.uid = 2
@@ -301,27 +295,22 @@ func TestCorpProgramPages(t *testing.T) {
 	if code := postRaw(t, d2, "/api/v1/corporation/build-programs/disable", `{}`); code != http.StatusForbidden {
 		t.Fatalf("disable foreign = %d", code)
 	}
-	// disable by enabler -> overview disabled
 	if code := postRaw(t, d, "/api/v1/corporation/build-programs/disable", `{}`); code != http.StatusOK {
 		t.Fatalf("disable = %d", code)
 	}
-	// show now 404 (feature off)
 	if code, _ := get(t, d, "/api/v1/corporation/build-programs/1"); code != http.StatusNotFound {
 		t.Fatalf("show disabled = %d", code)
 	}
-	// enable with no eligible character -> 422
 	d3 := corpPagesNoConfigDeps()
 	stub3 := d3.Sessions.(*stubAuth)
 	stub3.chars[0].Scopes = nil
 	if code := postRaw(t, d3, "/api/v1/corporation/build-programs/enable", `{}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("enable ineligible = %d", code)
 	}
-	// enable with eligible character -> overview enabled
 	d4 := corpPagesNoConfigDeps()
 	if code := postRaw(t, d4, "/api/v1/corporation/build-programs/enable", `{"character_id":11}`); code != http.StatusOK {
 		t.Fatalf("enable = %d", code)
 	}
-	// enable with wrong character -> 422
 	if code := postRaw(t, d4, "/api/v1/corporation/build-programs/enable", `{"character_id":99}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("enable wrong char = %d", code)
 	}

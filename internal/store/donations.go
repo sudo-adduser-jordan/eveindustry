@@ -7,7 +7,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// DonationConfig mirrors one corporate_donation_configs row.
 type DonationConfig struct {
 	ID              int64          `db:"id"`
 	CorporationID   int64          `db:"corporation_id"`
@@ -17,7 +16,6 @@ type DonationConfig struct {
 	IsActive        bool           `db:"is_active"`
 }
 
-// DonationStore covers donation tracking configs, scoped by corporation.
 type DonationStore interface {
 	DonationConfigForCorps(ctx context.Context, corpIDs []int64) (*DonationConfig, error)
 	UpsertDonationConfig(ctx context.Context, corpID int64, corpName string, characterID, userID int64) (*DonationConfig, error)
@@ -26,8 +24,6 @@ type DonationStore interface {
 
 const donationConfigCols = `id, corporation_id, corporation_name, character_id, enabled_by_user_id, is_active`
 
-// DonationConfigForCorps returns the active config for the first matching
-// corporation, else nil.
 func (s *SQL) DonationConfigForCorps(ctx context.Context, corpIDs []int64) (*DonationConfig, error) {
 	if len(corpIDs) == 0 {
 		return nil, nil
@@ -57,7 +53,6 @@ func (s *SQL) DonationConfigForCorps(ctx context.Context, corpIDs []int64) (*Don
 	return nil, nil
 }
 
-// UpsertDonationConfig mirrors CorporateDonationService::enable.
 func (s *SQL) UpsertDonationConfig(ctx context.Context, corpID int64, corpName string, characterID, userID int64) (*DonationConfig, error) {
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO corporate_donation_configs
@@ -78,7 +73,6 @@ func (s *SQL) UpsertDonationConfig(ctx context.Context, corpID int64, corpName s
 	return &out, nil
 }
 
-// DeactivateDonationConfig mirrors disable: the row stays but goes inactive.
 func (s *SQL) DeactivateDonationConfig(ctx context.Context, corpID int64) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE corporate_donation_configs
 		SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE corporation_id = ?`, corpID)

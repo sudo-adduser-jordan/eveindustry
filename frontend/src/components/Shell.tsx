@@ -33,10 +33,10 @@ export function Shell() {
     try {
       if (openGroup) localStorage.setItem(NAVIGATION_STORAGE_KEY, openGroup)
       else localStorage.removeItem(NAVIGATION_STORAGE_KEY)
-    } catch { /* Navigation also works when browser storage is unavailable. */ }
+    } catch {  }
   }, [openGroup])
 
-  // Below 992px the sidebar slides in over the page; see the media query in theme.css.
+  
   const [navOpen, setNavOpen] = useState(false)
   useEffect(() => { setNavOpen(false) }, [pathname])
   useEffect(() => {

@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// StationConfig mirrors one station_configs row.
 type StationConfig struct {
 	ID             int64     `db:"id"`
 	UserID         int64     `db:"user_id"`
@@ -23,7 +22,6 @@ type StationConfig struct {
 	UpdatedAt      time.Time `db:"updated_at"`
 }
 
-// StationConfigInput mirrors the validated store/update payloads.
 type StationConfigInput struct {
 	Name           *string
 	StructureType  *string
@@ -35,11 +33,8 @@ type StationConfigInput struct {
 	IsDefault      *bool
 }
 
-// PlanningStore covers the planning writes (station configs first).
 type PlanningStore interface {
 	StationConfigs(ctx context.Context, userID int64, activity string, limit, offset int) ([]StationConfig, int, error)
-	// AllStationConfigs lists the user's configs (optional activity filter),
-	// defaults first then by name — the structures index.
 	AllStationConfigs(ctx context.Context, userID int64, activity *string) ([]StationConfig, error)
 	StationConfig(ctx context.Context, id, userID int64) (*StationConfig, error)
 	CreateStationConfig(ctx context.Context, userID int64, activity string, in StationConfigInput) (*StationConfig, error)
@@ -108,8 +103,6 @@ func (s *SQL) StationConfigs(ctx context.Context, userID int64, activity string,
 	return out, total, nil
 }
 
-// StationConfig loads one config owned by the user: nil when missing or
-// another user's (the PHP denyAsNotFound 404).
 func (s *SQL) StationConfig(ctx context.Context, id, userID int64) (*StationConfig, error) {
 	var row stationConfigRow
 	err := s.db.GetContext(ctx, &row, `
@@ -284,7 +277,6 @@ func strVal(s *string) string {
 	return *s
 }
 
-// AllStationConfigs ports StructureListService::forUser.
 func (s *SQL) AllStationConfigs(ctx context.Context, userID int64, activity *string) ([]StationConfig, error) {
 	q := `SELECT ` + stationConfigColumns + ` FROM station_configs WHERE user_id = ?`
 	args := []any{userID}

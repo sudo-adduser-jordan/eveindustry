@@ -22,7 +22,7 @@ function SponsorFields({ sponsor }: { sponsor: Sponsor | null }) {
   }
 
   const error = (field: string) => fieldError(save.error, field)
-  // A 422 shows under its fields; anything else gets one message.
+  
   const generic = save.isError && !(save.error instanceof ApiError && save.error.errors)
   return (
     <form className="scan-form panel form-narrow" onSubmit={submit}>
@@ -61,7 +61,7 @@ function SponsorFields({ sponsor }: { sponsor: Sponsor | null }) {
   )
 }
 
-/** /admin/sponsors/new and /admin/sponsors/:id. */
+
 export default function AdminSponsorForm() {
   const idParam = useParams().sponsor
   const id = idParam === undefined || idParam === 'new' ? null : Number(idParam)

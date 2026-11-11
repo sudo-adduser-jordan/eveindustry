@@ -9,8 +9,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// AuthStore covers the session user lookup, /me characters and account
-// deletion. Tokens never leave this package's queries.
 type AuthStore interface {
 	UserByID(ctx context.Context, userID int64) (*auth.User, error)
 	CharactersForUser(ctx context.Context, userID int64) ([]auth.Character, error)
@@ -142,20 +140,16 @@ func scanAuthCharacters(rows []authCharacterRow) []auth.Character {
 }
 
 func (s *SQL) DeleteUser(ctx context.Context, userID int64) error {
-	// characters cascade via FK; sessions are stateless cookies.
 	_, err := s.db.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, userID)
 	return err
 }
 
-// UpdateCharacterLocation stores the ESI-resolved system name on the character.
 func (s *SQL) UpdateCharacterLocation(ctx context.Context, userID, characterID int64, location string) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE characters SET cached_location = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE user_id = ? AND character_id = ?`, location, userID, characterID)
 	return err
 }
 
-// CharacterOwner loads a character's owner and main flag plus the owner's
-// character count (for the last-character guard).
 func (s *SQL) CharacterOwner(ctx context.Context, characterID int64) (userID int64, isMain bool, count int, err error) {
 	var row struct {
 		UserID int64 `db:"user_id"`
@@ -172,7 +166,6 @@ func (s *SQL) CharacterOwner(ctx context.Context, characterID int64) (userID int
 	return row.UserID, row.IsMain, count, err
 }
 
-// SetMainCharacter clears the user's mains and promotes one character.
 func (s *SQL) SetMainCharacter(ctx context.Context, userID, characterID int64) error {
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -188,8 +181,6 @@ func (s *SQL) SetMainCharacter(ctx context.Context, userID, characterID int64) e
 	return tx.Commit()
 }
 
-// DeleteCharacter removes one character, promoting the oldest remaining one
-// when it was the main.
 func (s *SQL) DeleteCharacter(ctx context.Context, userID, characterID int64) error {
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -212,7 +203,6 @@ func (s *SQL) DeleteCharacter(ctx context.Context, userID, characterID int64) er
 	return tx.Commit()
 }
 
-// DemoCharacterRow is the minimal character record the demo responder needs.
 type DemoCharacterRow struct {
 	CharacterID     int64          `db:"character_id"`
 	Name            string         `db:"name"`
@@ -224,7 +214,6 @@ type DemoCharacterRow struct {
 	CreatedAt       time.Time      `db:"created_at"`
 }
 
-// DemoCharacters lists characters in the demo id range.
 func (s *SQL) DemoCharacters(ctx context.Context) ([]DemoCharacterRow, error) {
 	var out []DemoCharacterRow
 	err := s.db.SelectContext(ctx, &out, `SELECT character_id, name, corporation_id,
@@ -236,7 +225,6 @@ func (s *SQL) DemoCharacters(ctx context.Context) ([]DemoCharacterRow, error) {
 	return out, err
 }
 
-// CharacterRefresh holds the refreshed character columns.
 type CharacterRefresh struct {
 	CorporationID   *int64
 	CorporationName *string
@@ -251,8 +239,6 @@ type CharacterRefresh struct {
 	IsDirectorCEO   *bool
 }
 
-// UpdateCharacterRefresh applies a profile refresh (only set fields change;
-// Null* clears the column).
 func (s *SQL) UpdateCharacterRefresh(ctx context.Context, characterID int64, r CharacterRefresh) error {
 	set := ""
 	var args []any
@@ -309,7 +295,6 @@ func (s *SQL) UpdateCharacterRefresh(ctx context.Context, characterID int64, r C
 	return err
 }
 
-// EsiActiveCharacters lists ESI-active characters for refresh fan-out.
 func (s *SQL) EsiActiveCharacters(ctx context.Context, userID *int64) ([]auth.Character, error) {
 	q := `SELECT character_id, name, corporation_id, corporation_name, alliance_id, alliance_name,
 		is_main, is_esi_active, is_director_ceo, cached_location, cached_training, scopes, roles
@@ -327,8 +312,6 @@ func (s *SQL) EsiActiveCharacters(ctx context.Context, userID *int64) ([]auth.Ch
 	return scanAuthCharacters(rows), nil
 }
 
-// ActiveUserIDs ports the refresh fan-out: active users with a login in the
-// last 7 days.
 func (s *SQL) ActiveUserIDs(ctx context.Context) ([]int64, error) {
 	var out []int64
 	err := s.db.SelectContext(ctx, &out, `SELECT id FROM users

@@ -12,7 +12,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// RegisterNotifyJobs wires notifications:dispatch (default, 1 try, 120s per user).
 func RegisterNotifyJobs(r *Runner, h HandlerDeps) {
 	r.Register("dispatch-user-notifications", JobDef{
 		Queue: QueueDefault, MaxTries: 1, Timeout: 120 * time.Second,
@@ -29,8 +28,6 @@ func RegisterNotifyJobs(r *Runner, h HandlerDeps) {
 	})
 }
 
-// NotifySchedule mirrors notifications:dispatch every 5 minutes: prune the
-// log, then queue detection for active users with a subscribed device.
 func NotifySchedule(h HandlerDeps) []ScheduleEntry {
 	return []ScheduleEntry{
 		{
@@ -59,7 +56,6 @@ func NotifySchedule(h HandlerDeps) []ScheduleEntry {
 	}
 }
 
-// DispatchUserNotifications ports NotificationDispatcher::dispatchForUser.
 func DispatchUserNotifications(ctx context.Context, h HandlerDeps, userID int64, now time.Time) (int, error) {
 	chars, err := h.DB.EsiActiveCharacters(ctx, &userID)
 	if err != nil {
@@ -176,8 +172,6 @@ func detectType(ctx context.Context, h HandlerDeps, userID int64, key string, ch
 	return nil, nil
 }
 
-// finishedJobs ports getFinishedJobsForUser: active/ready jobs ending in
-// (since, until], reading the same cached ESI lists as the dashboard.
 func finishedJobs(ctx context.Context, h HandlerDeps, chars []auth.Character, since, until time.Time) ([]industry.FinishedJob, error) {
 	activityNames := map[int]string{
 		1: "Manufacturing", 3: "Time efficiency research", 4: "Material efficiency research",
@@ -224,7 +218,6 @@ func finishedJobs(ctx context.Context, h HandlerDeps, chars []auth.Character, si
 	return out, nil
 }
 
-// piPlanets ports the extractor detector's colony scan.
 func piPlanets(ctx context.Context, h HandlerDeps, chars []auth.Character, now time.Time) ([]notify.PiPlanetWithChar, error) {
 	colonies, err := pi.AnalyzeColonies(ctx, pi.ColonyDeps{
 		Characters: h.ESIChars, Universe: h.ESIUniverse, Industry: h.Industry,
@@ -261,8 +254,6 @@ func piPlanets(ctx context.Context, h HandlerDeps, chars []auth.Character, now t
 	return out, nil
 }
 
-// deliver ports the dispatcher deliver(): claim, send to every device, prune
-// gone subscriptions, release the claim when nothing was accepted.
 func deliver(ctx context.Context, h HandlerDeps, userID int64, subs []store.PushSubscription, m notify.Message, now time.Time) bool {
 	claimed, err := h.DB.ClaimNotification(ctx, userID, m.Type, m.DedupeKey, now)
 	if err != nil || !claimed {

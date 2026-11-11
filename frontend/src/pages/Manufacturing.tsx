@@ -47,7 +47,7 @@ interface Job {
   te: number
   request: ManufacturingRequest
   result: ManufacturingResult
-  /** Structure choices stored with an exported build program. */
+  
   structureSettings: Record<string, unknown>
 }
 
@@ -58,7 +58,7 @@ function useBlueprintHits(q: string) {
 
 const SKILLS =[0, 1, 2, 3, 4, 5].map((n) => [String(n), String(n)] as const)
 
-/** One exported step per material, as the build program endpoints expect. */
+
 function stepsOf(result: ManufacturingResult): BuildProgramRequest['steps'] {
   return result.materials.map((m) => ({
     type_id: m.type_id,
@@ -85,7 +85,7 @@ export default function Manufacturing() {
   const [characterId, setCharacterId] = useState<number | null>(null)
   const [industry, setIndustry] = useState('5')
   const [advIndustry, setAdvIndustry] = useState('5')
-  // undefined = not chosen yet, so the default structure applies once the list arrives.
+  
   const [mfgChoice, setMfgChoice] = useState<number | null | undefined>(undefined)
   const [reactionChoice, setReactionChoice] = useState<number | null | undefined>(undefined)
   const [region, setRegion] = useState<string>(DEFAULT_REGION)
@@ -116,7 +116,7 @@ export default function Manufacturing() {
 
   const buybackPct = buyback.trim() === '' ? null : num(buyback, 100)
 
-  /** The request for the form as it stands, or null until the blueprint's materials are loaded. */
+  
   function buildJob(): Omit<Job, 'id' | 'result'> | null {
     const data = activity.data?.data
     if (!blueprint || !data || data.materials.length === 0) return null
@@ -184,7 +184,7 @@ export default function Manufacturing() {
     })
   }
 
-  /** Re-price the queue (and the open result) after the region or buyback changed. */
+  
   async function recalculate(patch: Partial<ManufacturingRequest>) {
     if (jobs.length === 0 && !current) return
     setRecalculating(true)
@@ -594,7 +594,7 @@ interface CombinedMaterial {
   volume: number
 }
 
-/** Sum the materials of every queued job by type, most expensive first. */
+
 export function combineMaterials(jobs: Array<{ result: ManufacturingResult }>) {
   const map = new Map<number, CombinedMaterial>()
   for (const job of jobs) {

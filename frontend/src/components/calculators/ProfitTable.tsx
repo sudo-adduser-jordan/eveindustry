@@ -11,7 +11,7 @@ export interface SellScore {
   total_days: number
 }
 
-/** The fields the two browser tables share. */
+
 export interface ProfitRow {
   product_type_id: number
   product_name: string
@@ -63,10 +63,7 @@ function value(row: ProfitRow, key: SortKey): number | string {
   return key === 'sell_score' ? row.sell_score.score : row[key]
 }
 
-/**
- * The profit table of the manufacturing and reaction browsers. Sorts and
- * filters the rows it is given in the browser; the server already priced them.
- */
+
 export function ProfitTable<T extends ProfitRow>({
   rows,
   itemLabel,
@@ -75,9 +72,9 @@ export function ProfitTable<T extends ProfitRow>({
 }: {
   rows: T[]
   itemLabel: string
-  /** Extra controls shown beside the name filter. */
+  
   extraFilter?: { controls: ReactNode; test: (row: T) => boolean }
-  /** More text a row matches the name filter on (e.g. the blueprint name). */
+  
   extraSearchText?: (row: T) => string
 }) {
   const [sortKey, setSortKey] = useState<SortKey>('profit')

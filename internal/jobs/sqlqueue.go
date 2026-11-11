@@ -10,10 +10,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// SQLQueue ports the Horizon queue shapes onto the go_jobs table so
-// scheduler and worker share one FIFO across processes without an external
-// broker. Claim-by-DELETE arbitrates concurrent poppers:
-// the winner deletes the row, losers see zero rows affected and retry.
 type SQLQueue struct {
 	DB *sqlx.DB
 }
@@ -22,7 +18,6 @@ func sqlTime(t time.Time) string {
 	return t.UTC().Format("2006-01-02 15:04:05")
 }
 
-// Push appends a job to a queue.
 func (q *SQLQueue) Push(ctx context.Context, queue string, e Envelope) error {
 	if e.ID == "" {
 		e.ID = strconv.FormatInt(time.Now().UnixNano(), 10)
@@ -37,8 +32,6 @@ func (q *SQLQueue) Push(ctx context.Context, queue string, e Envelope) error {
 	return err
 }
 
-// Pop returns the oldest available job across queues, polling until wait
-// lapses (the blocking-pop replacement for BRPOP).
 func (q *SQLQueue) Pop(ctx context.Context, queues []string, wait time.Duration) (string, Envelope, bool, error) {
 	deadline := time.Now().Add(wait)
 	for {
@@ -94,8 +87,6 @@ func (q *SQLQueue) popOne(ctx context.Context, queues []string) (string, Envelop
 		return "", Envelope{}, false, err
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
-		// Lost the race to another popper; report empty so the
-		// caller polls again.
 		return "", Envelope{}, false, nil
 	}
 	enqueued, _ := time.ParseInLocation("2006-01-02 15:04:05", row.Enqueued, time.UTC)
@@ -109,7 +100,6 @@ func (q *SQLQueue) popOne(ctx context.Context, queues []string) (string, Envelop
 	}, true, nil
 }
 
-// Len reports the pending available depth of a queue.
 func (q *SQLQueue) Len(ctx context.Context, queue string) (int64, error) {
 	var n int64
 	err := q.DB.GetContext(ctx, &n, `SELECT COUNT(*) FROM go_jobs
@@ -117,20 +107,15 @@ func (q *SQLQueue) Len(ctx context.Context, queue string) (int64, error) {
 	return n, err
 }
 
-// Locker mirrors the old SETNX locks the runner (ShouldBeUnique) and the
-// scheduler (withoutOverlapping) used. A nil Locker disables locking.
 type Locker interface {
 	Acquire(ctx context.Context, key string, window time.Duration) bool
 	Release(ctx context.Context, key string)
 }
 
-// DBLocker implements Locker on the go_locks table. The upsert only
-// overwrites expired rows; RowsAffected tells whether we won.
 type DBLocker struct {
 	DB *sqlx.DB
 }
 
-// Acquire holds the lock for window. False means another process owns it.
 func (l *DBLocker) Acquire(ctx context.Context, key string, window time.Duration) bool {
 	if l == nil || l.DB == nil || window <= 0 {
 		return true
@@ -147,7 +132,6 @@ func (l *DBLocker) Acquire(ctx context.Context, key string, window time.Duration
 	return n == 1
 }
 
-// Release drops the lock.
 func (l *DBLocker) Release(ctx context.Context, key string) {
 	if l == nil || l.DB == nil {
 		return

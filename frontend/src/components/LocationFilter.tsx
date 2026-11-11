@@ -6,10 +6,7 @@ export interface FilterLocation {
   solar_system_name: string | null
 }
 
-/**
- * A button that opens a searchable checklist of hangars. Nothing ticked means
- * "all locations". Apply hands the ticked ids to `onApply`.
- */
+
 export function LocationFilter({
   label,
   hint,
@@ -18,7 +15,7 @@ export function LocationFilter({
   disabled,
   onApply,
 }: {
-  /** "Input" or "Output". */
+  
   label: string
   hint: string
   locations: FilterLocation[]

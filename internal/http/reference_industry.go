@@ -10,9 +10,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/market"
 )
 
-// registerIndustryReference mounts the manufacturing/invention side of the
-// reference group: /blueprints, /reactions/formulas, /invention/items,
-// /manufacturing/categories and /corporations.
 func registerIndustryReference(v1 *echo.Group, d Deps) {
 	if d.Industry == nil {
 		return
@@ -40,8 +37,6 @@ func summaryList(hits []industry.BlueprintTypeHit) []any {
 	return out
 }
 
-// GET /blueprints?q= — mirrors BlueprintController@index (local SDE only;
-// the ESI search fallback needs the ESI client from a later phase).
 func handleBlueprintSearch(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -58,9 +53,6 @@ func handleBlueprintSearch(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /blueprints/:id — mirrors BlueprintController@show (404 unknown).
-// Serves the local blueprint_activities manufacturing row with deduped
-// materials; the Fuzzwork SDE fallback needs the ESI-phase HTTP client.
 func handleBlueprintShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("blueprintTypeId"))
@@ -84,7 +76,6 @@ func handleBlueprintShow(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /reactions/formulas?q= — mirrors ReactionFormulaController@index.
 func handleFormulaSearch(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -101,7 +92,6 @@ func handleFormulaSearch(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /reactions/formulas/:id — mirrors ReactionFormulaController@show.
 func handleFormulaShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("formulaTypeId"))
@@ -125,8 +115,6 @@ func handleFormulaShow(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /invention/items?q= — mirrors InventionItemController@index: published
-// T2 items with an invention chain whose name matches.
 func handleInventionSearch(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -169,7 +157,6 @@ func handleInventionSearch(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /invention/items/:typeId — mirrors InventionItemController@show.
 func handleInventionShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("typeId"))
@@ -187,7 +174,6 @@ func handleInventionShow(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /manufacturing/categories — mirrors ManufacturingCategoryController@index.
 func handleProductCategories(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cats, err := industry.ProductCategories(c.Request().Context(), d.Industry)
@@ -206,10 +192,6 @@ func handleProductCategories(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /corporations?q= — mirrors CorporationController@index. Without an
-// authenticated ESI character (auth phase) there is no one to search as, so
-// this returns [] exactly as the PHP endpoint does for a user with no
-// character — with the same limit meta.
 func handleCorporationSearch(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}

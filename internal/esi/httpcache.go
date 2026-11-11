@@ -12,7 +12,6 @@ import (
 	"time"
 )
 
-// cacheEntry is one stored representation with its validators.
 type cacheEntry struct {
 	Status     int               `json:"status"`
 	Body       []byte            `json:"body,omitempty"`
@@ -21,10 +20,6 @@ type cacheEntry struct {
 	ExpiresAt  int64             `json:"expires_at"`
 }
 
-// HTTPCache ports EsiHttpCache::remember over the CoordStore: fresh entries
-// return immediately, stale ones revalidate with If-None-Match /
-// If-Modified-Since, and 304s reuse the stored body. Locking serializes
-// concurrent fills of the same key like the PHP lock()->block(2).
 type HTTPCache struct {
 	Store     CoordStore
 	Retention time.Duration
@@ -32,7 +27,6 @@ type HTTPCache struct {
 	Recorder  *DiagRecorder
 }
 
-// NewHTTPCache builds a cache with the PHP defaults (24h retention, 4MB cap).
 func NewHTTPCache(store CoordStore) *HTTPCache {
 	return &HTTPCache{Store: store, Retention: 24 * time.Hour, MaxBytes: 4 * 1024 * 1024}
 }
@@ -56,7 +50,6 @@ func validEntry(e *cacheEntry) bool {
 	return e != nil && e.Status == 200 && len(e.Body) > 0
 }
 
-// Remember serves a GET from cache or fetches it (conditionally on revalidation).
 func (c *HTTPCache) Remember(ctx context.Context, client *Client, endpoint string, query map[string]string, headers map[string]string, auth *Auth) (*Response, error) {
 	identity := ""
 	if auth != nil {
@@ -186,8 +179,6 @@ func (c *HTTPCache) cacheable(resp *Response) bool {
 	return true
 }
 
-// freshness ports the Expires/Cache-Control max-age math; unknown expiry is
-// never claimed fresh (freshUntil = observed).
 func freshness(resp *Response, observed time.Time) (freshUntil, expiresAt int64) {
 	now := observed.Unix()
 	date := now

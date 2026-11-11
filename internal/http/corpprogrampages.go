@@ -12,9 +12,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerCorpProgramPages mounts the corporate build-program page: the
-// feature overview, enable/disable and the per-program show page. Reads
-// never 403 — the page offers to enable the feature instead.
 func registerCorpProgramPages(v1 *echo.Group, d Deps) {
 	if d.Corp == nil || d.CorpPrograms == nil || d.Users == nil || d.Industry == nil {
 		return
@@ -27,8 +24,6 @@ func registerCorpProgramPages(v1 *echo.Group, d Deps) {
 
 const corpAssetScope = "esi-assets.read_corporation_assets.v1"
 
-// corpConfigForUser mirrors CorporationBuildProgramService::getConfigForUser:
-// the active config of the first user corporation that has one.
 func corpConfigForUser(ctx context.Context, d Deps, uid int64) (*store.CorpConfigFull, []auth.Character, error) {
 	chars, err := d.Users.CharactersForUser(ctx, uid)
 	if err != nil {
@@ -50,8 +45,6 @@ func corpConfigForUser(ctx context.Context, d Deps, uid int64) (*store.CorpConfi
 	return cfg, chars, nil
 }
 
-// eligibleCorpChars mirrors getEligibleCharactersForUser: Director/CEO
-// standing plus the corporation-assets ESI scope.
 func eligibleCorpChars(chars []auth.Character) []auth.Character {
 	var out []auth.Character
 	for _, ch := range chars {
@@ -67,7 +60,6 @@ func eligibleCorpChars(chars []auth.Character) []auth.Character {
 	return out
 }
 
-// corpProgramsOverview mirrors the page controller's overview payload.
 func corpProgramsOverview(ctx context.Context, d Deps, uid int64) (map[string]any, error) {
 	cfg, chars, err := corpConfigForUser(ctx, d, uid)
 	if err != nil {
@@ -98,7 +90,6 @@ func corpProgramsOverview(ctx context.Context, d Deps, uid int64) (map[string]an
 	if cfg.CorporationName.Valid {
 		out["corporation_name"] = cfg.CorporationName.String
 	}
-	// provider character name: the enabling character among the user's own
 	provider := ""
 	for _, ch := range chars {
 		if ch.CharacterID == cfg.CharacterID {
@@ -155,7 +146,6 @@ func corpProgramSummaryShape(p store.CorpProgram) map[string]any {
 	}
 }
 
-// GET /corporation/build-programs — the overview, never 403.
 func handleCorpProgramPagesIndex(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -167,8 +157,6 @@ func handleCorpProgramPagesIndex(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /corporation/build-programs/enable — 422 without an eligible
-// character; returns the new overview.
 func handleCorpProgramPagesEnable(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -229,8 +217,6 @@ func handleCorpProgramPagesEnable(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /corporation/build-programs/disable — 403 unless the caller enabled
-// the feature; programs are kept. Returns the new overview.
 func handleCorpProgramPagesDisable(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -253,8 +239,6 @@ func handleCorpProgramPagesDisable(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /corporation/build-programs/:id — program detail + material volumes.
-// 404 for foreign programs and whenever the feature is off for the user.
 func handleCorpProgramPagesShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := planID(c)
@@ -316,7 +300,6 @@ func handleCorpProgramPagesShow(d Deps) echo.HandlerFunc {
 	}
 }
 
-// collectCorpMaterialIDs mirrors the page controller's step-tree walk.
 func collectCorpMaterialIDs(steps []any, into map[int]bool) {
 	for _, s := range steps {
 		m, ok := s.(map[string]any)

@@ -104,30 +104,24 @@ func TestDonationStatus(t *testing.T) {
 	if data["provider_character_name"] != "Main" || data["corporation_name"] != "ACME" {
 		t.Fatalf("names = %v", data)
 	}
-	// disable by enabler
 	if code := postRaw(t, d, "/api/v1/corporation/donations/disable", `{}`); code != http.StatusOK {
 		t.Fatalf("disable = %d", code)
 	}
-	// status now disabled
 	code, body = get(t, d, "/api/v1/corporation/donations/status")
 	if body["data"].(map[string]any)["enabled"] != false {
 		t.Fatalf("still enabled: %v", body)
 	}
-	// enable with explicit character
 	if code := postRaw(t, d, "/api/v1/corporation/donations/enable", `{"character_id":11}`); code != http.StatusOK {
 		t.Fatalf("enable = %d", code)
 	}
-	// enable with ineligible character -> 422
 	if code := postRaw(t, d, "/api/v1/corporation/donations/enable", `{"character_id":99}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad char = %d", code)
 	}
-	// disable by another user -> 403
 	d2 := donationTestDeps()
 	d2.Sessions.(*stubAuth).uid = 2
 	if code := postRaw(t, d2, "/api/v1/corporation/donations/disable", `{}`); code != http.StatusForbidden {
 		t.Fatalf("foreign disable = %d", code)
 	}
-	// refresh -> 204
 	if code := postRaw(t, d, "/api/v1/corporation/donations/refresh", `{}`); code != http.StatusNoContent {
 		t.Fatalf("refresh = %d", code)
 	}
@@ -150,7 +144,6 @@ func TestDonationIndex(t *testing.T) {
 		t.Fatalf("items = %v", items)
 	}
 	it := items[0].(map[string]any)
-	// 1M + 500k from donor 100; negative + other ref_type excluded
 	if it["total_amount"] != 1500000.0 || it["donation_count"] != 2.0 || it["donator_name"] != "Donor" {
 		t.Fatalf("item = %v", it)
 	}
@@ -162,12 +155,10 @@ func TestDonationIndex(t *testing.T) {
 	if len(divs) != 1 || divs[0].(map[string]any)["name"] != "Master Wallet" {
 		t.Fatalf("divisions = %v", divs)
 	}
-	// division filter with no data -> empty
 	code, body = get(t, d, "/api/v1/corporation/donations?division=2")
 	if code != http.StatusOK || len(body["data"].([]any)) != 0 {
 		t.Fatalf("division filter = %d %v", code, body)
 	}
-	// date range excluding all -> empty
 	code, body = get(t, d, "/api/v1/corporation/donations?date_from=2020-01-01&date_to=2020-01-31")
 	if code != http.StatusOK || len(body["data"].([]any)) != 0 {
 		t.Fatalf("date filter = %d %v", code, body)
@@ -175,7 +166,6 @@ func TestDonationIndex(t *testing.T) {
 	if code, _ := get(t, d, "/api/v1/corporation/donations?division=9"); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad division = %d", code)
 	}
-	// tracking off -> 403
 	d3 := donationTestDeps()
 	d3.Donations.(*stubDonations).cfg = nil
 	if code, _ := get(t, d3, "/api/v1/corporation/donations"); code != http.StatusForbidden {

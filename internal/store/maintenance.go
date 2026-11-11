@@ -9,13 +9,11 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 )
 
-// DemoUser mirrors the users row for the demo account.
 type DemoUser struct {
 	ID   int64
 	Name string
 }
 
-// EnsureDemoUser finds or creates the demo account user.
 func (s *SQL) EnsureDemoUser(ctx context.Context, email string) (int64, error) {
 	var id int64
 	err := s.db.GetContext(ctx, &id, `SELECT id FROM users WHERE email = ?`, email)
@@ -33,10 +31,6 @@ func (s *SQL) EnsureDemoUser(ctx context.Context, email string) (int64, error) {
 	return res.LastInsertId()
 }
 
-// TouchDemoUser refreshes the demo account flags + login. It also backfills
-// the demo ESI scopes on the account's characters: resets created before the
-// scope fix left them scopeless, which empties every scope-gated tab (assets,
-// industry) until the next daily reset.
 func (s *SQL) TouchDemoUser(ctx context.Context, id int64) error {
 	scopes, _ := json.Marshal(esi.DemoScopes)
 	_, err := s.db.ExecContext(ctx, `UPDATE characters SET scopes = ? WHERE user_id = ?`, string(scopes), id)
@@ -48,8 +42,6 @@ func (s *SQL) TouchDemoUser(ctx context.Context, id int64) error {
 	return err
 }
 
-// WipeUserContent deletes everything the demo reset clears: characters stay
-// for last (FK), snapshots handled by asset owner cleanup in jobs.
 func (s *SQL) WipeUserContent(ctx context.Context, userID int64) error {
 	for _, q := range []string{
 		`DELETE FROM station_configs WHERE user_id = ?`,
@@ -70,7 +62,6 @@ func (s *SQL) WipeUserContent(ctx context.Context, userID int64) error {
 	return nil
 }
 
-// MaxCharacterColumn returns MAX(column) for demo id allocation.
 func (s *SQL) MaxCharacterColumn(ctx context.Context, column string, floor, ceiling int64) (int64, error) {
 	var max sql.NullInt64
 	allowed := map[string]bool{"character_id": true, "corporation_id": true, "alliance_id": true}
@@ -84,7 +75,6 @@ func (s *SQL) MaxCharacterColumn(ctx context.Context, column string, floor, ceil
 	return max.Int64, nil
 }
 
-// DemoCharacter mirrors the characters insert for demo regen.
 type DemoCharacter struct {
 	CharacterID   int64
 	UserID        int64
@@ -100,8 +90,6 @@ type DemoCharacter struct {
 	CachedTrain   string
 }
 
-// CreateDemoCharacter inserts one demo character. Demo characters carry the
-// full demo scope set so scope-gated tabs (assets, industry) serve demo data.
 func (s *SQL) CreateDemoCharacter(ctx context.Context, c DemoCharacter) error {
 	roles, _ := json.Marshal(c.Roles)
 	scopes, _ := json.Marshal(esi.DemoScopes)
@@ -115,7 +103,6 @@ func (s *SQL) CreateDemoCharacter(ctx context.Context, c DemoCharacter) error {
 	return err
 }
 
-// ActiveSweepIDs lists completed sweep ids per region for pruning.
 func (s *SQL) ActiveSweepIDs(ctx context.Context, regionID int, keep int) ([]string, error) {
 	var out []string
 	err := s.db.SelectContext(ctx, &out, `SELECT sweep_id FROM market_order_sweeps
@@ -126,7 +113,6 @@ func (s *SQL) ActiveSweepIDs(ctx context.Context, regionID int, keep int) ([]str
 	return out, err
 }
 
-// SweptRegionIDs lists regions with completed sweeps.
 func (s *SQL) SweptRegionIDs(ctx context.Context) ([]int, error) {
 	var out []int
 	err := s.db.SelectContext(ctx, &out, `SELECT DISTINCT region_id FROM market_order_sweeps WHERE status = 'completed'`)
@@ -136,7 +122,6 @@ func (s *SQL) SweptRegionIDs(ctx context.Context) ([]int, error) {
 	return out, err
 }
 
-// PrunableSweeps lists completed sweeps older than the cutoff excluding ids.
 func (s *SQL) PrunableSweeps(ctx context.Context, regionID int, cutoff time.Time, exclude []string) ([]string, error) {
 	q := `SELECT sweep_id FROM market_order_sweeps
 		WHERE region_id = ? AND status = 'completed' AND finished_at < ?`
@@ -167,7 +152,6 @@ func (s *SQL) PrunableSweeps(ctx context.Context, regionID int, cutoff time.Time
 	return out, nil
 }
 
-// DeleteSweepAggregates removes one sweep's aggregates in batches.
 func (s *SQL) DeleteSweepAggregates(ctx context.Context, regionID int, sweepID string, batch int) (int64, error) {
 	var total int64
 	for {
@@ -185,13 +169,11 @@ func (s *SQL) DeleteSweepAggregates(ctx context.Context, regionID int, sweepID s
 	return total, nil
 }
 
-// ContractGenerationRow mirrors the generations table for pruning.
 type ContractGenerationRow struct {
 	ID     int64  `db:"id"`
 	Status string `db:"status"`
 }
 
-// PrunableContractGenerations ports the candidate query.
 func (s *SQL) PrunableContractGenerations(ctx context.Context, graceCutoff, failedCutoff time.Time, keep int, activeID *int64) ([]ContractGenerationRow, error) {
 	var keepIDs []int64
 	err := s.db.SelectContext(ctx, &keepIDs, `SELECT id FROM public_contract_generations
@@ -224,7 +206,6 @@ func (s *SQL) PrunableContractGenerations(ctx context.Context, graceCutoff, fail
 	return out, nil
 }
 
-// ActiveContractGeneration reads the published pointer.
 func (s *SQL) ActiveContractGeneration(ctx context.Context) (*int64, error) {
 	var id sql.NullInt64
 	err := s.db.GetContext(ctx, &id, `SELECT active_generation_id FROM public_contract_snapshot_state WHERE id = 1`)
@@ -238,7 +219,6 @@ func (s *SQL) ActiveContractGeneration(ctx context.Context) (*int64, error) {
 	return &v, nil
 }
 
-// DeleteContractGenerationItems removes one generation's staged rows.
 func (s *SQL) DeleteContractGenerationItems(ctx context.Context, generationID int64, batch int) (int64, error) {
 	var total int64
 	for {
@@ -256,7 +236,6 @@ func (s *SQL) DeleteContractGenerationItems(ctx context.Context, generationID in
 	return total, nil
 }
 
-// DeleteContractGenerationContracts removes staged contracts.
 func (s *SQL) DeleteContractGenerationContracts(ctx context.Context, generationID int64, batch int) (int64, error) {
 	var total int64
 	for {
@@ -274,7 +253,6 @@ func (s *SQL) DeleteContractGenerationContracts(ctx context.Context, generationI
 	return total, nil
 }
 
-// DeleteContractGeneration drops the generation row when still prunable.
 func (s *SQL) DeleteContractGeneration(ctx context.Context, generationID int64) (bool, error) {
 	active, err := s.ActiveContractGeneration(ctx)
 	if err != nil {

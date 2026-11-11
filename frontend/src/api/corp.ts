@@ -2,11 +2,11 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { api, ApiError, unwrap, type ApiErrorBody } from './client'
 import type { components, paths } from './schema'
 
-/** Queries on corporation endpoints: a 403 says what to fix, so it is never retried. */
+
 const retryUnlessForbidden = (failures: number, error: unknown) =>
   !(error instanceof ApiError && error.status === 403) && failures < 1
 
-/** Await a write that answers 2xx with no body; throw ApiError otherwise. */
+
 async function noContent(request: Promise<{ response: Response; error?: unknown }>) {
   const { response, error } = await request
   if (!response.ok) throw new ApiError(response.status, error as ApiErrorBody | undefined)
@@ -18,9 +18,7 @@ export type ContributorsQuery = NonNullable<
 >
 export type StructureWindowRequest = components['schemas']['StructureWindowRequest']
 
-// ── Donations ──────────────────────────────────────────────────────────────
 
-/** Whether donation tracking is on, who provides it, and who could enable it. */
 export function useDonationStatus() {
   return useQuery({
     queryKey: ['corp', 'donations', 'status'],
@@ -28,7 +26,7 @@ export function useDonationStatus() {
   })
 }
 
-/** Donations by donator. 403 when tracking is off, so only ask once `enabled`. */
+
 export function useDonations(query: DonationsQuery, enabled: boolean) {
   return useQuery({
     queryKey: ['corp', 'donations', query],
@@ -56,7 +54,7 @@ export function useDisableDonations() {
   })
 }
 
-/** Forget the cached wallet journals (204), then reload. */
+
 export function useRefreshDonations() {
   const client = useQueryClient()
   return useMutation({
@@ -65,9 +63,7 @@ export function useRefreshDonations() {
   })
 }
 
-// ── Projects ───────────────────────────────────────────────────────────────
 
-/** The corporation's projects. Slow on a cold cache: one ESI call per project. */
 export function useProjects() {
   return useQuery({
     queryKey: ['corp', 'projects'],
@@ -88,7 +84,7 @@ export function useProjectContributors(query: ContributorsQuery) {
   })
 }
 
-/** Forget the cached projects (204), then reload both project pages. */
+
 export function useRefreshProjects() {
   const client = useQueryClient()
   return useMutation({
@@ -97,7 +93,6 @@ export function useRefreshProjects() {
   })
 }
 
-// ── Structure vulnerability windows ────────────────────────────────────────
 
 export function useStructureWindows() {
   return useQuery({
@@ -134,9 +129,7 @@ export function useRemoveStructureWindow() {
   )
 }
 
-// ── Solar system typeahead ─────────────────────────────────────────────────
 
-/** Systems whose name contains `q` (at most 20). Idle below two characters. */
 export function useSystemSearch(q: string) {
   const term = q.trim()
   return useQuery({
@@ -147,9 +140,7 @@ export function useSystemSearch(q: string) {
   })
 }
 
-// ── Corporate build programs ───────────────────────────────────────────────
 
-/** Whether the feature is on, what the user may do, and the programs. Never 403. */
 export function useBuildProgramsOverview() {
   return useQuery({
     queryKey: ['corp', 'build-programs'],
@@ -157,7 +148,7 @@ export function useBuildProgramsOverview() {
   })
 }
 
-/** One program with its step tree. 404 when it is another corporation's. */
+
 export function useBuildProgram(id: number) {
   return useQuery({
     queryKey: ['corp', 'build-programs', id],
@@ -166,11 +157,7 @@ export function useBuildProgram(id: number) {
   })
 }
 
-/**
- * Stock found for a program, counted at the given locations (all when empty).
- * Reads the corporation's assets with the enabling director's token, so it
- * can be slow on a cold cache.
- */
+
 export function useBuildProgramProgress(id: number, inputIds: number[], outputIds: number[]) {
   return useQuery({
     queryKey: ['corp', 'build-programs', id, 'progress', inputIds, outputIds],
@@ -188,7 +175,7 @@ export function useBuildProgramProgress(id: number, inputIds: number[], outputId
   })
 }
 
-/** Stations and structures that hold the corporation's assets, for the location filters. */
+
 export function useBuildProgramLocations(id: number) {
   return useQuery({
     queryKey: ['corp', 'build-programs', id, 'locations'],
@@ -247,7 +234,7 @@ export function useSaveLocationFilter() {
 
 export function useMergeBuildPrograms() {
   return useProgramsMutation(async (body: { program_ids: number[]; name: string }) =>
-    // The spec types this 201 as a bare number; the body is the new program.
+    
     (unwrap(await api.POST('/corporation/build-programs/merge', { body })) as unknown as { data: { id: number } }),
   )
 }

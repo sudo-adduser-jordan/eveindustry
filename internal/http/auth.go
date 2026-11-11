@@ -10,7 +10,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// AppConfig carries the public app metadata MeResource exposes.
 type AppConfig struct {
 	SourceURL string
 }
@@ -22,15 +21,11 @@ const (
 	ctxUIDKey  ctxKey = "auth.uid"
 )
 
-// CurrentUser returns the authenticated user set by RequireAuth.
 func CurrentUser(c echo.Context) (*auth.User, bool) {
 	u, ok := c.Get(string(ctxUserKey)).(*auth.User)
 	return u, ok && u != nil
 }
 
-// RequireAuth mirrors auth:sanctum for the versioned API: no valid session
-// (or no such user) is a 401 unauthenticated, never a redirect. /health
-// stays public; register it before this middleware runs.
 func RequireAuth(d Deps) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -55,8 +50,6 @@ func RequireAuth(d Deps) echo.MiddlewareFunc {
 	}
 }
 
-// BlockDemo mirrors BlockDemoUser: demo accounts are read-mostly; writes
-// outside the allow list get 403 demo_restricted.
 func BlockDemo(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		if u, ok := CurrentUser(c); ok {
@@ -71,7 +64,6 @@ func BlockDemo(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-// GET /me — mirrors MeController@show: the user with main-first characters.
 func handleMe(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		u, ok := CurrentUser(c)
@@ -87,7 +79,6 @@ func handleMe(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /logout — mirrors SessionController@destroy: clear the session, 204.
 func handleLogout(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		if d.Sessions != nil {
@@ -97,8 +88,6 @@ func handleLogout(d Deps) echo.HandlerFunc {
 	}
 }
 
-// DELETE /account — mirrors AccountController@destroy: delete the user row
-// (characters cascade), clear the session, 204.
 func handleAccountDelete(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid, ok := c.Get(string(ctxUIDKey)).(int64)
@@ -115,20 +104,13 @@ func handleAccountDelete(d Deps) echo.HandlerFunc {
 	}
 }
 
-// DemoEmail is the shared demo account email. It matches the address
-// jobs.ResetDemoAccount warms, so demo sign-in lands on the reset data.
 const DemoEmail = "demo@eve-industrialist.invalid"
 
-// DemoUsers creates and touches the shared demo account for
-// POST /demo/login. store.SQL implements it.
 type DemoUsers interface {
 	EnsureDemoUser(ctx context.Context, email string) (int64, error)
 	TouchDemoUser(ctx context.Context, id int64) error
 }
 
-// sessionUser returns the logged-in user, or nil for anonymous callers and
-// lookup failures. The login pages use it to bounce signed-in visitors to
-// the app instead of failing on a sick database.
 func sessionUser(c echo.Context, d Deps) *auth.User {
 	if d.Sessions == nil || d.Users == nil {
 		return nil
@@ -144,9 +126,6 @@ func sessionUser(c echo.Context, d Deps) *auth.User {
 	return u
 }
 
-// GET /login — public sign-in entry. The SPA owns the login UI at
-// /app/login, so anonymous visits bounce there (keeping one login screen);
-// signed-in visitors go straight to the app.
 func handleLogin(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		if sessionUser(c, d) != nil {
@@ -156,7 +135,6 @@ func handleLogin(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /welcome — legacy landing page. The SPA owns the login UI now.
 func handleWelcome(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		if sessionUser(c, d) != nil {
@@ -166,9 +144,6 @@ func handleWelcome(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /demo/login — signs in the shared demo account. 404s when demo mode
-// is off, like the PHP route. JSON clients (the SPA login page) get a 200
-// body with the redirect instead of following the form 302.
 func handleDemoLogin(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		if !d.DemoEnabled || d.DemoUsers == nil || d.Sessions == nil {

@@ -5,18 +5,14 @@ import (
 	"database/sql"
 )
 
-// StockStore covers the industry stock manager watch list.
 type StockStore interface {
-	// WatchedItems returns the user's tracked items ordered by type name.
 	WatchedItems(ctx context.Context, userID int64) ([]WatchedItem, error)
-	// WatchedItem returns one tracked item owned by the user, else nil.
 	WatchedItem(ctx context.Context, id, userID int64) (*WatchedItem, error)
 	UpsertWatchedItem(ctx context.Context, in WatchedItemUpsert) (*WatchedItem, error)
 	UpdateWatchedItemQuantity(ctx context.Context, id, userID, desired int64) (*WatchedItem, error)
 	DeleteWatchedItem(ctx context.Context, id, userID int64) (bool, error)
 }
 
-// WatchedItem mirrors one industry_stock_items row.
 type WatchedItem struct {
 	ID              int64  `db:"id"`
 	TypeID          int    `db:"type_id"`
@@ -35,8 +31,6 @@ func (s *SQL) WatchedItems(ctx context.Context, userID int64) ([]WatchedItem, er
 	return out, err
 }
 
-// WatchedItemUpsert mirrors IndustryStockService::saveItem: insert or update
-// the wanted quantity for a (user, type) pair.
 type WatchedItemUpsert struct {
 	UserID          int64
 	TypeID          int

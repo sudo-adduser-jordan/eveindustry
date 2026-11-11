@@ -8,7 +8,7 @@ type Material = Omit<ManufacturingResult['materials'][number], 'price_source'>
 
 const money = (n: number) => isk(n)
 
-/** The materials of one job: buy cost, build cost and (for buildable parts) the sub-materials. */
+
 export function MaterialsPanel({ result, fileName }: { result: ManufacturingResult; fileName: string }) {
   return (
     <MaterialsTable
@@ -20,7 +20,7 @@ export function MaterialsPanel({ result, fileName }: { result: ManufacturingResu
   )
 }
 
-/** The same table for any job whose materials have the manufacturing shape (the invention T2 bill of materials). */
+
 export function MaterialsTable({
   materials,
   buy,
@@ -191,7 +191,7 @@ function MaterialRow({ material: m, open, onToggle }: { material: Material; open
   )
 }
 
-/** Time, cost and profit, build fees, build-vs-buy and the two scenario summaries. */
+
 export function JobSummary({ result }: { result: ManufacturingResult }) {
   const fee = result.build_fee
   const buy = result.scenarios.full_buy
@@ -305,7 +305,7 @@ function ScenarioTable({
   revenue: number
   afterFees: boolean
 }) {
-  // Without job fees the "after fees" figures equal the plain ones, minus the SCC fee already in the total.
+  
   const profit = afterFees ? scenario.profit_after_fees : scenario.profit
   const margin = afterFees ? scenario.margin_after_fees : scenario.margin
   const perUnit = afterFees ? scenario.per_unit_after_fees : scenario.per_unit

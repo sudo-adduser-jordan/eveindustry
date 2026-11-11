@@ -8,8 +8,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// BlueprintActivityRow mirrors the blueprint_activities table: materials,
-// products and skills are raw JSON payloads decoded by this package.
 type BlueprintActivityRow struct {
 	BlueprintTypeID int            `db:"blueprint_type_id"`
 	ActivityID      int            `db:"activity_id"`
@@ -19,7 +17,6 @@ type BlueprintActivityRow struct {
 	Skills          sql.NullString `db:"skills"`
 }
 
-// ReactionFormula is one activity-11 row with its SDE formula name.
 type ReactionFormula struct {
 	BlueprintTypeID int
 	FormulaName     string
@@ -29,8 +26,6 @@ type ReactionFormula struct {
 	Time            int
 }
 
-// AllReactionFormulas ports getAllReactions()' first half: every activity-11
-// row with products, joined to eve_types for the formula name/group.
 func (s *SQL) AllReactionFormulas(ctx context.Context) ([]ReactionFormula, error) {
 	var rows []struct {
 		BlueprintTypeID int            `db:"blueprint_type_id"`
@@ -73,7 +68,6 @@ func (s *SQL) AllReactionFormulas(ctx context.Context) ([]ReactionFormula, error
 	return out, nil
 }
 
-// MfgActivity is one activity-1 row with products for the browser.
 type MfgActivity struct {
 	BlueprintTypeID int
 	Materials       []map[string]any
@@ -81,10 +75,6 @@ type MfgActivity struct {
 	Time            int
 }
 
-// AllManufacturingActivities ports the activity fetch of
-// getAllManufacturingBlueprints / getManufacturingBlueprintsForMarketGroup:
-// every activity-1 row with products (invented-BPO exclusion happens in
-// calc over InventedBlueprintIDs()).
 func (s *SQL) AllManufacturingActivities(ctx context.Context) ([]MfgActivity, error) {
 	var rows []struct {
 		BlueprintTypeID int            `db:"blueprint_type_id"`
@@ -110,8 +100,6 @@ func (s *SQL) AllManufacturingActivities(ctx context.Context) ([]MfgActivity, er
 	return out, nil
 }
 
-// InventedBlueprintIDs ports getInventedBlueprintTypeIds(): blueprint type
-// ids produced by invention activities (T2/T3 BPOs don't exist as originals).
 func (s *SQL) InventedBlueprintIDs(ctx context.Context) (map[int]bool, error) {
 	var rows []struct {
 		Products sql.NullString `db:"products"`
@@ -135,8 +123,6 @@ func (s *SQL) InventedBlueprintIDs(ctx context.Context) (map[int]bool, error) {
 	return out, nil
 }
 
-// MarketGroupDescendants ports collectDescendantGroupIds(): breadth-first
-// walk, one query per tree level.
 func (s *SQL) MarketGroupDescendants(ctx context.Context, parentID int) ([]int, error) {
 	seen := map[int]bool{parentID: true}
 	var all []int
@@ -163,7 +149,6 @@ func (s *SQL) MarketGroupDescendants(ctx context.Context, parentID int) ([]int, 
 	return all, nil
 }
 
-// PublishedTypesInGroups ports collectMarketGroupTypeIds().
 func (s *SQL) PublishedTypesInGroups(ctx context.Context, groupIDs []int) ([]int, error) {
 	if len(groupIDs) == 0 {
 		return nil, nil
@@ -177,8 +162,6 @@ func (s *SQL) PublishedTypesInGroups(ctx context.Context, groupIDs []int) ([]int
 	return out, err
 }
 
-// TypeGroupMeta returns group_id + meta_group_id per type for the browser
-// exclusion and category filters.
 type TypeGroupMeta struct {
 	TypeID      int           `db:"type_id"`
 	GroupID     sql.NullInt64 `db:"group_id"`
@@ -198,14 +181,12 @@ func (s *SQL) TypeGroupMeta(ctx context.Context, typeIDs []int) ([]TypeGroupMeta
 	return out, err
 }
 
-// GroupsInCategory resolves inv_groups for a category (category filter).
 func (s *SQL) GroupsInCategory(ctx context.Context, categoryID int) ([]int, error) {
 	var out []int
 	err := s.db.SelectContext(ctx, &out, `SELECT group_id FROM inv_groups WHERE category_id = ?`, categoryID)
 	return out, err
 }
 
-// PrecomputedCost mirrors one manufacturing_costs row.
 type PrecomputedCost struct {
 	ProductTypeID           int     `db:"product_type_id"`
 	BlueprintTypeID         int     `db:"blueprint_type_id"`
@@ -223,8 +204,6 @@ type PrecomputedCost struct {
 	SellScoreTotalDays      int     `db:"sell_score_total_days"`
 }
 
-// PrecomputedCosts ports browsePrecomputed()'s query: costs for the group's
-// products in one region/ME, ordered by base profit desc, paginated in SQL.
 func (s *SQL) PrecomputedCosts(ctx context.Context, productIDs []int, regionID, meLevel, limit, offset int) ([]PrecomputedCost, int, error) {
 	if len(productIDs) == 0 {
 		return nil, 0, nil
@@ -255,7 +234,6 @@ func (s *SQL) PrecomputedCosts(ctx context.Context, productIDs []int, regionID, 
 	return out, total, nil
 }
 
-// IndustryStore covers the blueprint/invention/category reference reads.
 type IndustryStore interface {
 	SearchBlueprintTypes(ctx context.Context, like string, limit int) ([]BlueprintTypeHit, error)
 	SearchReactionTypes(ctx context.Context, like string, limit int) ([]BlueprintTypeHit, error)
@@ -285,19 +263,16 @@ type IndustryStore interface {
 	CategoryNames(ctx context.Context, categoryIDs []int) (map[int]string, error)
 }
 
-// BlueprintTypeHit is one eve_types row for search results.
 type BlueprintTypeHit struct {
 	TypeID  int           `db:"type_id"`
 	Name    string        `db:"name"`
 	GroupID sql.NullInt64 `db:"group_id"`
 }
 
-// SQL is the sqlx implementation of IndustryStore.
 type SQL struct {
 	db *sqlx.DB
 }
 
-// NewSQL wraps an open sqlx DB.
 func NewSQL(db *sqlx.DB) *SQL { return &SQL{db: db} }
 
 func (s *SQL) SearchBlueprintTypes(ctx context.Context, like string, limit int) ([]BlueprintTypeHit, error) {
@@ -344,12 +319,10 @@ func (s *SQL) ActivityByBlueprint(ctx context.Context, blueprintTypeID, activity
 	return &row, nil
 }
 
-// ActivityProducing aliases ActivityProducingType for calc.ChainResolver.
 func (s *SQL) ActivityProducing(ctx context.Context, typeID, activityID int) (*BlueprintActivityRow, error) {
 	return s.ActivityProducingType(ctx, typeID, activityID)
 }
 
-// GroupsOf returns eve_types.group_id per type for chain fuel-block checks.
 func (s *SQL) GroupsOf(ctx context.Context, typeIDs []int) (map[int]int, error) {
 	out := map[int]int{}
 	if len(typeIDs) == 0 {
@@ -374,8 +347,6 @@ func (s *SQL) GroupsOf(ctx context.Context, typeIDs []int) (map[int]int, error) 
 	return out, nil
 }
 
-// ActivityProducingType ports BlueprintActivity::scopeWhereProducesType() on
-// MySQL: JSON_CONTAINS over the products array.
 func (s *SQL) ActivityProducingType(ctx context.Context, typeID, activityID int) (*BlueprintActivityRow, error) {
 	doc, _ := json.Marshal([]map[string]int{{"type_id": typeID}})
 	var row BlueprintActivityRow
@@ -420,8 +391,6 @@ func (s *SQL) TypeNames(ctx context.Context, typeIDs []int) (map[int]string, err
 	return out, nil
 }
 
-// TypeVolumes ports the show-page volume lookup: packaged_volume wins over
-// volume, missing types read as 0.
 func (s *SQL) TypeVolumes(ctx context.Context, typeIDs []int) (map[int]float64, error) {
 	out := map[int]float64{}
 	if len(typeIDs) == 0 {
@@ -444,12 +413,7 @@ func (s *SQL) TypeVolumes(ctx context.Context, typeIDs []int) (map[int]float64, 
 	return out, nil
 }
 
-// ProductTypeIDsExcludingInvented ports the first half of
-// getAvailableProductCategories(): product type ids from T1 (non-invented)
-// manufacturing blueprints. Invented T2 blueprints are those with an
-// invention activity producing them.
 func (s *SQL) ProductTypeIDsExcludingInvented(ctx context.Context) ([]int, error) {
-	// Invented T2 blueprints: invention activities' product type ids.
 	var invRows []struct {
 		Products sql.NullString `db:"products"`
 	}
@@ -468,7 +432,6 @@ func (s *SQL) ProductTypeIDsExcludingInvented(ctx context.Context) ([]int, error
 			}
 		}
 	}
-	// Manufacturing activities whose blueprint is itself an invented product.
 	var mfg []struct {
 		Blueprint int            `db:"blueprint_type_id"`
 		Products  sql.NullString `db:"products"`
@@ -566,15 +529,12 @@ func (s *SQL) CategoryNames(ctx context.Context, categoryIDs []int) (map[int]str
 	return out, nil
 }
 
-// ReprocessMaterial is one type_materials row: quantity of material per
-// portion of the reprocessed type.
 type ReprocessMaterial struct {
 	TypeID         int `db:"type_id"`
 	MaterialTypeID int `db:"material_type_id"`
 	Quantity       int `db:"quantity"`
 }
 
-// TypePortions batch-loads portion_size per type (callers default missing to 1).
 func (s *SQL) TypePortions(ctx context.Context, typeIDs []int) (map[int]int, error) {
 	out := map[int]int{}
 	if len(typeIDs) == 0 {
@@ -599,9 +559,6 @@ func (s *SQL) TypePortions(ctx context.Context, typeIDs []int) (map[int]int, err
 	return out, nil
 }
 
-// TypeMaterials batch-loads type_materials rows grouped by type. Types absent
-// from the table (or Fuzzwork-only) yield no entry; the Go port skips the
-// Fuzzwork fallback by design (see plan.md conventions).
 func (s *SQL) TypeMaterials(ctx context.Context, typeIDs []int) (map[int][]ReprocessMaterial, error) {
 	out := map[int][]ReprocessMaterial{}
 	if len(typeIDs) == 0 {
@@ -621,7 +578,6 @@ func (s *SQL) TypeMaterials(ctx context.Context, typeIDs []int) (map[int][]Repro
 	return out, nil
 }
 
-// GroupNames batch-loads inv_groups names for ship grouping.
 func (s *SQL) GroupNames(ctx context.Context, groupIDs []int) (map[int]string, error) {
 	out := map[int]string{}
 	if len(groupIDs) == 0 {
@@ -656,8 +612,6 @@ func sortDemoPool(pool []demoPair) {
 	}
 }
 
-// DemoBlueprintPool ports DemoEsiResponder::blueprintPool(): priced
-// manufacturing [blueprint, product] pairs ordered by blueprint, cap 400.
 func (s *SQL) DemoBlueprintPool(ctx context.Context) ([][2]int, error) {
 	type row struct {
 		BP       int            `db:"blueprint_type_id"`

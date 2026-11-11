@@ -12,7 +12,6 @@ import (
 	"testing"
 )
 
-// laravelEncrypt builds a Crypt::encryptString-compatible payload for tests.
 func laravelEncrypt(plain string, key []byte) string {
 	iv := make([]byte, aes.BlockSize)
 	_, _ = rand.Read(iv)

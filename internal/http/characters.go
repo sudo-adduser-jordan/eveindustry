@@ -6,7 +6,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// registerCharacters mounts character management: set main, unlink.
 func registerCharacters(v1 *echo.Group, d Deps) {
 	if d.Users == nil {
 		return
@@ -15,7 +14,6 @@ func registerCharacters(v1 *echo.Group, d Deps) {
 	v1.DELETE("/characters/:id", handleCharacterDelete(d))
 }
 
-// POST /characters/:id/main — promote to main. Foreign ids 404.
 func handleSetMain(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := essID(c)
@@ -38,8 +36,6 @@ func handleSetMain(d Deps) echo.HandlerFunc {
 	}
 }
 
-// DELETE /characters/:id — unlink. Foreign ids 404; the last character
-// cannot be removed (422).
 func handleCharacterDelete(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := essID(c)

@@ -1,15 +1,12 @@
 import { useState } from 'react'
 import { useCorporateExport, useCreateBuildProgram, type BuildProgramRequest } from '../../api/calculators'
 
-/** Where the finished program is shown (Blade pages until build programs are ported). */
+
 function programUrl(corporate: boolean, id: number): string {
   return corporate ? `/corporate/build-programs/${id}` : `/build-programs/${id}`
 }
 
-/**
- * Creates a build program from calculator steps and opens it. The corporate
- * variant only renders when the user may manage corporate programs.
- */
+
 export function ExportProgramButton({
   label,
   corporate = false,
@@ -49,7 +46,7 @@ export function ExportProgramButton({
   )
 }
 
-/** The corporate export button for the corporation the user may export to, or nothing. */
+
 export function CorporateExportButton({ label, build }: { label: string; build: () => BuildProgramRequest }) {
   const access = useCorporateExport()
   if (!access.data?.data.available) return null

@@ -35,13 +35,13 @@ const GRADES: Array<[string, string, string]> = [
 
 const TIER_LABEL: Record<number, string> = { 5: 'R64', 4: 'R32', 3: 'R16', 2: 'R8', 1: 'R4', 0: '?' }
 
-/** The ISK value with the same suffixes the classic page used (T/B/M/K). */
+
 export function formatMoonIsk(value: number): string {
   if (value >= 1e12) return `${(value / 1e12).toFixed(2)}T`
   return formatIsk(value)
 }
 
-/** Moons without the occupied ones when the filter is on, plus per-grade counts. */
+
 export function summarise(moons: Moon[], hideOccupied: boolean) {
   const visible = hideOccupied ? moons.filter((m) => !m.occupied) : moons
   return {
@@ -58,7 +58,7 @@ function errorMessage(error: unknown, fallback: string): string {
 function CorporationPicker({ onPick, onCancel }: { onPick: (id: number, name: string) => void; onCancel: () => void }) {
   const [text, setText] = useState('')
   const [q, setQ] = useState('')
-  // Wait for a pause in typing before asking ESI.
+  
   useEffect(() => {
     const timer = setTimeout(() => setQ(text.trim()), 350)
     return () => clearTimeout(timer)

@@ -85,7 +85,6 @@ func TestAvailability(t *testing.T) {
 	}
 	ch := chars[0].(map[string]any)
 	mfg := ch["manufacturing"].(map[string]any)
-	// 1 + 5 + 4 = 10 slots, 1 active
 	if mfg["total"] != 10.0 || mfg["active"] != 1.0 || mfg["available"] != 9.0 {
 		t.Fatalf("mfg = %v", mfg)
 	}
@@ -117,7 +116,6 @@ func TestReprocessing(t *testing.T) {
 		t.Fatalf("characters = %v", data["characters"])
 	}
 	ch := chars[0].(map[string]any)
-	// yield = .5*1.15*1.1 = .6325 -> 63.2%
 	if ch["yield_pct"] != 63.2 {
 		t.Fatalf("yield = %v", ch["yield_pct"])
 	}
@@ -131,7 +129,6 @@ func TestReprocessing(t *testing.T) {
 		t.Fatalf("items = %v", loc["items"])
 	}
 	it := items[0].(map[string]any)
-	// 100 Rifters @1000 = 100000 market; reprocess: floor(200*.6325)=126 Trit *100 batches... batches=100/1=100 -> 12600 Trit @10 = 126000 > 100000
 	if it["profit"] != 26000.0 {
 		t.Fatalf("item = %v", it)
 	}

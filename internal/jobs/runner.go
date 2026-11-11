@@ -8,47 +8,34 @@ import (
 	"time"
 )
 
-// Handler runs one job's payload. Returning an error retries the job until
-// MaxTries, mirroring Horizon's tries/timeout contract ($timeout caps a
-// single attempt; attempts beyond MaxTries are dropped with a log).
 type Handler func(ctx context.Context, d Deps, payload json.RawMessage) error
 
-// JobDef registers a job: its queue, retry budget and single-attempt timeout.
 type JobDef struct {
 	Queue    string
 	MaxTries int
 	Timeout  time.Duration
-	Unique   time.Duration // dedupe window; 0 disables (ShouldBeUnique)
+	Unique   time.Duration
 	Run      Handler
 }
 
-// Deps carries what job bodies need. Concrete wiring lives in cmd/worker.
 type Deps struct {
-	Log *slog.Logger
-	// Locks is nil when the process runs without a database: uniqueness
-	// windows become no-ops.
+	Log   *slog.Logger
 	Locks Locker
 }
 
-// Runner dispatches envelopes to registered handlers.
 type Runner struct {
 	Jobs map[string]JobDef
 	Deps Deps
 }
 
-// NewRunner builds an empty runner.
 func NewRunner(d Deps) *Runner { return &Runner{Jobs: map[string]JobDef{}, Deps: d} }
 
-// Register adds a job definition.
 func (r *Runner) Register(name string, def JobDef) { r.Jobs[name] = def }
 
-// uniqueKey mirrors ShouldBeUnique: one active envelope per name+payload.
 func uniqueKey(name string, payload json.RawMessage) string {
 	return "jobs:unique:" + name + ":" + string(payload)
 }
 
-// AcquireUnique holds the uniqueness lock for window. False means a
-// duplicate is already queued/running and this dispatch is skipped.
 func AcquireUnique(ctx context.Context, l Locker, name string, payload json.RawMessage, window time.Duration) bool {
 	if l == nil || window <= 0 {
 		return true
@@ -56,7 +43,6 @@ func AcquireUnique(ctx context.Context, l Locker, name string, payload json.RawM
 	return l.Acquire(ctx, uniqueKey(name, payload), window)
 }
 
-// Dispatch pushes an envelope, honoring the job's uniqueness window.
 func (r *Runner) Dispatch(ctx context.Context, q Queue, name string, payload json.RawMessage) error {
 	def, ok := r.Jobs[name]
 	if !ok {
@@ -68,9 +54,6 @@ func (r *Runner) Dispatch(ctx context.Context, q Queue, name string, payload jso
 	return q.Push(ctx, def.Queue, Envelope{Name: name, Payload: payload, MaxTries: def.MaxTries})
 }
 
-// RunOne executes a single envelope with its timeout. A nil error releases
-// the uniqueness lock; failures keep it until the window lapses (like
-// ShouldBeUniqueUntilProcessing expiring with the job).
 func (r *Runner) RunOne(ctx context.Context, e Envelope) error {
 	def, ok := r.Jobs[e.Name]
 	if !ok {
@@ -114,7 +97,6 @@ func (r *Runner) RunOne(ctx context.Context, e Envelope) error {
 	return nil
 }
 
-// ShouldRetry reports whether a failed envelope goes back on its queue.
 func (r *Runner) ShouldRetry(e Envelope) (Envelope, bool) {
 	def, ok := r.Jobs[e.Name]
 	if !ok {

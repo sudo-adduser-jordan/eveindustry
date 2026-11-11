@@ -9,7 +9,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// Skill IDs for slot counts (mirrors IndustryService).
 const (
 	SkillMassProduction      = 3387
 	SkillAdvMassProduction   = 24625
@@ -19,10 +18,8 @@ const (
 	SkillAdvMassReactions    = 45749
 )
 
-// ResearchActivities mirrors the PHP RESEARCH_ACTIVITIES list.
 var ResearchActivities = []int{3, 4, 5, 8}
 
-// DetailedActivityNames mirrors the detailed-job activity names.
 var DetailedActivityNames = map[int]string{
 	1: "Manufacturing",
 	3: "Time Efficiency Research",
@@ -32,7 +29,6 @@ var DetailedActivityNames = map[int]string{
 	9: "Reactions",
 }
 
-// ReadyActivityNames mirrors the ready-for-collection activity names.
 var ReadyActivityNames = map[int]string{
 	1: "Manufacturing",
 	3: "Research (TE)",
@@ -42,14 +38,12 @@ var ReadyActivityNames = map[int]string{
 	9: "Reactions",
 }
 
-// AvailCharacters is the ESI surface availability computation needs.
 type AvailCharacters interface {
 	GetSkills(ctx context.Context, characterID int64) (map[int]int, error)
 	GetIndustryJobs(ctx context.Context, characterID int64, includeCompleted bool) ([]map[string]any, error)
 	GetCorporationIndustryJobs(ctx context.Context, characterID, corporationID int64, includeCompleted bool) ([]map[string]any, error)
 }
 
-// AvailUniverse resolves names, images and locations.
 type AvailUniverse interface {
 	GetTypeInfo(ctx context.Context, typeID int) (map[string]any, error)
 	GetBestTypeImageUrl(ctx context.Context, typeID int, isBlueprint bool) string
@@ -58,12 +52,10 @@ type AvailUniverse interface {
 	GetStructure(ctx context.Context, structureID uint64, characterID int64) (map[string]any, error)
 }
 
-// AvailCorp reads corp roles for the corp-jobs collector.
 type AvailCorp interface {
 	UserCorpCharacters(ctx context.Context, userID, corporationID int64) ([]CorpMember, error)
 }
 
-// CorpMember mirrors the corp-standing fields availability needs.
 type CorpMember struct {
 	CharacterID   int64
 	IsEsiActive   bool
@@ -72,22 +64,18 @@ type CorpMember struct {
 	Roles         []string
 }
 
-// AvailDeps carries the availability computation collaborators.
 type AvailDeps struct {
 	Characters AvailCharacters
 	Universe   AvailUniverse
 	Corp       AvailCorp
 }
 
-// AvailData is the computed availability payload (characters, totals,
-// ready_for_collection).
 type AvailData struct {
 	Characters []any
 	Totals     map[string]map[string]int
 	Ready      []any
 }
 
-// HasScope reports whether the character holds a scope.
 func HasScope(ch auth.Character, scope string) bool {
 	for _, s := range ch.Scopes {
 		if s == scope {
@@ -106,8 +94,6 @@ func hasRole(roles []string, role string) bool {
 	return false
 }
 
-// CorpJobsFor ports getCorporationJobsForCharacter(): corp jobs started by
-// this character, via itself or a same-corp Factory_Manager sibling.
 func CorpJobsFor(ctx context.Context, d AvailDeps, uid int64, ch auth.Character) []map[string]any {
 	if ch.CorporationID == nil || *ch.CorporationID == 0 || d.Corp == nil {
 		return nil
@@ -153,9 +139,6 @@ func CorpJobsFor(ctx context.Context, d AvailDeps, uid int64, ch auth.Character)
 	return jobs
 }
 
-// AvailabilityData ports the slot computation shared by /availability and
-// the dashboard industry stats. Per-character ESI failures skip that
-// character.
 func AvailabilityData(ctx context.Context, d AvailDeps, chars []auth.Character, uid int64, now time.Time) AvailData {
 	out := AvailData{
 		Totals: map[string]map[string]int{
@@ -240,7 +223,6 @@ func slotGroup(total, active int, jobs []any) map[string]any {
 	}
 }
 
-// ActiveJobs filters active jobs, deduped by id.
 func ActiveJobs(jobs []map[string]any) []map[string]any {
 	out := []map[string]any{}
 	seen := map[int64]bool{}
@@ -258,7 +240,6 @@ func ActiveJobs(jobs []map[string]any) []map[string]any {
 	return out
 }
 
-// DetailedJobs ports getDetailedJobsByActivity.
 func DetailedJobs(ctx context.Context, d AvailDeps, ch auth.Character, jobs []map[string]any, activities []int, now time.Time) []any {
 	out := []any{}
 	for _, j := range jobs {
@@ -346,7 +327,6 @@ func DetailedJobs(ctx context.Context, d AvailDeps, ch auth.Character, jobs []ma
 	return out
 }
 
-// ReadyJobs ports getReadyForCollectionJobsForUser's per-character slice.
 func ReadyJobs(ctx context.Context, d AvailDeps, ch auth.Character, jobs []map[string]any, now time.Time) []any {
 	out := []any{}
 	cutoff := now.Add(60 * time.Second)
@@ -428,7 +408,6 @@ func inventionProbability(j map[string]any) *float64 {
 	return &v
 }
 
-// completingSoon ports getJobsCompletingSoon.
 func completingSoon(jobs []map[string]any, now time.Time) []any {
 	out := []any{}
 	limit := now.Add(time.Hour)

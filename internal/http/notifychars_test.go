@@ -109,11 +109,9 @@ func TestCharacters(t *testing.T) {
 	if code, _ := deleteReq(t, d, "/api/v1/characters/12"); code != http.StatusNoContent {
 		t.Fatalf("delete = %d", code)
 	}
-	// only one left -> 422
 	if code, _ := deleteReq(t, d, "/api/v1/characters/11"); code != http.StatusUnprocessableEntity {
 		t.Fatalf("last = %d", code)
 	}
-	// foreign -> 404
 	d2 := notifyTestDeps()
 	d2.Sessions.(*stubAuth).uid = 2
 	if code := postRaw(t, d2, "/api/v1/characters/11/main", `{}`); code != http.StatusNotFound {
@@ -138,7 +136,6 @@ func TestNotifications(t *testing.T) {
 	if types[2].(map[string]any)["available"] != true {
 		t.Fatalf("corp available = %v", types[2])
 	}
-	// subscribe
 	sub := `{"endpoint":"https://push.example/x","keys":{"p256dh":"k","auth":"a"}}`
 	if code, body := putJSON(t, d, "/api/v1/notifications/subscription", sub); code != http.StatusOK {
 		t.Fatalf("sub = %d %v", code, body)
@@ -148,7 +145,6 @@ func TestNotifications(t *testing.T) {
 	if code, _ := putJSON(t, d, "/api/v1/notifications/subscription", `{"endpoint":"http://x"}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad endpoint = %d", code)
 	}
-	// update prefs
 	upd := `{"types":{"pi.extractor_expiring":{"enabled":true,"lead_minutes":15,"character_ids":[12]}},"quiet_hours":{"start":"22:00","end":"07:00","timezone":"UTC"}}`
 	if code, body := putJSON(t, d, "/api/v1/notifications", upd); code != http.StatusOK {
 		t.Fatalf("update = %d %v", code, body)
@@ -164,21 +160,17 @@ func TestNotifications(t *testing.T) {
 			t.Fatalf("pi = %v", pi)
 		}
 	}
-	// unknown type -> 422
 	if code, _ := putJSON(t, d, "/api/v1/notifications", `{"types":{"nope.x":{"enabled":true}}}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad type = %d", code)
 	}
-	// foreign character -> 422
 	if code, _ := putJSON(t, d, "/api/v1/notifications", `{"types":{"pi.extractor_expiring":{"character_ids":[99]}}}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad char = %d", code)
 	}
-	// unsubscribe
 	if code, body := deleteJSON(t, d, "/api/v1/notifications/subscription", `{"endpoint":"https://push.example/x"}`); code != http.StatusOK {
 		t.Fatalf("unsub = %d %v", code, body)
 	} else if body["data"].(map[string]any)["devices"] != 0.0 {
 		t.Fatalf("devices = %v", body["data"])
 	}
-	// test -> 503
 	if code, _ := post(t, d, "/api/v1/notifications/test", `{}`); code != http.StatusServiceUnavailable {
 		t.Fatalf("test = %d", code)
 	}

@@ -1,7 +1,3 @@
-// Package esi is the Go port of the EVE ESI transport: outcome
-// classification, error circuit, sliding-window rate coordination, token
-// refresh and the HTTP client. Diagnostics recording, the response cache,
-// demo responses and the eight resource sub-clients arrive in later slices.
 package esi
 
 import (
@@ -9,7 +5,6 @@ import (
 	"time"
 )
 
-// Outcome mirrors the EsiRequestException outcome vocabulary.
 type Outcome string
 
 const (
@@ -25,8 +20,6 @@ const (
 	OutcomeIncomplete   Outcome = "incomplete"
 )
 
-// RequestError mirrors EsiRequestException: an outcome plus how long the
-// caller should wait before retrying (0 = do not retry on this path).
 type RequestError struct {
 	Outcome        Outcome
 	RetryAfterSecs int
@@ -37,22 +30,18 @@ func (e *RequestError) Error() string {
 	return fmt.Sprintf("esi %s (status %d, retry in %ds)", e.Outcome, e.Status, e.RetryAfterSecs)
 }
 
-// ESI error-limit constants mirror EsiService.
 const (
 	ErrorLimitThreshold      = 20
 	ErrorDefaultResetSeconds = 60
 )
 
-// Rate limiter defaults mirror EsiRateLimiter.
 const (
 	DefaultWindowSeconds = 900
 	DefaultLimit         = 600
 )
 
-// BaseURL is the ESI host all relative endpoints resolve against.
 const BaseURL = "https://esi.evetech.net/latest"
 
-// LoginBase is the SSO host for token refresh.
 const LoginBase = "https://login.eveonline.com"
 
 func max(a, b int64) int64 {

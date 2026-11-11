@@ -18,7 +18,7 @@ const SCOPES = [
 
 const icon = (typeId: number) => typeIconUrl(typeId)
 
-/** Case-insensitive product name filter; a source with no match is dropped. */
+
 export function filterSources(sources: Source[], query: string): Source[] {
   const q = query.trim().toLowerCase()
   if (q === '') return sources

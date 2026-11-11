@@ -1,7 +1,5 @@
 package calc
 
-// PricedMaterial is a material with its resolved unit price and source,
-// mirroring one calculateCostProfit() material row.
 type PricedMaterial struct {
 	Material
 	UnitPrice   float64          `json:"unit_price"`
@@ -11,7 +9,6 @@ type PricedMaterial struct {
 	Component   *ComponentResult `json:"component"`
 }
 
-// ComponentResult mirrors the component block attached per material.
 type ComponentResult struct {
 	IsBuildable     bool             `json:"is_buildable"`
 	BlueprintTypeID int              `json:"blueprint_type_id"`
@@ -20,15 +17,10 @@ type ComponentResult struct {
 	BaseTime        int              `json:"base_time"`
 	Materials       []PricedMaterial `json:"materials"`
 	BuildCost       float64          `json:"build_cost"`
-	// MaterialCost/JobCost split the build cost for the invention path
-	// (raw material cost vs component job fee); the manufacturing path
-	// leaves them zero and omits them from its payload.
-	MaterialCost float64 `json:"material_cost"`
-	JobCost      float64 `json:"job_cost"`
+	MaterialCost    float64          `json:"material_cost"`
+	JobCost         float64          `json:"job_cost"`
 }
 
-// ComponentData is the pre-resolved build data for one material, mirroring
-// one resolveComponentBuildData() entry.
 type ComponentData struct {
 	BlueprintTypeID int
 	IsReaction      bool
@@ -38,8 +30,6 @@ type ComponentData struct {
 	Materials       []Material
 }
 
-// JobInput carries everything CalculateJob needs after the handler has
-// fetched SDE rows, prices and volumes.
 type JobInput struct {
 	Materials         []Material
 	ProductTypeID     int
@@ -58,13 +48,11 @@ type JobInput struct {
 	HasReactionSystem bool
 }
 
-// PricedValue is one resolved sell price with its source.
 type PricedValue struct {
 	Price  float64
 	Source string
 }
 
-// JobResult mirrors ManufacturingJobCalculator::calculate() return keys.
 type JobResult struct {
 	Materials                 []PricedMaterial
 	CostProfit                CostProfit
@@ -119,11 +107,6 @@ type BuildFee struct {
 	HasData        bool
 }
 
-// CalculateJob ports the body of ManufacturingJobCalculator::calculate()
-// over pre-fetched inputs. Live ESI inputs (regional price seeding,
-// adjusted prices, cost indices) arrive as empty/zero until the ESI phase;
-// the fee blocks then compute to zero with HasData still reflecting whether
-// a system was configured, exactly as if ESI had returned nothing.
 func CalculateJob(in JobInput, time JobTime) JobResult {
 	costProfit := costProfit(in.Materials, in.ProductTypeID, in.Runs, in.PortionSize, in.Prices, in.BuybackMultiplier)
 
@@ -177,7 +160,6 @@ func CalculateJob(in JobInput, time JobTime) JobResult {
 		perUnitFullBuild = profitFullBuild / float64(totalOutput)
 	}
 
-	// Build fees.
 	eiv, jobCost, facilityTax, mainFee := 0.0, 0.0, 0.0, 0.0
 	needsFee := in.HasMainSystem || in.HasReactionSystem
 	if in.HasMainSystem {
@@ -209,7 +191,6 @@ func CalculateJob(in JobInput, time JobTime) JobResult {
 			for _, sub := range mat.Component.Materials {
 				compEiv += in.AdjustedPrices[sub.TypeID] * float64(sub.AdjustedQuantity)
 			}
-			// PHP bases component facility tax on the component's buy cost.
 			componentsFee += compEiv*compSci + mat.TotalCost*(compTax/100)
 		}
 	}
@@ -252,8 +233,6 @@ func CalculateJob(in JobInput, time JobTime) JobResult {
 	}
 }
 
-// costProfit ports calculateCostProfit(): unit prices with the buyback
-// multiplier (materials only, never the product), product value, SCC summary.
 func costProfit(materials []Material, productTypeID, runs, portionSize int, prices map[int]PricedValue, buybackMultiplier float64) CostProfit {
 	out := make([]PricedMaterial, 0, len(materials))
 	totalMaterialCost := 0.0

@@ -14,7 +14,7 @@ export const PRICE_REGIONS = [
   ['10000042', 'Metropolis (Hek)'],
 ] as const
 
-/** An EVE image-server icon that hides itself when the type has none. */
+
 export function TypeIcon({ typeId, size = 24 }: { typeId: number; size?: number }) {
   return (
     <img
@@ -28,7 +28,7 @@ export function TypeIcon({ typeId, size = 24 }: { typeId: number; size?: number 
   )
 }
 
-/** A label above a control; `hint` is muted text after the label. */
+
 export function Field({
   id,
   label,
@@ -50,7 +50,7 @@ export function Field({
   )
 }
 
-/** A number input that keeps what is typed (including an empty box) as text. */
+
 export function NumberField({
   label,
   hint,
@@ -88,7 +88,7 @@ export function NumberField({
   )
 }
 
-/** A native select over `options`. */
+
 export function SelectField<V extends string>({
   label,
   hint,
@@ -116,22 +116,18 @@ export function SelectField<V extends string>({
   )
 }
 
-/** Parse a text field; blank or invalid gives `fallback`. */
+
 export function num(value: string, fallback: number): number {
   const n = Number(value)
   return value.trim() === '' || !Number.isFinite(n) ? fallback : n
 }
 
-/** Round a text field to an integer clamped to [min, max]. */
+
 export function intIn(value: string, min: number, max: number, fallback: number): number {
   return Math.min(max, Math.max(min, Math.round(num(value, fallback))))
 }
 
-/**
- * A search box with a dropdown of results. Searching waits 300 ms after the
- * last keystroke; the results come from `useResults`, a query hook keyed by
- * the settled text.
- */
+
 export function SearchPicker<T>({
   label,
   placeholder,
@@ -215,7 +211,7 @@ export function SearchPicker<T>({
   )
 }
 
-/** Pick one of the user's saved structures; shows the bonuses the calculator will apply. */
+
 export function StructureSelect({
   label,
   structures,
@@ -268,7 +264,7 @@ export function StructureSelect({
   )
 }
 
-/** A button that runs `onCopy` and flashes "Copied!" for two seconds. */
+
 export function CopyButton({ label, onCopy, disabled }: { label: string; onCopy: () => string | null; disabled?: boolean }) {
   const [done, setDone] = useState(false)
   useEffect(() => {
@@ -292,7 +288,7 @@ export function CopyButton({ label, onCopy, disabled }: { label: string; onCopy:
   )
 }
 
-/** Trigger a browser download of `text`. */
+
 export function downloadText(filename: string, text: string, type = 'text/csv;charset=utf-8;') {
   const url = URL.createObjectURL(new Blob([text], { type }))
   const a = document.createElement('a')
@@ -302,7 +298,7 @@ export function downloadText(filename: string, text: string, type = 'text/csv;ch
   URL.revokeObjectURL(url)
 }
 
-/** One labelled figure in a summary grid. */
+
 export function Stat({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
   return (
     <div className="calc-stat">
@@ -312,13 +308,13 @@ export function Stat({ label, children, className }: { label: string; children: 
   )
 }
 
-/** A request error as one line: the validation messages when there are any, else the message. */
+
 export function errorText(error: Error): string {
   const errors = error instanceof ApiError ? error.errors : undefined
   return errors ? Object.values(errors).flat().join(' ') : error.message
 }
 
-/** `value` when it is one of `allowed`, else `fallback` (narrows a server string to a request enum). */
+
 export function pick<T extends string>(value: string | undefined | null, allowed: readonly T[], fallback: T): T {
   return allowed.find((a) => a === value) ?? fallback
 }

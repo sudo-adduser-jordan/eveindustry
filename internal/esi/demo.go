@@ -13,7 +13,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// Demo bases mirror DemoIds (above anything CCP has issued).
 const (
 	DemoCharacterBase   int64 = 99_000_000_000
 	DemoCorporationBase int64 = 99_100_000_000
@@ -21,7 +20,6 @@ const (
 	DemoPlanetBase      int64 = 99_250_000_000
 )
 
-// DemoHubs mirrors DemoEsiResponder::HUBS.
 var DemoHubs = []struct {
 	StationID int64
 	SystemID  int
@@ -34,26 +32,19 @@ var DemoHubs = []struct {
 	{60005686, 30002053, "Hek"},
 }
 
-// DemoSkills mirrors the demo skill set (skill_id => level).
 var DemoSkills = map[int]int{
 	3380: 5, 3388: 4, 3387: 5, 24625: 4, 3406: 5, 24624: 4, 3402: 5, 3403: 5,
 	3409: 4, 45746: 4, 45748: 4, 45749: 3, 2406: 5, 2403: 4, 2505: 5, 2495: 5,
 }
 
-// DemoMinerals mirrors the demo mineral stacks (type_id => base quantity).
 var DemoMinerals = map[int]int{
 	34: 4000000, 35: 1200000, 36: 400000, 37: 90000, 38: 30000, 39: 12000, 40: 4000,
 }
 
-// DemoIsotopes mirrors the demo isotope list.
 var DemoIsotopes = []int{17887, 17888, 17889, 16274}
 
-// DemoShips mirrors the demo ship list.
 var DemoShips = []int{587, 24702, 24698, 638, 17480, 32880}
 
-// DemoShipGroups mirrors the inv_groups rows the ships tab needs: without
-// them GroupsInCategory(6) is empty and the ships page renders empty even
-// though the demo assets contain hulls.
 var DemoShipGroups = []struct {
 	GroupID int
 	Name    string
@@ -69,7 +60,6 @@ var DemoShipGroups = []struct {
 	{1964, "Mutaplasmids"},
 }
 
-// DemoShipCategories mirrors the inv_categories rows for the demo groups.
 var DemoShipCategories = []struct {
 	CategoryID int
 	Name       string
@@ -79,9 +69,6 @@ var DemoShipCategories = []struct {
 	{17, "Commodity"},
 }
 
-// DemoAbyssal pairs a fake mutated type with its base module and mutaplasmid.
-// Mutated IDs live above real type IDs; seedDemoReferenceData stores them with
-// meta_group_id 15 so the abyssal tab picks them up.
 var DemoAbyssal = []struct {
 	Mutated int
 	Source  int
@@ -93,7 +80,6 @@ var DemoAbyssal = []struct {
 	{99104, 3178, 47775},
 }
 
-// DemoAbyssalNames fallbacks when ESI is unreachable during seeding.
 var DemoAbyssalNames = map[int]string{
 	99101: "Abyssal Damage Control II",
 	99102: "Abyssal Large Shield Extender I",
@@ -101,8 +87,6 @@ var DemoAbyssalNames = map[int]string{
 	99104: "Abyssal Light Neutron Blaster II",
 }
 
-// DemoTypeFallbacks covers every static demo type so seeding degrades to
-// labels instead of "Type N" when ESI is down. Group IDs come from ESI.
 var DemoTypeFallbacks = map[int]struct {
 	Name  string
 	Group int
@@ -125,10 +109,8 @@ var DemoTypeFallbacks = map[int]struct {
 	99104: {"Abyssal Light Neutron Blaster II", 74},
 }
 
-// DemoCorpRoles mirrors the roles demo characters are created with.
 var DemoCorpRoles = []string{"Director", "Factory_Manager", "Accountant", "Junior_Accountant", "Project_Manager", "Station_Manager"}
 
-// DemoScopes mirrors the scopes demo characters are created with.
 var DemoScopes = []string{
 	"publicData", "esi-skills.read_skills.v1", "esi-skills.read_skillqueue.v1", "esi-location.read_location.v1",
 	"esi-industry.read_character_jobs.v1", "esi-characters.read_blueprints.v1", "esi-assets.read_assets.v1",
@@ -143,7 +125,6 @@ type demoPlanetType struct {
 	Resources []int
 }
 
-// DemoPlanetTypes mirrors PLANET_TYPES.
 var DemoPlanetTypes = map[string]demoPlanetType{
 	"temperate": {ECU: 3068, Basic: 2481, Resources: []int{2305, 2288, 2073}},
 	"barren":    {ECU: 2848, Basic: 2473, Resources: []int{2267, 2288, 2268}},
@@ -155,7 +136,6 @@ var DemoPlanetTypes = map[string]demoPlanetType{
 	"plasma":    {ECU: 3064, Basic: 2471, Resources: []int{2267, 2272, 2308}},
 }
 
-// DemoCharacter is the minimal character record the responder needs.
 type DemoCharacter struct {
 	ID            int64
 	Name          string
@@ -167,16 +147,10 @@ type DemoCharacter struct {
 	CreatedAt     time.Time
 }
 
-// DemoResponder stands in for ESI for demo characters. Payloads have ESI's
-// shape and derive from the character id, so a character always sees the
-// same assets, blueprints and planets until the account is regenerated.
 type DemoResponder struct {
-	// Chars lists all demo characters (corporation/alliance endpoints).
 	Chars func(ctx context.Context) ([]DemoCharacter, error)
-	// Pool returns [blueprint, product] pairs for deterministic picks.
-	Pool func(ctx context.Context) ([][2]int, error)
-	// Now fixes the clock in tests.
-	Now func() time.Time
+	Pool  func(ctx context.Context) ([][2]int, error)
+	Now   func() time.Time
 }
 
 func (r *DemoResponder) now() time.Time {
@@ -186,7 +160,6 @@ func (r *DemoResponder) now() time.Time {
 	return time.Now()
 }
 
-// Handles mirrors DemoEsiResponder::handles.
 func DemoHandles(endpoint string) bool {
 	m := demoIDRe.FindStringSubmatch(endpoint)
 	if m == nil {
@@ -198,8 +171,6 @@ func DemoHandles(endpoint string) bool {
 
 var demoIDRe = regexp.MustCompile(`/(characters|corporations|alliances|universe/planets)/(\d+)`)
 
-// Respond answers a demo ESI call: status + JSON-ready body + headers.
-// Nil body means "not handled / not found here" (caller maps to 404).
 func (r *DemoResponder) Respond(ctx context.Context, method, endpoint string, ch *DemoCharacter, params map[string]string, body any) (int, any, map[string]string) {
 	path := endpoint
 	if u, rest, ok := stringsCut(path, "?"); ok {
@@ -319,7 +290,6 @@ func stringsCut(s, sep string) (before, after string, found bool) {
 	return s, "", false
 }
 
-// DemoHome mirrors home(): the character's hub by id.
 func DemoHome(id int64) (stationID int64, systemID int, system string) {
 	h := DemoHubs[int(id)%len(DemoHubs)]
 	if int(id) < 0 {
@@ -438,7 +408,6 @@ func (r *DemoResponder) corporationEndpoint(ctx context.Context, corpID int64, r
 	return 404, map[string]any{"error": "Not available in the demo"}, nil
 }
 
-// demoRand is a deterministic PRNG (LCG) for wallet balances.
 func demoRand(seed int64) float64 {
 	s := uint64(seed*1103515245 + 12345)
 	return float64(s&0x7fffffff) / float64(0x7fffffff)
@@ -476,7 +445,6 @@ func sortDemoChars(members []DemoCharacter) {
 	}
 }
 
-// demoPool mirrors blueprintPool(): priced manufacturing pairs, capped at 400.
 func (r *DemoResponder) demoPool(ctx context.Context) [][2]int {
 	if r.Pool == nil {
 		return nil
@@ -488,7 +456,6 @@ func (r *DemoResponder) demoPool(ctx context.Context) [][2]int {
 	return pool
 }
 
-// demoPick mirrors pick(): deterministic LCG sample from the pool.
 func (r *DemoResponder) demoPick(c DemoCharacter, count int, salt string) [][2]int {
 	pool := r.demoPool(context.Background())
 	if len(pool) == 0 {
@@ -516,7 +483,6 @@ func crc32demo(s string) uint64 {
 	return h & 0x7FFFFFFF
 }
 
-// demoItemBase mirrors itemBase.
 func demoItemBase(c DemoCharacter) int64 {
 	return 2000000000000 + ((c.ID-DemoCharacterBase)%100000)*1000
 }
@@ -566,15 +532,9 @@ func (r *DemoResponder) demoAssets(c DemoCharacter) []any {
 	for _, typeID := range DemoIsotopes {
 		add(typeID, 20000+int((c.ID+int64(typeID))%60000), false)
 	}
-	// Every demo character owns the full ship lineup so the ships tab is
-	// never empty: one hull per type, named per character via the asset
-	// names endpoint fallback.
 	for _, typeID := range DemoShips {
 		add(typeID, 1, true)
 	}
-	// One mutated module per DemoAbyssal entry so the abyssal tab has data.
-	// Item ids stay in the personal base range; the dynamic payload comes
-	// from demoDynamicItem.
 	for _, ab := range DemoAbyssal {
 		add(ab.Mutated, 1, true)
 	}
@@ -584,9 +544,6 @@ func (r *DemoResponder) demoAssets(c DemoCharacter) []any {
 	return items
 }
 
-// demoDynamicItem answers /dogma/dynamic/items for demo abyssal items:
-// source + mutator plus mutated dogma attributes that differ from the live
-// base values so the roll scores and attribute rows render.
 func (r *DemoResponder) demoDynamicItem(typeID int, itemID int64) (map[string]any, bool) {
 	for _, ab := range DemoAbyssal {
 		if ab.Mutated != typeID {
@@ -617,10 +574,6 @@ func (r *DemoResponder) demoDynamicItem(typeID int, itemID int64) (map[string]an
 	return nil, false
 }
 
-// demoCorpAssets mirrors a corp hangar snapshot: deterministic per corp,
-// station-homed with corp hangar flags so the corporate assets tab has data.
-// Item ids use a corp-disjoint base so personal and corporate trees never
-// collide on item_id.
 func (r *DemoResponder) demoCorpAssets(ctx context.Context, corpID int64) []any {
 	chars, _ := r.Chars(ctx)
 	var members []DemoCharacter
@@ -670,8 +623,6 @@ func (r *DemoResponder) demoCorpAssets(ctx context.Context, corpID int64) []any 
 	return items
 }
 
-// sortedDemoMineralIDs lists the demo mineral type ids in ascending order so
-// corp snapshots are stable across map iterations.
 func sortedDemoMineralIDs() []int {
 	ids := make([]int, 0, len(DemoMinerals))
 	for id := range DemoMinerals {

@@ -21,7 +21,7 @@ const CAPACITY_LABELS: Record<Capacity['status'], string> = {
 
 const one = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
-/** "3h 20m", "45m"; null once the program has ended. */
+
 export function timeRemaining(expiry: string, now: Date = new Date()): string | null {
   const seconds = Math.floor((new Date(expiry).getTime() - now.getTime()) / 1000)
   if (seconds <= 0) return null
@@ -30,7 +30,7 @@ export function timeRemaining(expiry: string, now: Date = new Date()): string | 
   return hours > 0 ? `${hours}h ${minutes}m` : `${Math.max(1, minutes)}m`
 }
 
-/** How far through its program an extractor is, 0–100. */
+
 export function extractorProgress(e: Pick<Extractor, 'install_time' | 'expiry_time'>, now: Date = new Date()): number {
   if (!e.install_time || !e.expiry_time) return 0
   const total = new Date(e.expiry_time).getTime() - new Date(e.install_time).getTime()
@@ -39,7 +39,7 @@ export function extractorProgress(e: Pick<Extractor, 'install_time' | 'expiry_ti
   return Math.max(0, Math.min(100, Math.round(done * 1000) / 10))
 }
 
-/** "00:30:00" like the classic page's cycle time. */
+
 function clock(seconds: number): string {
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
@@ -47,7 +47,7 @@ function clock(seconds: number): string {
   return [h, m, s].map((n) => String(n).padStart(2, '0')).join(':')
 }
 
-/** Identical schematics collapse into one row with a count. */
+
 export function groupFactories(factories: Planet['factories']) {
   const groups = new Map<number, Planet['factories'][number] & { count: number }>()
   for (const f of factories) {

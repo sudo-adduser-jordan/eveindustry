@@ -23,7 +23,7 @@ function Icon({ typeId, size = 24 }: { typeId: number; size?: number }) {
   )
 }
 
-/** One "name quantity" line per item, the EVE Multibuy format. */
+
 export function multibuyText(items: Stock[], missingOnly: boolean): string {
   return items
     .filter((m) => !missingOnly || m.quantity > m.available)
@@ -84,7 +84,7 @@ export function BlueprintsPanel({ blueprints }: { blueprints: Blueprint[] }) {
   )
 }
 
-/** Base materials or fuel blocks: grouped, with volumes and Multibuy copy buttons. */
+
 export function StockPanel({ title, items, empty }: { title: string; items: Stock[]; empty: string }) {
   const groups = new Map<string, Stock[]>()
   for (const m of items) groups.set(m.group_name || 'Other', [...(groups.get(m.group_name || 'Other') ?? []), m])

@@ -14,7 +14,7 @@ interface Input {
   unit_cost: number
 }
 
-/** One schematic of the single-step tiers (P1→P2, P2→P3, P3→P4). */
+
 export interface StepRow {
   output_type_id: number
   output_name: string
@@ -45,7 +45,7 @@ export interface StepRow {
   daily_profit_after_tax: number
 }
 
-/** One P3 product of the single-planet tiers (P1→P3, P0→P3). */
+
 export interface ChainRow {
   output_type_id: number
   output_name: string
@@ -102,7 +102,7 @@ export function formatCycle(seconds: number): string {
   return `${(seconds / 86400).toFixed(1)} day`
 }
 
-/** ISK with a trailing unit, or a dash when there is no price. */
+
 function isk(value: number | null | undefined): string {
   return value === null || value === undefined ? '—' : `${formatIsk(value)} ISK`
 }
@@ -535,7 +535,7 @@ function ChainTable({ rows, tax, tier }: { rows: ChainRow[]; tax: number; tier: 
   )
 }
 
-/** Best-row summary shown above the table. */
+
 export function summarise(rows: Array<StepRow | ChainRow>, tax: number) {
   const chain = (r: StepRow | ChainRow): r is ChainRow => 'daily_profit_sell' in r
   const pre = (r: StepRow | ChainRow) => (chain(r) ? r.daily_profit_sell : r.daily_profit_sell_planet)
@@ -555,7 +555,7 @@ export default function FactoryPlanner() {
   const [taxInput, setTaxInput] = useState('0')
   const [tax, setTax] = useState(0)
 
-  // Wait for a pause in typing before asking the server for the taxed figures.
+  
   useEffect(() => {
     const parsed = Number(taxInput)
     const next = taxInput.trim() === '' || !Number.isFinite(parsed) ? 0 : Math.max(0, Math.min(100, parsed))
@@ -568,7 +568,7 @@ export default function FactoryPlanner() {
     StepRow | ChainRow
   >
   const freshness = (plan.data?.meta as unknown as { freshness?: { prices_as_of: string | null; stale: boolean } } | undefined)?.freshness
-  // The rows on screen can still belong to the previous tier while the next one loads.
+  
   const shownTier = ((plan.data?.data as unknown as { tier?: FactoryTier } | undefined)?.tier ?? tier) as FactoryTier
   const stats = summarise(rows, tax)
 

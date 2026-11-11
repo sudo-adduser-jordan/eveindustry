@@ -43,7 +43,6 @@ func TestDemoLogoServesSVG(t *testing.T) {
 	if !strings.HasPrefix(body, "<svg") || !strings.Contains(body, `width="64"`) {
 		t.Fatalf("logo body is not a sized SVG: %.120s", body)
 	}
-	// Portraits and logos are distinct artworks.
 	_, _, portrait := demoImageReq(t, "/demo/portrait/99101050398.svg?size=64")
 	if portrait == body {
 		t.Fatalf("portrait and logo SVGs are identical")
@@ -55,7 +54,7 @@ func TestDemoImageRejectsNonDemoIDs(t *testing.T) {
 		"/demo/portrait/12345.svg",
 		"/demo/logo/631636893.svg",
 		"/demo/portrait/notanid.svg",
-		"/demo/logo/99300000000.svg", // at/above the demo ceiling
+		"/demo/logo/99300000000.svg",
 	} {
 		code, _, _ := demoImageReq(t, path)
 		if code != http.StatusNotFound {

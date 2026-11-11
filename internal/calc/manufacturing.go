@@ -5,27 +5,20 @@ import (
 	"strings"
 )
 
-// SCCFeeRate mirrors IndustryProfitCalculator::SCC_FEE_RATE.
 const SCCFeeRate = 0.04
 
-// Skill type IDs mirror ManufacturingCalculatorService::SKILL_* and
-// ReactionsCalculatorService::SKILL_REACTIONS.
 const (
 	SkillIndustry         = 3380
 	SkillAdvancedIndustry = 3388
 	SkillReactions        = 45746
 )
 
-// Summary ports IndustryProfitCalculator::summary(): profit after the SCC
-// fee and any other costs, margin as profit ÷ input cost.
 func Summary(outputValue, inputCost, otherCosts float64) (sccFee, profit, profitMargin float64) {
 	sccFee = outputValue * SCCFeeRate
 	profit = outputValue - inputCost - otherCosts - sccFee
 	return sccFee, profit, Margin(profit, inputCost)
 }
 
-// Margin ports IndustryProfitCalculator::margin(): profit ÷ input cost as a
-// percentage rounded to 0.1.
 func Margin(profit, inputCost float64) float64 {
 	if inputCost <= 0 {
 		return 0
@@ -33,7 +26,6 @@ func Margin(profit, inputCost float64) float64 {
 	return math.Round(profit/inputCost*100*10) / 10
 }
 
-// QueueTotals ports IndustryProfitCalculator::totals().
 type QueueItem struct {
 	Revenue   float64 `json:"revenue"`
 	InputCost float64 `json:"input_cost"`
@@ -74,15 +66,12 @@ func Totals(items []QueueItem) ([]QueueRow, QueueTotals) {
 	return rows, totals
 }
 
-// BaseMaterial is one posted or SDE material: {type_id, name, quantity}.
 type BaseMaterial struct {
 	TypeID   int
 	Name     string
 	Quantity int
 }
 
-// Material ports one calculateMaterials() row. QuantityPerRun is float64
-// because PHP's ceil() returns a float.
 type Material struct {
 	TypeID           int     `json:"type_id"`
 	Name             string  `json:"name"`
@@ -91,8 +80,6 @@ type Material struct {
 	QuantityPerRun   float64 `json:"quantity_per_run"`
 }
 
-// CalculateMaterials ports ManufacturingCalculatorService::calculateMaterials():
-// adjusted = max(runs, ceil(round(base*runs*meFactor*structFactor, 2))).
 func CalculateMaterials(base []BaseMaterial, meLevel, runs int, structureMeBonus float64) []Material {
 	meFactor := 1 - float64(meLevel)/100
 	structFactor := 1 - structureMeBonus/100
@@ -118,7 +105,6 @@ func CalculateMaterials(base []BaseMaterial, meLevel, runs int, structureMeBonus
 	return out
 }
 
-// JobTime ports calculateProductionTime().
 type JobTime struct {
 	BaseTimeSeconds     int    `json:"base_time_seconds"`
 	TimePerRunSeconds   int    `json:"time_per_run_seconds"`
@@ -143,7 +129,6 @@ func CalculateProductionTime(baseTimeSeconds, teLevel, runs, industrySkill, adva
 	}
 }
 
-// FormatDuration ports ManufacturingCalculatorService::formatDuration().
 func FormatDuration(seconds int) string {
 	days := seconds / 86400
 	hours := (seconds % 86400) / 3600
@@ -179,8 +164,6 @@ func itoa(n int) string {
 
 func Round2(v float64) float64 { return math.Round(v*100) / 100 }
 
-// ReactionMaterials ports ReactionsCalculatorService::calculateMaterials():
-// adjusted = max(runs, ceil(round(base*runs*rigFactor, 2))).
 func ReactionMaterials(base []BaseMaterial, runs int, rigBonus float64) []Material {
 	rigFactor := 1 - rigBonus/100
 	out := make([]Material, 0, len(base))
@@ -205,7 +188,6 @@ func ReactionMaterials(base []BaseMaterial, runs int, rigBonus float64) []Materi
 	return out
 }
 
-// ReactionTime ports ReactionsCalculatorService::calculateProductionTime().
 func ReactionTime(baseTimeSeconds, runs, reactionsSkill int, structureTeBonus float64) JobTime {
 	skillFactor := 1 - float64(reactionsSkill)*4/100
 	structFactor := 1 - structureTeBonus/100
@@ -220,8 +202,6 @@ func ReactionTime(baseTimeSeconds, runs, reactionsSkill int, structureTeBonus fl
 	}
 }
 
-// ReactionCostProfit ports ReactionsCalculatorService::calculateCostProfit()
-// (no buyback multiplier, unlike manufacturing).
 func ReactionCostProfit(materials []Material, productTypeID, runs, portionSize int, prices map[int]PricedValue) CostProfit {
 	return costProfit(materials, productTypeID, runs, portionSize, prices, 1.0)
 }

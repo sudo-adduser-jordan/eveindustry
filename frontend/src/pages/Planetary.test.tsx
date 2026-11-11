@@ -71,7 +71,7 @@ describe('Planetary', () => {
     expect(screen.getByText('Planets', { selector: 'dt' })).toBeInTheDocument()
     expect(screen.getByText('Alerts (1)')).toBeInTheDocument()
     expect(screen.getByText('Under capacity')).toBeInTheDocument()
-    // 400/hr → 9,600/day
+    
     expect(screen.getByText('9,600')).toBeInTheDocument()
     expect(screen.getByText('Jita I', { selector: 'strong' })).toBeInTheDocument()
     expect(screen.getByText('Inactive')).toBeInTheDocument()

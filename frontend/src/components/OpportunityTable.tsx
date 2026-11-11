@@ -2,17 +2,17 @@ import { useState, type ReactNode } from 'react'
 import { typeIconUrl, iconFallback } from './typeIcon'
 
 export interface Column<T> {
-  /** A field of the row to sort by. */
+  
   key: keyof T & string
   label: string
   render: (row: T) => ReactNode
-  /** Right-aligned; sorts high to low first. */
+  
   numeric?: boolean
 }
 
 type Row = { type_id: number; type_name: string }
 
-/** Compare two cells: numbers numerically, text case-insensitively, null last. */
+
 function compare(a: unknown, b: unknown): number {
   if (a === b) return 0
   if (a === null || a === undefined) return 1
@@ -21,7 +21,7 @@ function compare(a: unknown, b: unknown): number {
   return String(a).localeCompare(String(b), undefined, { sensitivity: 'base' })
 }
 
-/** Sort and filter by item name; shared by the market scanners. */
+
 export function OpportunityTable<T extends Row>({
   rows,
   columns,
@@ -110,7 +110,7 @@ export function OpportunityTable<T extends Row>({
   )
 }
 
-/** Item icon and name, the first column of every scanner. */
+
 export function ItemCell({ row }: { row: Row }) {
   return (
     <span className="asset-name">
@@ -127,7 +127,7 @@ export function ItemCell({ row }: { row: Row }) {
   )
 }
 
-/** A profit-coloured number: green when positive, red when negative. */
+
 export function Signed({ value, children }: { value: number; children: ReactNode }) {
   return <span className={value >= 0 ? 'text-profit' : 'text-loss'}>{children}</span>
 }

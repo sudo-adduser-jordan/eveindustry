@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// InventionPlan mirrors one invention_plans row.
 type InventionPlan struct {
 	ID              int64     `db:"id"`
 	UserID          int64     `db:"user_id"`
@@ -32,7 +31,6 @@ type InventionPlan struct {
 	UpdatedAt       time.Time `db:"updated_at"`
 }
 
-// ReactionPlan mirrors one reaction_plans row (entries are raw JSON).
 type ReactionPlan struct {
 	ID                 int64     `db:"id"`
 	UserID             int64     `db:"user_id"`
@@ -51,8 +49,6 @@ type ReactionPlan struct {
 	UpdatedAt          time.Time `db:"updated_at"`
 }
 
-// PlanStore covers saved planner setups. Reads are owner-scoped (nil when
-// missing or another user's, matching the hidden-as-404 policies).
 type PlanStore interface {
 	InventionPlans(ctx context.Context, userID int64, limit, offset int) ([]InventionPlan, int, error)
 	InventionPlan(ctx context.Context, id, userID int64) (*InventionPlan, error)
@@ -214,7 +210,6 @@ func (s *SQL) DeleteReactionPlan(ctx context.Context, id, userID int64) (bool, e
 	return n > 0, err
 }
 
-// MoonOccupation is one moon row with its scan system's corporation.
 type MoonOccupation struct {
 	MoonID                   int64   `db:"id"`
 	MoonName                 string  `db:"moon_name"`
@@ -224,8 +219,6 @@ type MoonOccupation struct {
 	SystemCorporationID      *int64  `db:"system_corporation_id"`
 }
 
-// MoonForCorporation loads a moon with its system's corporation for the
-// occupation check.
 func (s *SQL) MoonForCorporation(ctx context.Context, moonID int64) (*MoonOccupation, error) {
 	var out MoonOccupation
 	err := s.db.GetContext(ctx, &out, `
@@ -240,8 +233,6 @@ func (s *SQL) MoonForCorporation(ctx context.Context, moonID int64) (*MoonOccupa
 	return &out, err
 }
 
-// SetMoonOccupation applies the occupation edit (clearing the occupier when
-// unoccupied, whatever was sent).
 func (s *SQL) SetMoonOccupation(ctx context.Context, moonID int64, occupied bool, corpID *int64, corpName *string) (*MoonOccupation, error) {
 	var occID any
 	var occName any

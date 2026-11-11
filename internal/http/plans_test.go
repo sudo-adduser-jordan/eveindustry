@@ -10,7 +10,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// stubPlans implements store.PlanStore in memory.
 type stubPlans struct {
 	inv  map[int64]store.InventionPlan
 	reac map[int64]store.ReactionPlan
@@ -144,11 +143,9 @@ func TestInventionPlansCRUD(t *testing.T) {
 	if code, _ := get(t, d, "/api/v1/invention-plans"); code != http.StatusOK {
 		t.Fatalf("index = %d", code)
 	}
-	// foreign id -> 404 (hidden, not 403)
 	if code, _ := get(t, d, "/api/v1/invention-plans/9"); code != http.StatusNotFound {
 		t.Fatalf("foreign = %d", code)
 	}
-	// create minimal (defaults kick in) -> 201
 	code, body := post(t, d, "/api/v1/invention-plans", `{"name":"Min","t2_type_id":1,"t2_type_name":"X"}`)
 	if code != http.StatusCreated {
 		t.Fatalf("create = %d %v", code, body)
@@ -157,23 +154,19 @@ func TestInventionPlansCRUD(t *testing.T) {
 		t.Fatalf("defaults = %v", body)
 	}
 	id := int(body["data"].(map[string]any)["id"].(float64))
-	// show
 	if code, _ := get(t, d, "/api/v1/invention-plans/101"); code != http.StatusOK {
 		t.Fatalf("show = %d", code)
 	}
 	_ = id
-	// update
 	if code, body = putJSON(t, d, "/api/v1/invention-plans/1", `{"t1_me":10}`); code != http.StatusOK || body["data"].(map[string]any)["t1_me"].(float64) != 10 {
 		t.Fatalf("update = %d %v", code, body)
 	}
-	// delete own -> 204, then 404
 	if code, _ := deleteReq(t, d, "/api/v1/invention-plans/1"); code != http.StatusNoContent {
 		t.Fatalf("delete = %d", code)
 	}
 	if code, _ := get(t, d, "/api/v1/invention-plans/1"); code != http.StatusNotFound {
 		t.Fatalf("gone = %d", code)
 	}
-	// bad input -> 422
 	if code, _ := post(t, d, "/api/v1/invention-plans", `{"name":"x"}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad = %d", code)
 	}
@@ -191,14 +184,12 @@ func TestReactionPlansCRUD(t *testing.T) {
 		t.Fatalf("create = %d %v", code, body)
 	}
 	data := body["data"].(map[string]any)
-	// defaults: 240 runs, athanor/none/lowsec
 	if data["default_runs_per_slot"].(float64) != 240 || data["structure_type"] != "athanor" {
 		t.Fatalf("defaults = %v", data)
 	}
 	if data["entries"].([]any)[0].(map[string]any)["slots"].(float64) != 1 {
 		t.Fatalf("entries = %v", data)
 	}
-	// show + update (partial, entries replaced)
 	if code, _ := get(t, d, "/api/v1/reaction-plans/2"); code != http.StatusOK {
 		t.Fatalf("show = %d", code)
 	}
@@ -206,7 +197,6 @@ func TestReactionPlansCRUD(t *testing.T) {
 	if code != http.StatusOK || body["data"].(map[string]any)["name"] != "R2" {
 		t.Fatalf("update = %d %v", code, body)
 	}
-	// empty entries rejected
 	if code, _ := post(t, d, "/api/v1/reaction-plans", `{"name":"R","entries":[]}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("empty = %d", code)
 	}
@@ -217,7 +207,6 @@ func TestReactionPlansCRUD(t *testing.T) {
 
 func TestMoonOccupation(t *testing.T) {
 	d := plansTestDeps()
-	// occupy
 	code, body := putJSON(t, d, "/api/v1/moon-scans/moons/5/occupation", `{"occupied":true,"corporation_id":988,"corporation_name":"ACME"}`)
 	if code != http.StatusOK {
 		t.Fatalf("occupy = %d %v", code, body)
@@ -226,7 +215,6 @@ func TestMoonOccupation(t *testing.T) {
 	if data["occupied"] != true || data["occupying_corporation_id"].(float64) != 988 {
 		t.Fatalf("occupied = %v", data)
 	}
-	// unoccupy clears the occupier
 	code, body = putJSON(t, d, "/api/v1/moon-scans/moons/5/occupation", `{"occupied":false,"corporation_id":1}`)
 	if code != http.StatusOK || body["data"].(map[string]any)["occupied"] != false {
 		t.Fatalf("free = %d %v", code, body)
@@ -234,11 +222,9 @@ func TestMoonOccupation(t *testing.T) {
 	if body["data"].(map[string]any)["occupying_corporation_id"] != nil {
 		t.Fatalf("cleared = %v", body)
 	}
-	// unknown moon -> 404
 	if code, _ := putJSON(t, d, "/api/v1/moon-scans/moons/4242/occupation", `{"occupied":true}`); code != http.StatusNotFound {
 		t.Fatalf("missing = %d", code)
 	}
-	// missing occupied -> 422
 	if code, _ := putJSON(t, d, "/api/v1/moon-scans/moons/5/occupation", `{}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad = %d", code)
 	}

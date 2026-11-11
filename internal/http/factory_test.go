@@ -18,12 +18,10 @@ func TestFactoryPlanner(t *testing.T) {
 	if len(data["results"].([]any)) != 24 {
 		t.Fatalf("want 24 schematics, got %d", len(data["results"].([]any)))
 	}
-	// tax applied: with no prices everything is 0 profit, 0 tax
 	first := data["results"].([]any)[0].(map[string]any)
 	if first["daily_profit_after_tax"] == nil || first["prices_available"] != false {
 		t.Fatalf("row = %v", first)
 	}
-	// bad tier + bad tax
 	if code, _ := get(t, d, "/api/v1/calculators/factory-planner?tier=nope"); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad tier = %d", code)
 	}

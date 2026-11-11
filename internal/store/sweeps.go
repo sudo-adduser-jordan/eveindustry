@@ -9,7 +9,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Sweep statuses mirroring MarketOrderSweep.
 const (
 	SweepRunning    = "running"
 	SweepCompleting = "completing"
@@ -18,7 +17,6 @@ const (
 	SweepAbandoned  = "abandoned"
 )
 
-// MarketOrderSweep mirrors one market_order_sweeps row.
 type MarketOrderSweep struct {
 	ID              int64          `db:"id"`
 	SweepID         string         `db:"sweep_id"`
@@ -37,7 +35,6 @@ type MarketOrderSweep struct {
 	Error           sql.NullString `db:"error"`
 }
 
-// SweepStore covers the region order sweep state machine.
 type SweepStore interface {
 	StartSweep(ctx context.Context, regionID int, startedAt time.Time, runningTimeout time.Duration) (*MarketOrderSweep, error)
 	SweepByID(ctx context.Context, sweepID string) (*MarketOrderSweep, error)
@@ -59,7 +56,6 @@ type SweepStore interface {
 	CurrentGeneration(ctx context.Context, regionID int) (latest, active int64, activeSweep string, err error)
 }
 
-// SweepOrder is one order row staged by a sweep.
 type SweepOrder struct {
 	OrderID      int64
 	RegionID     int
@@ -75,7 +71,6 @@ type SweepOrder struct {
 	Issued       *time.Time
 }
 
-// AggregateSide is one grouped side row for rebuild.
 type AggregateSide struct {
 	TypeID   int     `db:"type_id"`
 	IsBuy    bool    `db:"is_buy_order"`
@@ -85,14 +80,12 @@ type AggregateSide struct {
 	Orders   int     `db:"orders"`
 }
 
-// SellOrderPrice is one sell order price/volume pair.
 type SellOrderPrice struct {
 	TypeID int     `db:"type_id"`
 	Price  float64 `db:"price"`
 	Volume int64   `db:"volume_remain"`
 }
 
-// AggregateRow is one market_aggregates upsert row.
 type SweepAggregate struct {
 	RegionID    int
 	TypeID      int
@@ -111,8 +104,6 @@ const sweepCols = `id, sweep_id, region_id, generation, status, started_at, fini
 	duration_seconds, pages_total, pages_fetched, pages_not_modified, orders_seen,
 	orders_deleted, types_aggregated, error`
 
-// StartSweep ports start(): abandon stale runners, skip when one runs, else
-// create a new generation and bump the region state.
 func (s *SQL) StartSweep(ctx context.Context, regionID int, startedAt time.Time, runningTimeout time.Duration) (*MarketOrderSweep, error) {
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -184,7 +175,6 @@ func (s *SQL) IncrementSweep(ctx context.Context, sweepID string, fetched, notMo
 	return err
 }
 
-// StoreSweepOrders upserts a page of orders and counts it on the sweep.
 func (s *SQL) StoreSweepOrders(ctx context.Context, sweepID string, regionID int, orders []SweepOrder) error {
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -270,7 +260,6 @@ func nullTime(v *time.Time) any {
 	return *v
 }
 
-// MarkSweepOrdersSeen stamps known order ids with the sweep without rewriting.
 func (s *SQL) MarkSweepOrdersSeen(ctx context.Context, sweepID string, regionID int, orderIDs []int64) error {
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -318,7 +307,6 @@ func int64s(in []int64) []any {
 	return out
 }
 
-// sqlxIn expands IN clauses and rebinds for the driver.
 func sqlxIn(query string, args []any) (string, []any, error) {
 	anyArgs := make([]any, 0, len(args))
 	for _, a := range args {
@@ -331,12 +319,10 @@ func sqlxIn(query string, args []any) (string, []any, error) {
 	return q, expanded, nil
 }
 
-// MarkSweepPageMissing counts a 404 page on the sweep.
 func (s *SQL) MarkSweepPageMissing(ctx context.Context, sweepID string) error {
 	return s.IncrementSweep(ctx, sweepID, 1, 0, 0)
 }
 
-// FailSweep records a failed sweep, keeping every order.
 func (s *SQL) FailSweep(ctx context.Context, sweepID, reason string) error {
 	if len(reason) > 490 {
 		reason = reason[:490]
@@ -348,7 +334,6 @@ func (s *SQL) FailSweep(ctx context.Context, sweepID, reason string) error {
 	return err
 }
 
-// ClaimCompletion moves a fully-fetched running sweep to completing.
 func (s *SQL) ClaimCompletion(ctx context.Context, sweepID string) (*MarketOrderSweep, error) {
 	_, err := s.db.ExecContext(ctx, `UPDATE market_order_sweeps SET status = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE sweep_id = ? AND status = 'running' AND pages_total > 0 AND pages_fetched >= pages_total`,
@@ -359,7 +344,6 @@ func (s *SQL) ClaimCompletion(ctx context.Context, sweepID string) (*MarketOrder
 	return s.SweepByID(ctx, sweepID)
 }
 
-// DeleteUnseenOrders removes region orders the sweep never stamped.
 func (s *SQL) DeleteUnseenOrders(ctx context.Context, regionID int, startedAt time.Time) (int64, error) {
 	var total int64
 	for {
@@ -380,7 +364,6 @@ func (s *SQL) DeleteUnseenOrders(ctx context.Context, regionID int, startedAt ti
 	return total, nil
 }
 
-// FinishSweep marks completion with stats.
 func (s *SQL) FinishSweep(ctx context.Context, sweepID string, finishedAt time.Time, deleted, types int64) (*MarketOrderSweep, error) {
 	_, err := s.db.ExecContext(ctx, `UPDATE market_order_sweeps SET status = ?, finished_at = ?,
 		duration_seconds = max(0, strftime('%s', ?) - strftime('%s', started_at)),
@@ -393,7 +376,6 @@ func (s *SQL) FinishSweep(ctx context.Context, sweepID string, finishedAt time.T
 	return s.SweepByID(ctx, sweepID)
 }
 
-// PublishActiveSnapshot moves the active pointer when this sweep is newest.
 func (s *SQL) PublishActiveSnapshot(ctx context.Context, regionID int, sweepID string, snapshotAt time.Time) (bool, error) {
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -433,7 +415,6 @@ func (s *SQL) PublishActiveSnapshot(ctx context.Context, regionID int, sweepID s
 	return true, tx.Commit()
 }
 
-// LastCompletedSweep returns the newest completed sweep.
 func (s *SQL) LastCompletedSweep(ctx context.Context, regionID int) (*MarketOrderSweep, error) {
 	var out MarketOrderSweep
 	err := s.db.GetContext(ctx, &out, `SELECT `+sweepCols+` FROM market_order_sweeps
@@ -444,7 +425,6 @@ func (s *SQL) LastCompletedSweep(ctx context.Context, regionID int) (*MarketOrde
 	return &out, err
 }
 
-// LatestSweep returns the newest started sweep.
 func (s *SQL) LatestSweep(ctx context.Context, regionID int) (*MarketOrderSweep, error) {
 	var out MarketOrderSweep
 	err := s.db.GetContext(ctx, &out, `SELECT `+sweepCols+` FROM market_order_sweeps
@@ -455,7 +435,6 @@ func (s *SQL) LatestSweep(ctx context.Context, regionID int) (*MarketOrderSweep,
 	return &out, err
 }
 
-// CurrentGeneration reads the region state's generations.
 func (s *SQL) CurrentGeneration(ctx context.Context, regionID int) (latest, active int64, activeSweep string, err error) {
 	var as sql.NullString
 	err = s.db.QueryRowContext(ctx, `SELECT latest_generation, active_generation, active_sweep_id
@@ -469,7 +448,6 @@ func (s *SQL) CurrentGeneration(ctx context.Context, regionID int) (latest, acti
 	return latest, active, activeSweep, err
 }
 
-// UpsertAggregates writes rebuilt aggregate rows.
 func (s *SQL) UpsertAggregates(ctx context.Context, rows []SweepAggregate) error {
 	for _, chunk := range chunkAggregates(rows, 500) {
 		q := `INSERT INTO market_aggregates (region_id, type_id, sweep_id, snapshot_at, best_bid, best_ask,
@@ -506,7 +484,6 @@ func chunkAggregates(in []SweepAggregate, n int) [][]SweepAggregate {
 	return out
 }
 
-// AggregateSides ports the rebuild group query (fresh, non-empty orders).
 func (s *SQL) AggregateSides(ctx context.Context, regionID int, cutoff time.Time) ([]AggregateSide, error) {
 	var out []AggregateSide
 	err := s.db.SelectContext(ctx, &out, `SELECT type_id, is_buy_order, MIN(price) AS min_price,
@@ -516,7 +493,6 @@ func (s *SQL) AggregateSides(ctx context.Context, regionID int, cutoff time.Time
 	return out, err
 }
 
-// SellOrdersByTypes loads priced sell orders cheapest-first for the p5 calc.
 func (s *SQL) SellOrdersByTypes(ctx context.Context, regionID int, typeIDs []int, cutoff time.Time) ([]SellOrderPrice, error) {
 	if len(typeIDs) == 0 {
 		return nil, nil
@@ -543,8 +519,6 @@ func intsToAny(in []int) []any {
 var sweepCounter int64
 
 func newSweepID() string {
-	// Uniqueness within a process is enough: the column is unique and the
-	// insert runs inside the start transaction.
 	n := time.Now().UnixNano()
 	return "sw-" + itoa64sweep(n%1e12) + "-" + itoa64sweep(atomic.AddInt64(&sweepCounter, 1))
 }

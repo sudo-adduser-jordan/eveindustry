@@ -43,7 +43,7 @@ it('keeps showing the banner across reloads until it is dismissed, then stays aw
   expect(first.result.current.bannerOpen).toBe(true)
   first.unmount()
 
-  // A reload hours later without clicking anything: it is still offered.
+  
   vi.setSystemTime(new Date('2026-10-26T18:00:00Z'))
   resetInstallForTests()
   captureInstallPrompt()
@@ -53,7 +53,7 @@ it('keeps showing the banner across reloads until it is dismissed, then stays aw
   act(() => second.result.current.dismiss())
   second.unmount()
 
-  // After dismissing, reloads within 24 hours do not bring it back.
+  
   vi.setSystemTime(new Date('2026-10-27T10:00:00Z'))
   resetInstallForTests()
   captureInstallPrompt()

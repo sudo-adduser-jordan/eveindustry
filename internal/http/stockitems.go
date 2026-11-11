@@ -8,8 +8,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerStockItems mounts the stock-manager item CRUD (stock-manager gate
-// + per-user ownership, 404 for foreign ids).
 func registerStockItems(v1 *echo.Group, d Deps) {
 	if d.StockItems == nil || d.Industry == nil {
 		return
@@ -19,8 +17,6 @@ func registerStockItems(v1 *echo.Group, d Deps) {
 	v1.DELETE("/stock/items/:id", handleStockItemDestroy(d), requireStockManager)
 }
 
-// POST /stock/items — upsert by (user, type): create or change the wanted
-// quantity. 201. Type must exist in eve_types.
 func handleStockItemStore(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -75,7 +71,6 @@ func stockItemShape(r store.WatchedItem) map[string]any {
 	}
 }
 
-// PUT /stock/items/:id — change the wanted quantity. 404 foreign/missing.
 func handleStockItemUpdate(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := stockItemID(c)
@@ -109,7 +104,6 @@ func handleStockItemUpdate(d Deps) echo.HandlerFunc {
 	}
 }
 
-// DELETE /stock/items/:id — 204. 404 foreign/missing.
 func handleStockItemDestroy(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := stockItemID(c)

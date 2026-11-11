@@ -6,7 +6,7 @@ import { ScopeWarning } from '../components/ScopeWarning'
 
 export const PROJECT_SCOPES = [{ scope: 'esi-corporations.read_projects.v1', description: 'Read Corporation Projects' }]
 
-/** 12.3M, the way the Blade page abbreviated rewards. */
+
 export function formatMillions(isk: number, decimals = 1): string {
   return `${(isk / 1_000_000).toFixed(decimals)}M`
 }

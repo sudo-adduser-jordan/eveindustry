@@ -1,4 +1,4 @@
-/** Previous / Next for a paginated scan. */
+
 export function Pager({
   pagination,
   onPage,

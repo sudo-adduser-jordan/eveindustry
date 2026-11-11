@@ -22,12 +22,12 @@ const SCOPES = [
   { scope: 'esi-industry.read_corporation_jobs.v1', description: 'Read Corporation Industry Jobs' },
 ]
 
-/** "Ready" once ended, else "in under a minute" (the list only holds jobs within a minute). */
+
 export function readyLabel(endDate: string, now: Date = new Date()): string {
   return new Date(endDate).getTime() <= now.getTime() ? `Ready ${formatAge(endDate, now)}` : 'In under a minute'
 }
 
-/** Slots in use as a bar; the numbers are available / total like the game. */
+
 function SlotMeter({ label, kind, group }: { label: string; kind: Kind; group: SlotGroup }) {
   const busy = Math.max(0, group.total - Math.max(0, group.available))
   const pct = group.total > 0 ? Math.round((busy / group.total) * 100) : 0

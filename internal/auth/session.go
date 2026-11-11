@@ -11,18 +11,11 @@ import (
 	"time"
 )
 
-// SessionCookie mirrors config/session.php: name eve_auth_session.
 const SessionCookie = "eve_auth_session"
 
-// Sessions issues and validates login sessions. The cookie transport is
-// stateless: no server storage is needed.
 type Sessions interface {
-	// UserID returns the logged-in user id, or false for missing, expired
-	// or tampered cookies.
 	UserID(r *http.Request) (int64, bool)
-	// Issue writes a fresh session cookie for userID.
 	Issue(w http.ResponseWriter, userID int64)
-	// Destroy clears the session cookie (logout).
 	Destroy(w http.ResponseWriter, r *http.Request)
 }
 
@@ -32,8 +25,6 @@ type sessionPayload struct {
 	Iat int64 `json:"iat"`
 }
 
-// CookieSessions is the HMAC-signed JSON cookie implementation. Signatures
-// use constant-time comparison; payloads are base64url without padding.
 type CookieSessions struct {
 	key    []byte
 	ttl    time.Duration
@@ -41,8 +32,6 @@ type CookieSessions struct {
 	domain string
 }
 
-// NewCookieSessions builds the store. Zero ttl defaults to 120 minutes like
-// SESSION_LIFETIME; negative ttls issue already-expired cookies.
 func NewCookieSessions(key []byte, ttl time.Duration, secure bool, domain string) *CookieSessions {
 	if ttl == 0 {
 		ttl = 120 * time.Minute
@@ -50,7 +39,6 @@ func NewCookieSessions(key []byte, ttl time.Duration, secure bool, domain string
 	return &CookieSessions{key: key, ttl: ttl, secure: secure, domain: domain}
 }
 
-// TTL exposes the session lifetime for tests.
 func (s *CookieSessions) TTL() time.Duration { return s.ttl }
 
 func (s *CookieSessions) sign(payload string) string {
@@ -120,9 +108,6 @@ func (s *CookieSessions) Destroy(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// SessionKeyFromEnv resolves the signing key: SESSION_KEY first, else the
-// Laravel APP_KEY (base64: stripped and decoded), else an ephemeral key with
-// sessions that die on restart. Callers log the fallback loudly.
 func SessionKeyFromEnv(sessionKey, appKey string) (key []byte, ephemeral bool) {
 	if sessionKey != "" {
 		return []byte(sessionKey), false

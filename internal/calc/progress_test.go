@@ -35,7 +35,6 @@ func progressMeta() ProgressMeta {
 func TestSummariseProgressFull(t *testing.T) {
 	q := map[int]float64{34: 100000, 35: 100000, 587: 0, 600: 0, 786: 1}
 	s := SummariseProgress(progressSteps(), map[string]any{}, q, q, progressMeta())
-	// overall counts finished products only: 0 Rifters + 0 DCs built.
 	if s.OverallProgress != 0 {
 		t.Fatalf("overall = %v", s.OverallProgress)
 	}
@@ -46,7 +45,6 @@ func TestSummariseProgressFull(t *testing.T) {
 	if bp["name"] != "Rifter Blueprint" || bp["owned"] != true {
 		t.Fatalf("bp = %v", bp)
 	}
-	// Tritanium 100 + child 20 = 120 aggregated; Pyerite 50.
 	byID := map[int]map[string]any{}
 	for _, m := range s.BaseMaterials {
 		mm := m.(map[string]any)
@@ -72,7 +70,6 @@ func TestSummariseProgressFull(t *testing.T) {
 }
 
 func TestSummariseProgressPartial(t *testing.T) {
-	// 4 finished Rifters in the output hangar: remaining 6 scale children.
 	q := map[int]float64{34: 100000, 35: 100000, 587: 4, 600: 0}
 	s := SummariseProgress(progressSteps(), map[string]any{}, q, q, progressMeta())
 	step := s.Steps[0].(map[string]any)
@@ -80,16 +77,13 @@ func TestSummariseProgressPartial(t *testing.T) {
 		t.Fatalf("step progress = %v", step["progress"])
 	}
 	mats := step["materials"].([]any)
-	// childScale = 6/10 = 0.6 -> ceil(100*0.6)=60, ceil(50*0.6)=30
 	if mats[0].(map[string]any)["required"] != 60.0 || mats[1].(map[string]any)["required"] != 30.0 {
 		t.Fatalf("mats = %v", mats)
 	}
 	kid := step["children"].([]any)[0].(map[string]any)
-	// parentScale 0.6 -> ceil(10*0.6)=6
 	if kid["quantity_required"] != 6.0 {
 		t.Fatalf("kid qty = %v", kid["quantity_required"])
 	}
-	// overall: root 4/10 + kid 0/6 = 4/16 = 25
 	if s.OverallProgress != 25.0 {
 		t.Fatalf("overall = %v", s.OverallProgress)
 	}
@@ -137,8 +131,6 @@ func TestSummariseProgressFuelAndReactions(t *testing.T) {
 		t.Fatalf("fuel = %v", s.FuelBlocks)
 	}
 	fb := s.FuelBlocks[0].(map[string]any)
-	// step has no blueprint: fuel step (5) + fuel material scaled by
-	// remaining (ceil(5 * 3/5) = 3, since 2 of 5 are on hand) = 8.
 	if fb["quantity"] != 8.0 || fb["group_name"] != "Fuel Blocks" || fb["volume"] != 5.0 {
 		t.Fatalf("fb = %v", fb)
 	}
@@ -146,7 +138,6 @@ func TestSummariseProgressFuelAndReactions(t *testing.T) {
 		t.Fatalf("reactions = %v", s.ReactionsSummary)
 	}
 	r := s.ReactionsSummary[0].(map[string]any)
-	// portion = round(100/10) = 10; net = 100; netRuns = 10; inputs scaled 1:1
 	if r["total_runs"] != 10 || r["net_runs"] != 10 || r["net_output_qty"] != 100.0 {
 		t.Fatalf("reaction = %v", r)
 	}

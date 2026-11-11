@@ -10,7 +10,7 @@ export type InventionChain = Schemas['InventionChainResource']
 export type InventionPlanBody = Schemas['InventionPlanStoreRequest']
 export type SavedInventionPlan = Schemas['InventionPlanResource']
 
-/** T2 item name search; waits for two characters. */
+
 export function useInventionSearch(q: string) {
   return useQuery({
     queryKey: ['reference', 'invention-items', q],
@@ -20,7 +20,7 @@ export function useInventionSearch(q: string) {
   })
 }
 
-/** Invention chain of one T2 item: datacores, skills, base probability and runs. */
+
 export function useInventionChain(typeId: number | null) {
   return useQuery({
     queryKey: ['reference', 'invention-chain', typeId],
@@ -31,7 +31,7 @@ export function useInventionChain(typeId: number | null) {
   })
 }
 
-/** The decryptors the calculator accepts. */
+
 export function useDecryptors() {
   return useQuery({
     queryKey: ['calculators', 'invention', 'decryptors'],
@@ -40,7 +40,7 @@ export function useDecryptors() {
   })
 }
 
-/** Invention-related skill levels of one of your characters. */
+
 export function useInventionSkills(characterId: number | null) {
   return useQuery({
     queryKey: ['calculators', 'invention', 'skills', characterId],
@@ -66,7 +66,7 @@ export function useInventionPlans() {
   })
 }
 
-/** Create a plan (id null) or update the plan with `id`. */
+
 export function useSaveInventionPlan() {
   const client = useQueryClient()
   return useMutation({

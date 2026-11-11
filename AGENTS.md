@@ -177,5 +177,5 @@ Passive, flag-gated capture of ESI traffic (`app/Services/Esi/Diagnostics`), buf
 ## Open-source release additions
 
 - **Licence:** AGPL-3.0-or-later, provided as is (`LICENSE`, `NOTICE`). The app shows a source link (`APP_SOURCE_URL`, exposed as `source_url` on `/api/v1/me`). Contributions are signed off (DCO). No tracking or analytics on by default, no account impersonation (a CI step fails if the word returns).
-- **Logging:** slog JSON to stdout (see `cmd/api/main.go`).
+- **Logging:** `internal/logx` dual sink, pretty color stdout plus JSONL at `logs/test/app.jsonl` and `logs/errors/app.jsonl` (see `docs/logging.md`).
 - **Themes:** tokens only, no raw colours: `docs/styling.md`.

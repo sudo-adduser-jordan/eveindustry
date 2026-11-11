@@ -8,10 +8,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Cache is a JSON-over-SQLite helper mirroring the Cache::remember/forever
-// shapes the refresh jobs and warm reads use. A nil DB disables caching
-// (every read misses, writes drop) so tests and DB-less runs stay live.
-// Rows live in the go_cache table created by the baseline migration.
 type Cache struct {
 	DB     *sqlx.DB
 	Prefix string
@@ -31,7 +27,6 @@ func (c *Cache) db() *sqlx.DB {
 	return c.DB
 }
 
-// GetJSON loads and decodes a key. False on miss/expiry/decoding failure.
 func (c *Cache) GetJSON(ctx context.Context, k string, v any) bool {
 	db := c.db()
 	if db == nil {
@@ -46,7 +41,6 @@ func (c *Cache) GetJSON(ctx context.Context, k string, v any) bool {
 	return true
 }
 
-// SetJSON stores a key with TTL (<=0 means keep forever).
 func (c *Cache) SetJSON(ctx context.Context, k string, v any, ttl time.Duration) {
 	db := c.db()
 	if db == nil {
@@ -68,7 +62,6 @@ func (c *Cache) SetJSON(ctx context.Context, k string, v any, ttl time.Duration)
 		c.key(k), string(raw), expires)
 }
 
-// Del drops keys.
 func (c *Cache) Del(ctx context.Context, keys ...string) {
 	db := c.db()
 	if db == nil || len(keys) == 0 {
@@ -85,7 +78,6 @@ func (c *Cache) Del(ctx context.Context, keys ...string) {
 	_, _ = db.ExecContext(ctx, db.Rebind(q), args...)
 }
 
-// Has reports key existence (unexpired).
 func (c *Cache) Has(ctx context.Context, k string) bool {
 	db := c.db()
 	if db == nil {

@@ -14,21 +14,14 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 )
 
-// SkillReader is the subset of the ESI character client the skill endpoints
-// need. *esi.CharacterClient satisfies it; tests stub it.
 type SkillReader interface {
 	GetSkills(ctx context.Context, characterID int64) (map[int]int, error)
 }
 
-// SkillsDeps carries the ESI character client for the skill endpoints.
-// The client is nil until live credentials are wired; without it the
-// endpoints 503 like any other unconfigured dependency.
 type SkillsDeps struct {
 	Characters SkillReader
 }
 
-// registerSkills mounts the three calculator skill endpoints. Ownership is
-// checked locally (404 for another user's character); levels come from ESI.
 func registerSkills(v1 *echo.Group, d Deps) {
 	if d.Skills.Characters == nil || d.Users == nil {
 		return
@@ -38,12 +31,8 @@ func registerSkills(v1 *echo.Group, d Deps) {
 	v1.GET("/calculators/invention/skills", handleInventionSkills(d))
 }
 
-// errHandled marks that the response was already written (the envelope
-// helpers return nil on success, so callers need a non-nil error to stop).
 var errHandled = errors.New("response already written")
 
-// ownCharacter mirrors CharacterSkillsService::findForUser(): the character
-// must belong to the caller, else 404.
 func ownCharacter(c echo.Context, d Deps, uid int64) (auth.Character, error) {
 	raw := c.QueryParam("character_id")
 	id, err := strconv.ParseInt(raw, 10, 64)
@@ -66,8 +55,6 @@ func ownCharacter(c echo.Context, d Deps, uid int64) (auth.Character, error) {
 	return auth.Character{}, errHandled
 }
 
-// skillMap loads trained levels. A dead credential yields zeros, mirroring
-// the PHP `?? 0` defaults; other ESI failures are 500s.
 func skillMap(c echo.Context, d Deps, characterID int64) (map[int]int, error) {
 	levels, err := d.Skills.Characters.GetSkills(c.Request().Context(), characterID)
 	if err != nil {
@@ -82,8 +69,6 @@ func skillMap(c echo.Context, d Deps, characterID int64) (map[int]int, error) {
 	return levels, nil
 }
 
-// GET /calculators/manufacturing/skills?character_id= — mirrors
-// ManufacturingController@skills.
 func handleManufacturingSkills(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ch, err := ownCharacter(c, d, c.Get(string(ctxUIDKey)).(int64))
@@ -104,8 +89,6 @@ func handleManufacturingSkills(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /calculators/reactions/skills?character_id= — mirrors
-// ReactionsController@skills.
 func handleReactionSkills(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ch, err := ownCharacter(c, d, c.Get(string(ctxUIDKey)).(int64))
@@ -123,9 +106,6 @@ func handleReactionSkills(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /calculators/invention/skills?character_id= — mirrors
-// InventionController@skills: encryption + datacore science skills, the full
-// level map, and Industry / Advanced Industry.
 func handleInventionSkills(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ch, err := ownCharacter(c, d, c.Get(string(ctxUIDKey)).(int64))

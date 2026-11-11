@@ -1,6 +1,3 @@
-// Package store is the sqlx data layer for the Go API. Table and column
-// names mirror database/migrations/*.php exactly; every query has an
-// interface so handlers stay testable without a database.
 package store
 
 import (
@@ -14,18 +11,10 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// DB wraps sqlx for dependency injection. Nil *DB means "database not
-// configured": handlers answer 503 rather than crashing (same contract as
-// the PHP readiness check).
 type DB struct {
 	*sqlx.DB
 }
 
-// Connect opens the SQLite database at path, creating the parent directory.
-// WAL mode keeps readers unblocked during writer commits; the busy timeout
-// absorbs queue/cache contention instead of failing fast. Time columns
-// round-trip as UTC SQLite timestrs (_time_format + _timezone + _texttotime)
-// so date functions and ordering work on them.
 func Connect(path string) (*DB, error) {
 	if dir := filepath.Dir(path); dir != "" && dir != "." {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -39,8 +28,6 @@ func Connect(path string) (*DB, error) {
 	}
 	return &DB{db}, nil
 }
-
-// --- Row shapes (column names = migration columns) ---
 
 type MarketGroup struct {
 	MarketGroupID int            `db:"market_group_id"`
@@ -113,9 +100,6 @@ type Station struct {
 	Security      sql.NullFloat64 `db:"security"`
 }
 
-// --- Interfaces (handlers depend on these, tests stub them) ---
-
-// ReferenceStore covers GET /api/v1/types, /market-groups, /systems, /stations.
 type ReferenceStore interface {
 	RootGroups(ctx context.Context) ([]MarketGroup, error)
 	ChildCount(ctx context.Context, groupID int) (int, error)
@@ -137,11 +121,7 @@ type ReferenceStore interface {
 	StationsInSystem(ctx context.Context, systemID int) ([]Station, error)
 }
 
-// MarketStore covers GET /api/v1/market/* and the freshness block.
 type MarketStore interface {
-	// AggregateSellPrices reads the region's active sweep generation.
-	// hasSnapshot is false when the region was never swept (the caller
-	// falls back to raw orders, mirroring sellPrices() returning null).
 	AggregateSellPrices(ctx context.Context, typeIDs []int, regionID int) (prices map[int]float64, hasSnapshot bool, err error)
 	RawSellOrders(ctx context.Context, typeIDs []int, regionID int, since time.Time) ([]RawOrder, error)
 	FallbackPrices(ctx context.Context, typeIDs []int, regionIDs []int) ([]FallbackPrice, error)
@@ -152,14 +132,12 @@ type MarketStore interface {
 	MarketPriceRows(ctx context.Context, typeIDs []int, regionID int) ([]MarketPriceRowFull, error)
 }
 
-// RawOrder is the minimal order shape for the percentile calc.
 type RawOrder struct {
 	TypeID       int     `db:"type_id"`
 	Price        float64 `db:"price"`
 	VolumeRemain uint64  `db:"volume_remain"`
 }
 
-// FallbackPrice is one market_prices row for price resolution.
 type FallbackPrice struct {
 	TypeID   int             `db:"type_id"`
 	RegionID int             `db:"region_id"`
@@ -167,7 +145,6 @@ type FallbackPrice struct {
 	Average  sql.NullFloat64 `db:"average_price"`
 }
 
-// MarketPriceRowFull is one market_prices row for factory/calculator pricing.
 type MarketPriceRowFull struct {
 	TypeID  int             `db:"type_id"`
 	BuyMax  sql.NullFloat64 `db:"buy_max"`
@@ -175,8 +152,6 @@ type MarketPriceRowFull struct {
 	Average sql.NullFloat64 `db:"average_price"`
 }
 
-// MarketPriceRows batch-loads market_prices rows (buy_max/sell_min/average)
-// for the given types in one region.
 func (s *SQL) MarketPriceRows(ctx context.Context, typeIDs []int, regionID int) ([]MarketPriceRowFull, error) {
 	if len(typeIDs) == 0 {
 		return nil, nil
@@ -191,12 +166,10 @@ func (s *SQL) MarketPriceRows(ctx context.Context, typeIDs []int, regionID int) 
 	return out, err
 }
 
-// SQL is the sqlx implementation of ReferenceStore + MarketStore.
 type SQL struct {
 	db *sqlx.DB
 }
 
-// NewSQL wraps an open sqlx DB. Used by cmd/api when DATABASE is configured.
 func NewSQL(db *sqlx.DB) *SQL { return &SQL{db: db} }
 
 func (s *SQL) RootGroups(ctx context.Context) ([]MarketGroup, error) {
@@ -272,10 +245,6 @@ func (s *SQL) AllGroups(ctx context.Context) ([]MarketGroup, error) {
 	return out, err
 }
 
-// ManufacturableGroupIDs ports the leaf/ancestor/sibling logic of
-// MarketBrowserService::getManufacturableMarketGroupIds() down to the group
-// walk: products come from blueprint_activities (manufacturing minus
-// invented), leaves from published eve_types, then ancestors + siblings.
 func (s *SQL) ManufacturableGroupIDs(ctx context.Context) (map[int]bool, error) {
 	var invented []int
 	err := s.db.SelectContext(ctx, &invented,
@@ -285,8 +254,6 @@ func (s *SQL) ManufacturableGroupIDs(ctx context.Context) (map[int]bool, error) 
 		return nil, err
 	}
 
-	// NOTE: products is JSON; json_each expansion keeps this in SQL.
-	// When products is NULL-heavy this degrades gracefully to an empty set.
 	query := `SELECT DISTINCT t.market_group_id FROM eve_types t
 		JOIN blueprint_activities b ON EXISTS (SELECT 1 FROM json_each(b.products) WHERE json_extract(value, '$.type_id') = t.type_id)
 		WHERE b.activity_id = 1 AND b.products IS NOT NULL
@@ -339,7 +306,6 @@ func (s *SQL) expandGroupAncestors(ctx context.Context, leaves []int) (map[int]b
 			cur = *p
 		}
 	}
-	// Siblings of manufactured-item leaves (one level), mirroring PHP step 5.
 	leafParents := map[int]bool{}
 	for _, leaf := range leaves {
 		if p, ok := parent[leaf]; ok && p != nil {
@@ -472,10 +438,6 @@ func (s *SQL) AggregateSellPrices(ctx context.Context, typeIDs []int, regionID i
 	if len(typeIDs) == 0 {
 		return map[int]float64{}, true, nil
 	}
-	// Follow the durable per-region pointer to the active complete sweep,
-	// mirroring MarketAggregateService::currentSnapshot(). No pointer row
-	// (or a NULL active sweep) means the region was never swept: the caller
-	// computes from raw market_orders instead.
 	var sweepID sql.NullString
 	err := s.db.GetContext(ctx, &sweepID,
 		`SELECT active_sweep_id FROM market_region_states WHERE region_id = ?`, regionID)
@@ -555,7 +517,6 @@ func (s *SQL) PagedOrders(ctx context.Context, typeID, regionID int, buy bool, l
 		dir = "DESC"
 	}
 	var out []MarketOrderRow
-	// dir is internal only (ASC/DESC), never user input: safe to interpolate.
 	err = s.db.SelectContext(ctx, &out,
 		`SELECT order_id, region_id, type_id, is_buy_order, price, volume_remain,
 		        volume_total, location_id, issued
@@ -578,10 +539,6 @@ func (s *SQL) History(ctx context.Context, typeID, regionID, days int) ([]Market
 	return out, err
 }
 
-// FreshnessTimestamps ports MarketFreshnessService::loadTimestamps() for one
-// region. Orders cascade: durable active_snapshot_at, else the last
-// completed sweep's started_at, else the last raw order write. Costs come
-// from manufacturing_costs; global from market_prices under Jita.
 func (s *SQL) FreshnessTimestamps(ctx context.Context, regionID int) (orders, costs, global *time.Time, err error) {
 	var o, c, g sql.NullTime
 	if e := s.db.GetContext(ctx, &o,
@@ -625,7 +582,6 @@ func (s *SQL) FreshnessTimestamps(ctx context.Context, regionID int) (orders, co
 const eveTypeCols = `type_id, name, description, group_id, market_group_id, volume, mass,
 	portion_size, published, meta_group_id`
 
-// TypesByIDs batch-loads eve_types rows for the given ids.
 func (s *SQL) TypesByIDs(ctx context.Context, typeIDs []int) ([]EveType, error) {
 	if len(typeIDs) == 0 {
 		return nil, nil
@@ -641,7 +597,6 @@ func (s *SQL) TypesByIDs(ctx context.Context, typeIDs []int) ([]EveType, error) 
 	return out, nil
 }
 
-// TypesByNames batch-loads eve_types rows for exact names (compressed-ore lookup).
 func (s *SQL) TypesByNames(ctx context.Context, names []string) ([]EveType, error) {
 	if len(names) == 0 {
 		return nil, nil

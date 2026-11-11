@@ -15,33 +15,27 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// ProgressCharacters is the ESI surface the progress endpoints need.
 type ProgressCharacters interface {
 	GetAssets(ctx context.Context, characterID int64) ([]map[string]any, error)
 	GetCorporationAssets(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error)
 }
 
-// ProgressUniverse resolves structure and system names over ESI.
 type ProgressUniverse interface {
 	GetSystem(ctx context.Context, systemID int) (map[string]any, error)
 	GetStructure(ctx context.Context, structureID uint64, characterID int64) (map[string]any, error)
 }
 
-// ProgressReference is the SDE surface for stations and systems.
 type ProgressReference interface {
 	FindStation(ctx context.Context, stationID uint64) (*store.Station, error)
 	FindSystem(ctx context.Context, systemID int) (*store.SolarSystem, error)
 }
 
-// ProgressDeps carries the progress endpoints' collaborators. Nil Characters
-// keeps the routes unregistered until the ESI phase wires them.
 type ProgressDeps struct {
 	Characters ProgressCharacters
 	Universe   ProgressUniverse
 	Reference  ProgressReference
 }
 
-// registerProgress mounts the four build-program progress routes.
 func registerProgress(v1 *echo.Group, d Deps) {
 	if d.Progress.Characters == nil || d.Users == nil || d.Programs == nil ||
 		d.CorpPrograms == nil || d.Corp == nil || d.Industry == nil {
@@ -53,7 +47,6 @@ func registerProgress(v1 *echo.Group, d Deps) {
 	v1.GET("/corporation/build-programs/:id/asset-locations", handleCorpAssetLocations(d))
 }
 
-// GET /build-programs/:id/progress — 404 foreign; 400 with no characters.
 func handlePersonalProgress(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := planID(c)
@@ -93,7 +86,6 @@ func handlePersonalProgress(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /build-programs/:id/asset-locations — paginated, 404 foreign.
 func handlePersonalAssetLocations(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := planID(c)
@@ -125,9 +117,6 @@ func handlePersonalAssetLocations(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /corporation/build-programs/:id/progress — 404 foreign/disabled;
-// 403 when the user has no character in the corp; 400 when the director
-// character is gone.
 func handleCorpProgress(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := planID(c)
@@ -176,7 +165,6 @@ func handleCorpProgress(d Deps) echo.HandlerFunc {
 			}
 		}
 		if director == nil {
-			// The director may belong to another user; fetch minimal identity.
 			director = &auth.Character{CharacterID: cfg.CharacterID, Name: ""}
 		}
 		assets, err := d.Progress.Characters.GetCorporationAssets(ctx, cfg.CharacterID, cfg.CorporationID)
@@ -195,7 +183,6 @@ func handleCorpProgress(d Deps) echo.HandlerFunc {
 			names = []any{director.Name}
 		}
 		payload := progressShape(names, sum)
-		// Corporate responses carry character_name instead of character_names.
 		payload["character_name"] = ""
 		if len(names) > 0 {
 			payload["character_name"] = names[0]
@@ -205,7 +192,6 @@ func handleCorpProgress(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /corporation/build-programs/:id/asset-locations — paginated.
 func handleCorpAssetLocations(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := planID(c)
@@ -248,9 +234,6 @@ func handleCorpAssetLocations(d Deps) echo.HandlerFunc {
 	}
 }
 
-// personalAssetQuantities aggregates asset quantities over the user's
-// ESI-active characters; revoked/unlinked characters are skipped, other ESI
-// failures propagate.
 func personalAssetQuantities(ctx context.Context, d Deps, chars []auth.Character, filter map[int64]bool) (map[int]float64, []any, error) {
 	qtys := map[int]float64{}
 	names := []any{}
@@ -290,8 +273,6 @@ func personalAssetQuantities(ctx context.Context, d Deps, chars []auth.Character
 
 func useFilter(f map[int64]bool) bool { return len(f) > 0 }
 
-// personalAssetLocations collects distinct root locations over ESI-active
-// characters (empty when the user has none).
 func personalAssetLocations(ctx context.Context, d Deps, chars []auth.Character) ([]any, error) {
 	var all []map[string]any
 	for _, ch := range chars {
@@ -313,8 +294,6 @@ func personalAssetLocations(ctx context.Context, d Deps, chars []auth.Character)
 	return describeLocations(ctx, d, all, chars)
 }
 
-// splitCorpQuantities counts materials at input locations and finished
-// products at output locations (empty filter counts everything).
 func splitCorpQuantities(assets []map[string]any, inFilter, outFilter map[int64]bool) (map[int]float64, map[int]float64) {
 	inQ := map[int]float64{}
 	outQ := map[int]float64{}
@@ -338,7 +317,6 @@ func splitCorpQuantities(assets []map[string]any, inFilter, outFilter map[int64]
 	return inQ, outQ
 }
 
-// progressMeta gathers group/blueprint/volume metadata for the step tree.
 func progressMeta(ctx context.Context, d Deps, steps []any) (calc.ProgressMeta, error) {
 	ids := map[int]bool{}
 	collectProgressTypeIDs(steps, ids)
@@ -365,8 +343,6 @@ func progressMeta(ctx context.Context, d Deps, steps []any) (calc.ProgressMeta, 
 		}
 		_ = n
 	}
-	// Blueprint names: only blueprint type ids carry names in the summary;
-	// collectSummaryData keys them by blueprint id, so expose all names.
 	for id, n := range names {
 		bpNames[itoaProg(id)] = n
 	}
@@ -400,8 +376,6 @@ func collectProgressTypeIDs(steps []any, into map[int]bool) {
 	}
 }
 
-// progressShape renders a ProgressSummary like BuildProgramProgressResource:
-// character_names + floats + nested steps (children stay raw step maps).
 func progressShape(names []any, s calc.ProgressSummary) map[string]any {
 	if names == nil {
 		names = []any{}
@@ -509,8 +483,6 @@ func reactionList(in []any) []any {
 	return out
 }
 
-// --- asset locations ---
-
 func buildAssetMap(assets []map[string]any) map[int64]map[string]any {
 	m := make(map[int64]map[string]any, len(assets))
 	for _, a := range assets {
@@ -521,7 +493,6 @@ func buildAssetMap(assets []map[string]any) map[int64]map[string]any {
 	return m
 }
 
-// rootLocationID ports AssetLocationResolver::rootLocationId (depth guard 20).
 func rootLocationID(asset map[string]any, assetMap map[int64]map[string]any) int64 {
 	depth := 0
 	for {
@@ -539,9 +510,6 @@ func rootLocationID(asset map[string]any, assetMap map[int64]map[string]any) int
 	}
 }
 
-// describeLocations ports AssetLocationResolver::describe: station, player
-// structure (ESI with a scoped character), or bare system; sorted by system
-// name then location name, unknown systems last.
 func describeLocations(ctx context.Context, d Deps, assets []map[string]any, chars []auth.Character) ([]any, error) {
 	assetMap := buildAssetMap(assets)
 	roots := map[int64]bool{}
@@ -580,7 +548,6 @@ func describeLocations(ctx context.Context, d Deps, assets []map[string]any, cha
 				}
 			}
 		case id > 2000000000000:
-			// Player-owned structure: live ESI with a scoped character.
 			if d.Progress.Universe != nil {
 				for _, ch := range scoped {
 					if st, err := d.Progress.Universe.GetStructure(ctx, uint64(id), ch.CharacterID); err == nil && st != nil {
@@ -667,8 +634,6 @@ func describeLocations(ctx context.Context, d Deps, assets []map[string]any, cha
 	return res, nil
 }
 
-// --- small coercions ---
-
 func asIntProg(v any) (int, bool) {
 	switch n := v.(type) {
 	case int:
@@ -754,7 +719,6 @@ func itoaProg(i int) string {
 	return string(b[p:])
 }
 
-// listPage parses ?page=&per_page= (defaults 1/50, max 200); 422 on garbage.
 func listPage(c echo.Context) (int, int, bool) {
 	page, ok := queryInt(c, "page", 1, 1, 1<<31-1)
 	if !ok {
@@ -784,8 +748,6 @@ func queryInt(c echo.Context, key string, def, min, max int) (int, bool) {
 	return n, true
 }
 
-// queryIDs reads ?location_ids[]=1&location_ids[]=2 (or repeated
-// ?location_ids=1); 422 on non-integers.
 func queryIDs(c echo.Context, key string) (map[int64]bool, bool) {
 	vals := c.QueryParams()[key]
 	if vals == nil {
@@ -837,7 +799,6 @@ func parseIntProg(s string) (int, error) {
 	return n, nil
 }
 
-// progressFilter parses ?location_ids (personal progress).
 func progressFilter(c echo.Context) (map[int64]bool, bool) {
 	f, ok := queryIDs(c, "location_ids")
 	if !ok {
@@ -846,7 +807,6 @@ func progressFilter(c echo.Context) (map[int64]bool, bool) {
 	return f, true
 }
 
-// corpProgressFilters parses ?input_location_ids & ?output_location_ids.
 func corpProgressFilters(c echo.Context) (map[int64]bool, map[int64]bool, bool) {
 	inF, ok := queryIDs(c, "input_location_ids")
 	if !ok {
@@ -859,7 +819,6 @@ func corpProgressFilters(c echo.Context) (map[int64]bool, map[int64]bool, bool) 
 	return inF, outF, true
 }
 
-// paginated slices items and renders the {data, meta.pagination} envelope.
 func paginated(c echo.Context, items []any, page, perPage int) error {
 	total := len(items)
 	start := (page - 1) * perPage
@@ -878,8 +837,6 @@ func paginated(c echo.Context, items []any, page, perPage int) error {
 	})
 }
 
-// isCredentialErr mirrors assetsOrNull: revoked/unlinked tokens yield no
-// assets; every other ESI failure propagates.
 func isCredentialErr(err error) bool {
 	var reqErr *esi.RequestError
 	if errors.As(err, &reqErr) {

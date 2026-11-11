@@ -34,9 +34,6 @@ func TestCalculateBuildableItems(t *testing.T) {
 		},
 	}
 	got := CalculateBuildableItems(bps, mats, acts)
-	// 786: req ceil(90)=90 -> 950/90 = 10 runs (BPO, unlimited cap)
-	// 787: req 100 -> 9 runs, capped to 3 BPC runs
-	// grouped by 587_ME10: 10 runs; 587_ME0: 3 runs
 	if len(got) != 2 {
 		t.Fatalf("got %+v", got)
 	}

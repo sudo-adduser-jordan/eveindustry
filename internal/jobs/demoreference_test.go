@@ -6,7 +6,6 @@ import (
 	"testing"
 )
 
-// stubRefSource answers reference reads from canned ESI payloads.
 type stubRefSource struct {
 	types    map[int]map[string]any
 	stations map[uint64]map[string]any
@@ -69,8 +68,6 @@ func TestCollectDemoReference(t *testing.T) {
 		failIDs: map[int]bool{35: true},
 	}
 	ref := collectDemoReference(context.Background(), src)
-	// Tritanium resolves; Pyerite fails and has no fallback so it is skipped.
-	// Other demo types resolve via static fallbacks when ESI is unreachable.
 	byID := map[int]bool{}
 	for _, row := range ref.Types {
 		byID[row.TypeID] = true
@@ -92,11 +89,9 @@ func TestCollectDemoReference(t *testing.T) {
 	if !tritFound || tritGID != 18 || !tritPublished {
 		t.Fatalf("tritanium row found=%v gid=%d published=%v", tritFound, tritGID, tritPublished)
 	}
-	// Demo ships fall back to static names when the stub has no ESI row.
 	if !byID[587] {
 		t.Fatalf("ship fallback missing in %+v", ref.Types)
 	}
-	// Mutated abyssal types are demo-only: they carry meta group 15.
 	foundMut := false
 	for _, row := range ref.Types {
 		if row.TypeID == 99101 {
@@ -112,7 +107,6 @@ func TestCollectDemoReference(t *testing.T) {
 	if !foundMut {
 		t.Fatalf("mutated 99101 missing in %+v", ref.Types)
 	}
-	// Ship groups/categories seed alongside types so the ships tab groups.
 	foundGroup := false
 	for _, g := range ref.Groups {
 		if g.GroupID == 25 && g.Name == "Frigate" {
@@ -143,6 +137,5 @@ func TestCollectDemoReference(t *testing.T) {
 }
 
 func TestSeedDemoReferenceDataNoDeps(t *testing.T) {
-	// Zero handler (no DB, no ESI) is a no-op, never a panic.
 	seedDemoReferenceData(context.Background(), HandlerDeps{})
 }

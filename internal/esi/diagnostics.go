@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// DiagEventKind mirrors the diagnostics event kinds.
 type DiagEventKind string
 
 const (
@@ -21,8 +20,6 @@ const (
 	DiagSkipped         DiagEventKind = "skipped"
 )
 
-// DiagEvent is one passive capture record. Nothing here may alter an ESI
-// outcome: recording never returns errors to the caller.
 type DiagEvent struct {
 	Kind        DiagEventKind
 	Method      string
@@ -37,21 +34,16 @@ type DiagEvent struct {
 	OccurredAt  time.Time
 }
 
-// DiagSink receives events. The SQL-stream sink buffers into go_diag_stream
-// for the flush worker; until then the recorder drops (no-op when disabled).
 type DiagSink interface {
 	Emit(ctx context.Context, e DiagEvent)
 }
 
-// DiagRecorder is the passive capture facade. Enabled gates everything;
-// Emit swallows sink failures via the dropped counter.
 type DiagRecorder struct {
 	Enabled bool
 	Sink    DiagSink
 	Dropped int64
 }
 
-// Record emits unless disabled or sinkless.
 func (r *DiagRecorder) Record(ctx context.Context, e DiagEvent) {
 	if r == nil || !r.Enabled || r.Sink == nil {
 		return

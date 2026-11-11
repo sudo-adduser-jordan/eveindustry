@@ -12,27 +12,23 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/pi"
 )
 
-// PlanetaryColonyESI fetches colonies (CharacterClient satisfies it).
 type PlanetaryColonyESI interface {
 	GetCharacterPlanets(ctx context.Context, characterID int64) ([]map[string]any, error)
 	GetCharacterPlanetDetails(ctx context.Context, characterID int64, planetID int) (map[string]any, error)
 	ClearPlanetaryCache(characterID int64)
 }
 
-// PlanetaryUniverseESI resolves schematics, planets and types (UniverseClient).
 type PlanetaryUniverseESI interface {
 	GetPlanetarySchematic(ctx context.Context, schematicID int) (map[string]any, error)
 	GetPlanetInfo(ctx context.Context, planetID int) (map[string]any, error)
 	GetTypeInfo(ctx context.Context, typeID int) (map[string]any, error)
 }
 
-// PlanetaryDeps carries the ESI surface the planetary dashboard needs.
 type PlanetaryDeps struct {
 	Characters PlanetaryColonyESI
 	Universe   PlanetaryUniverseESI
 }
 
-// registerPlanetary mounts the PI dashboard + refresh.
 func registerPlanetary(v1 *echo.Group, d Deps) {
 	if d.Planetary.Characters == nil || d.Planetary.Universe == nil || d.Users == nil || d.Industry == nil {
 		return
@@ -41,8 +37,6 @@ func registerPlanetary(v1 *echo.Group, d Deps) {
 	v1.POST("/planetary/refresh", handlePlanetaryRefresh(d))
 }
 
-// GET /planetary — colonies with extractors, factories, storage, outputs,
-// alerts and capacity. ESI-active characters with the PI scope.
 func handlePlanetaryShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -76,8 +70,6 @@ func handlePlanetaryShow(d Deps) echo.HandlerFunc {
 	}
 }
 
-// assemblePlanetary aggregates shaped characters into the dashboard payload.
-// Numbers read float-tolerantly so cached (JSON) payloads work too.
 func assemblePlanetary(charOut []any) map[string]any {
 	type outAgg struct {
 		typeID  int
@@ -174,13 +166,11 @@ func numAny(v any) float64 {
 	return 0
 }
 
-// planetaryChar is one dashboard character with analyzed planets.
 type planetaryChar struct {
 	ch      *auth.Character
 	planets []any
 }
 
-// collectPlanetary fetches and analyzes every eligible colony.
 func collectPlanetary(ctx context.Context, d Deps, uid int64, now time.Time) ([]planetaryChar, error) {
 	chars, err := d.Users.CharactersForUser(ctx, uid)
 	if err != nil {
@@ -207,7 +197,6 @@ func collectPlanetary(ctx context.Context, d Deps, uid int64, now time.Time) ([]
 	return out, nil
 }
 
-// shapeColony renders one analyzed colony like the dashboard resource.
 func shapeColony(c pi.Colony) any {
 	extractors := []any{}
 	factories := []any{}
@@ -249,7 +238,6 @@ func shapeColony(c pi.Colony) any {
 	}
 }
 
-// POST /planetary/refresh — forget colony memos, 204.
 func handlePlanetaryRefresh(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)

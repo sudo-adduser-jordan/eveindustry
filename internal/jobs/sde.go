@@ -16,12 +16,8 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// sdeBaseURL mirrors SdeImportService::SDE_BASE_URL.
 const sdeBaseURL = "https://developers.eveonline.com/static-data/eve-online-static-data-latest-jsonl.zip"
 
-// RegisterSDEJobs wires sde:import (default, 1 try, 1h), esi:import-types
-// (updates, chunks of 1000), sde:import-blueprints (updates) and
-// esi:import-market-groups (updates).
 func RegisterSDEJobs(r *Runner, h HandlerDeps) {
 	r.Register("sde-import", JobDef{
 		Queue: QueueDefault, MaxTries: 1, Timeout: time.Hour,
@@ -73,7 +69,6 @@ func RegisterSDEJobs(r *Runner, h HandlerDeps) {
 	})
 }
 
-// SDESchedule mirrors the static-data cadences.
 func SDESchedule(h HandlerDeps) []ScheduleEntry {
 	return []ScheduleEntry{
 		{
@@ -128,7 +123,6 @@ func SDESchedule(h HandlerDeps) []ScheduleEntry {
 		{
 			Name: "esi:import-market-groups", Every: 24 * time.Hour, Overlap: 24 * time.Hour,
 			Run: func(ctx context.Context, r *Runner, q Queue) error {
-				// 1st and 15th of the month at 03:00 like the cron line.
 				now := time.Now().UTC()
 				if (now.Day() != 1 && now.Day() != 15) || now.Hour() != 3 {
 					return nil
@@ -149,8 +143,6 @@ func SDESchedule(h HandlerDeps) []ScheduleEntry {
 	}
 }
 
-// ImportSDE ports the sde:import command: checksum gate, zip download, and
-// per-dataset JSONL imports.
 func ImportSDE(ctx context.Context, h HandlerDeps, force bool, datasets []string) error {
 	all := []string{"systems", "categories", "groups", "types", "marketgroups", "stations", "stargates", "materials", "blueprints"}
 	if len(datasets) == 0 {
@@ -723,7 +715,6 @@ func importSDEFile(open func(string) (io.ReadCloser, error), name string, fn fun
 	return sc.Err()
 }
 
-// UniverseTypeIDs ports the esi:import-types ID enumeration.
 func UniverseTypeIDs(ctx context.Context, h HandlerDeps) ([]int, error) {
 	var out []int
 	page := 1
@@ -741,7 +732,6 @@ func UniverseTypeIDs(ctx context.Context, h HandlerDeps) ([]int, error) {
 	return out, nil
 }
 
-// ProcessEveTypeChunk ports the chunk job: ESI type info into eve_types.
 func ProcessEveTypeChunk(ctx context.Context, h HandlerDeps, typeIDs []int, publishedOnly bool) error {
 	var rows []store.SdeType
 	for _, chunk := range chunkInts(typeIDs, 50) {
@@ -780,7 +770,6 @@ func ProcessEveTypeChunk(ctx context.Context, h HandlerDeps, typeIDs []int, publ
 	return nil
 }
 
-// ProcessBlueprintDataChunk ports the Fuzzwork chunk job.
 func ProcessBlueprintDataChunk(ctx context.Context, h HandlerDeps, typeIDs []int) error {
 	var rows []store.SdeBlueprint
 	for _, id := range typeIDs {
@@ -809,7 +798,6 @@ func ProcessBlueprintDataChunk(ctx context.Context, h HandlerDeps, typeIDs []int
 	return nil
 }
 
-// ProcessMarketGroupChunk ports the market-group tree chunk.
 func ProcessMarketGroupChunk(ctx context.Context, h HandlerDeps, groupIDs []int) error {
 	var rows []store.SdeMarketGroup
 	for _, id := range groupIDs {
@@ -887,8 +875,6 @@ func isTrue(v any) bool {
 	return b
 }
 
-// fetchFuzzworkBlueprint ports the per-type Fuzzwork lookup with activity
-// materials, products and times.
 func fetchFuzzworkBlueprint(ctx context.Context, typeID int) (mats []map[string]any, prods []map[string]any, secs map[int]int, err error) {
 	secs = map[int]int{}
 	url := "https://www.fuzzwork.co.uk/blueprint/api/blueprint.php?typeid=" + itoa(int64(typeID))

@@ -4,21 +4,12 @@ import (
 	"context"
 )
 
-// ResearchStore covers the blueprint/reaction research lists.
 type ResearchStore interface {
-	// T1Blueprints lists published T1 (meta NULL) manufacturing blueprints
-	// with market group names, LIKE-escaped search, optional market group
-	// filter. Always by name ascending; owned/market_group sorts happen in
-	// Go like the PHP post-sort.
 	T1Blueprints(ctx context.Context, search string, marketGroupID int) ([]ResearchBlueprint, error)
-	// ReactionFormulas lists published reaction formulas with group names.
 	ReactionFormulas(ctx context.Context, search string, groupID int) ([]ResearchFormula, error)
-	// BlueprintMarketGroups lists market groups containing T1 manufacturing
-	// blueprints, by name, for the filter dropdown.
 	BlueprintMarketGroups(ctx context.Context) ([]GroupName, error)
 }
 
-// ResearchBlueprint is one T1 blueprint row.
 type ResearchBlueprint struct {
 	TypeID          int     `db:"type_id"`
 	Name            string  `db:"name"`
@@ -26,7 +17,6 @@ type ResearchBlueprint struct {
 	MarketGroupName *string `db:"market_group_name"`
 }
 
-// ResearchFormula is one reaction formula row.
 type ResearchFormula struct {
 	TypeID    int     `db:"type_id"`
 	Name      string  `db:"name"`
@@ -34,7 +24,6 @@ type ResearchFormula struct {
 	GroupName *string `db:"group_name"`
 }
 
-// GroupName is one id/name pair for dropdowns.
 type GroupName struct {
 	ID   int    `db:"id"`
 	Name string `db:"name"`

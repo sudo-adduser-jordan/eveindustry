@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-/** The five trade hubs (MarketTradingService::REGIONS). */
+
 export const REGIONS = [
   ['10000002', 'The Forge (Jita)'],
   ['10000043', 'Domain (Amarr)'],
@@ -15,7 +15,7 @@ export type RegionId = (typeof REGIONS)[number][0]
 export interface ScanField {
   name: string
   label: string
-  /** A select of the trade hubs when 'region', else a number input. */
+  
   kind: 'region' | 'number'
   hint?: string
   min?: number
@@ -23,17 +23,14 @@ export interface ScanField {
   step?: number
 }
 
-/** Blank fields fall back to the server default instead of sending an empty string. */
+
 export function numberParam(value: string | undefined): number | undefined {
   if (value === undefined || value.trim() === '') return undefined
   const n = Number(value)
   return Number.isFinite(n) ? n : undefined
 }
 
-/**
- * The inputs of a market scan. `values` are the applied parameters (from the
- * URL); typing only changes a draft until the form is submitted.
- */
+
 export function ScanForm({
   fields,
   values,
@@ -91,7 +88,7 @@ export function ScanForm({
   )
 }
 
-/** Scan parameters and page number, kept in the URL so a scan can be shared and survives reload. */
+
 export function useScanParams(defaults: Record<string, string>) {
   const [params, setParams] = useSearchParams()
   const values: Record<string, string> = Object.fromEntries(
@@ -101,7 +98,7 @@ export function useScanParams(defaults: Record<string, string>) {
   return {
     values,
     page,
-    /** Apply new parameters and go back to page 1. */
+    
     apply: (next: Record<string, string>) => setParams(next),
     setPage: (p: number) => setParams({ ...values, page: String(p) }),
   }

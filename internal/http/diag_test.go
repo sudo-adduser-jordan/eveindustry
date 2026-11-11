@@ -108,7 +108,6 @@ func TestDiagReports(t *testing.T) {
 	if code != http.StatusOK || len(body["data"].([]any)) != 1 {
 		t.Fatalf("batches = %d %v", code, body)
 	}
-	// events default page 50: all 3, no cursor
 	code, body = get(t, d, "/api/v1/admin/esi-diagnostics/events")
 	if code != http.StatusOK || len(body["data"].([]any)) != 3 {
 		t.Fatalf("events = %d %v", code, body)
@@ -116,7 +115,6 @@ func TestDiagReports(t *testing.T) {
 	if body["meta"].(map[string]any)["next_cursor"] != nil {
 		t.Fatalf("cursor = %v", body["meta"])
 	}
-	// per_page=2 -> cursor 2
 	code, body = get(t, d, "/api/v1/admin/esi-diagnostics/events?per_page=2")
 	if code != http.StatusOK || len(body["data"].([]any)) != 2 {
 		t.Fatalf("paged = %d %v", code, body)
@@ -124,12 +122,10 @@ func TestDiagReports(t *testing.T) {
 	if body["meta"].(map[string]any)["next_cursor"] != 2.0 {
 		t.Fatalf("cursor = %v", body["meta"])
 	}
-	// before_id=2 -> only id 1
 	code, body = get(t, d, "/api/v1/admin/esi-diagnostics/events?before_id=2")
 	if code != http.StatusOK || len(body["data"].([]any)) != 1 {
 		t.Fatalf("before = %d %v", code, body)
 	}
-	// bad range
 	if code, _ := get(t, d, "/api/v1/admin/esi-diagnostics/summary?from=2026-11-08&to=2026-11-01"); code != http.StatusUnprocessableEntity {
 		t.Fatalf("reversed = %d", code)
 	}
@@ -139,7 +135,6 @@ func TestDiagReports(t *testing.T) {
 	if code, _ := get(t, d, "/api/v1/admin/esi-diagnostics/summary?reason=nope"); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad reason = %d", code)
 	}
-	// non-admin -> 403
 	d2 := diagTestDeps()
 	d2.Sessions.(*stubAuth).user.IsAdmin = false
 	if code, _ := get(t, d2, "/api/v1/admin/esi-diagnostics/summary"); code != http.StatusForbidden {

@@ -71,13 +71,11 @@ func TestCorporateExportAvailable(t *testing.T) {
 }
 
 func TestCorporateExportUnavailable(t *testing.T) {
-	// no corp on character
 	d := corpTestDeps(nil, nil, nil)
 	code, body := get(t, d, "/api/v1/calculators/corporate-export")
 	if code != http.StatusOK || body["data"].(map[string]any)["available"] != false {
 		t.Fatalf("code = %d %v", code, body)
 	}
-	// config exists but no director role
 	corp := int64(987)
 	d = corpTestDeps(
 		map[int64]*store.CorpConfig{987: {CorporationID: 987, CorporationName: "ACME", IsActive: true}},
@@ -88,7 +86,6 @@ func TestCorporateExportUnavailable(t *testing.T) {
 	if code != http.StatusOK || body["data"].(map[string]any)["available"] != false {
 		t.Fatalf("member = %d %v", code, body)
 	}
-	// factory manager counts
 	d = corpTestDeps(
 		map[int64]*store.CorpConfig{987: {CorporationID: 987, CorporationName: "ACME", IsActive: true}},
 		map[int64][]store.CorpCharacter{987: {{Roles: []string{"Factory_Manager"}}}},

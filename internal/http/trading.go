@@ -9,8 +9,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/market"
 )
 
-// registerTrading mounts the scanner pair, mirroring
-// routes/api_v1/market.php: station-trading and region-arbitrage.
 func registerTrading(v1 *echo.Group, d Deps) {
 	if d.Trading == nil || d.Market == nil {
 		return
@@ -19,7 +17,6 @@ func registerTrading(v1 *echo.Group, d Deps) {
 	v1.GET("/market/region-arbitrage", handleRegionArbitrage(d))
 }
 
-// parseScanFees validates the shared scanner inputs from MarketRequest::scanRules().
 func parseScanFees(c echo.Context, verrs validationErrors) (brokerFee, salesTax, minMargin float64, minDailyVolume int) {
 	brokerFee, salesTax, minMargin = market.DefaultBrokerFee, market.DefaultSalesTax, market.DefaultMinMargin
 	minDailyVolume = market.DefaultMinDailyVolume
@@ -58,9 +55,6 @@ func parseScanFees(c echo.Context, verrs validationErrors) (brokerFee, salesTax,
 	return brokerFee, salesTax, minMargin, minDailyVolume
 }
 
-// historyVolumes loads 30-day average daily volumes per type. A query error
-// maps to the PHP ESI-error path (nil history): the candidate is included
-// with volume 0 rather than dropped.
 func historyVolumes(c echo.Context, d Deps, typeIDs []int, regionID int) map[int]*int {
 	volumes := make(map[int]*int, len(typeIDs))
 	for _, id := range typeIDs {
@@ -79,7 +73,6 @@ func historyVolumes(c echo.Context, d Deps, typeIDs []int, regionID int) map[int
 	return volumes
 }
 
-// GET /market/station-trading — mirrors TradingController@stationTrading.
 func handleStationTrading(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -119,7 +112,6 @@ func handleStationTrading(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /market/region-arbitrage — mirrors TradingController@regionArbitrage.
 func handleRegionArbitrage(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}

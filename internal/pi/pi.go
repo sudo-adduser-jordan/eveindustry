@@ -1,7 +1,3 @@
-// Package pi ports FactoryPlanetPlannerService: factory-planet schematic
-// tables and profitability for the P1→P2, P2→P3, P3→P4, P1→P3 and P0→P3
-// tiers. Live ESI average-price fallbacks are skipped (no ESI client yet):
-// rows price from local market_prices only.
 package pi
 
 import (
@@ -19,7 +15,6 @@ const (
 	SecondsPerDay = 86400
 )
 
-// TierLabels mirrors TIER_LABELS.
 var TierLabels = map[string]string{
 	"p1_to_p2": "P1 → P2 (Buy P1 materials)",
 	"p2_to_p3": "P2 → P3 (Buy P2 materials)",
@@ -28,7 +23,6 @@ var TierLabels = map[string]string{
 	"p0_to_p3": "P0 → P3 (Single Planet, Buy P0)",
 }
 
-// ValidTiers is the request allow-list (keys of TIER_LABELS).
 var ValidTiers = []string{"p1_to_p2", "p2_to_p3", "p3_to_p4", "p1_to_p3", "p0_to_p3"}
 
 func ValidTier(tier string) bool {
@@ -36,16 +30,14 @@ func ValidTier(tier string) bool {
 	return ok
 }
 
-// Schematic is one factory schematic: output, cycle and inputs.
 type Schematic struct {
 	OutputTypeID int
 	Name         string
 	OutputQty    int
 	CycleTime    int
-	Inputs       [][2]int // [type_id, qty]
+	Inputs       [][2]int
 }
 
-// SchematicsP1ToP2 mirrors SCHEMATICS_P1_TO_P2 (AIF: 40+40 P1 → 5 P2).
 var SchematicsP1ToP2 = []Schematic{
 	{2329, "Biocells", 5, CycleP1ToP2, [][2]int{{2396, 40}, {2399, 40}}},
 	{3828, "Construction Blocks", 5, CycleP1ToP2, [][2]int{{2398, 40}, {2400, 40}}},
@@ -73,7 +65,6 @@ var SchematicsP1ToP2 = []Schematic{
 	{2328, "Water-Cooled CPU", 5, CycleP1ToP2, [][2]int{{2398, 40}, {3645, 40}}},
 }
 
-// SchematicsP2ToP3 mirrors SCHEMATICS_P2_TO_P3 (HTPP: P2 → 3 P3).
 var SchematicsP2ToP3 = []Schematic{
 	{2358, "Biotech Research Reports", 3, CycleP2ToP3, [][2]int{{2463, 10}, {3725, 10}, {3828, 10}}},
 	{2345, "Camera Drones", 3, CycleP2ToP3, [][2]int{{3697, 10}, {9830, 10}}},
@@ -98,7 +89,6 @@ var SchematicsP2ToP3 = []Schematic{
 	{28974, "Vaccines", 3, CycleP2ToP3, [][2]int{{3725, 10}, {3775, 10}}},
 }
 
-// SchematicsP3ToP4 mirrors SCHEMATICS_P3_TO_P4 (HTPP: P3/P1 → 1 P4).
 var SchematicsP3ToP4 = []Schematic{
 	{2867, "Broadcast Node", 1, CycleP3ToP4, [][2]int{{2354, 6}, {17392, 6}, {17898, 6}}},
 	{2868, "Integrity Response Drones", 1, CycleP3ToP4, [][2]int{{2348, 6}, {2366, 6}, {9846, 6}}},
@@ -110,7 +100,6 @@ var SchematicsP3ToP4 = []Schematic{
 	{2876, "Wetware Mainframe", 1, CycleP3ToP4, [][2]int{{2349, 6}, {2358, 6}, {2367, 6}}},
 }
 
-// SchematicsP0ToP1 mirrors SCHEMATICS_P0_TO_P1 (BIF: 3000 P0 → 20 P1).
 var SchematicsP0ToP1 = []Schematic{
 	{2389, "Plasmoids", 20, CycleP0ToP1, [][2]int{{2308, 3000}}},
 	{2390, "Electrolytes", 20, CycleP0ToP1, [][2]int{{2309, 3000}}},
@@ -157,9 +146,6 @@ var p2Names = map[int]string{
 	15317: "Genetically Enhanced Livestock",
 }
 
-// ResolveInputName mirrors resolveInputName(): P0 → P1 → P2 → P3/P4
-// schematic names, else "Type {id}". (P0_NAMES has no 2311 entry, so
-// Reactive Gas falls back to "Type 2311", exactly like the PHP.)
 func ResolveInputName(typeID int) string {
 	if n, ok := p0Names[typeID]; ok {
 		return n
@@ -183,14 +169,12 @@ func ResolveInputName(typeID int) string {
 	return "Type " + itoa(typeID)
 }
 
-// PriceRow is one market_prices row for factory pricing.
 type PriceRow struct {
 	BuyMax  *float64
 	SellMin *float64
 	Average *float64
 }
 
-// SchematicInput is one priced input line.
 type SchematicInput struct {
 	TypeID      int     `json:"type_id"`
 	Name        string  `json:"name"`
@@ -201,7 +185,6 @@ type SchematicInput struct {
 	PriceSource *string `json:"price_source"`
 }
 
-// SchematicResult mirrors calculateSchematicProfit().
 type SchematicResult struct {
 	OutputTypeID             int              `json:"output_type_id"`
 	OutputName               string           `json:"output_name"`
@@ -237,8 +220,6 @@ type SchematicResult struct {
 func fptr(v float64) *float64 { v2 := v; return &v2 }
 func sptr(s string) *string   { v := s; return &v }
 
-// CalculateSchematicProfit ports calculateSchematicProfit(). ESI average
-// fallbacks are skipped: rows price from local market_prices only.
 func CalculateSchematicProfit(s Schematic, prices map[int]PriceRow) SchematicResult {
 	r := SchematicResult{
 		OutputTypeID: s.OutputTypeID, OutputName: s.Name,
@@ -313,8 +294,6 @@ func CalculateSchematicProfit(s Schematic, prices map[int]PriceRow) SchematicRes
 	return r
 }
 
-// CalculateSimpleTier ports the p1_to_p2/p2_to_p3/p3_to_p4 branch of
-// calculateProfitability(): every schematic priced, sorted by daily profit.
 func CalculateSimpleTier(schematics []Schematic, prices map[int]PriceRow) []SchematicResult {
 	out := make([]SchematicResult, 0, len(schematics))
 	for _, s := range schematics {
@@ -324,7 +303,6 @@ func CalculateSimpleTier(schematics []Schematic, prices map[int]PriceRow) []Sche
 	return out
 }
 
-// SchematicsForTier returns the table for the three simple tiers.
 func SchematicsForTier(tier string) []Schematic {
 	switch tier {
 	case "p1_to_p2":
@@ -337,8 +315,6 @@ func SchematicsForTier(tier string) []Schematic {
 	return nil
 }
 
-// TierTypeIDs collects every type id a tier needs prices for: schematic
-// inputs and outputs, plus the transitive P1/P0 inputs of the chain tiers.
 func TierTypeIDs(tier string) []int {
 	seen := map[int]bool{}
 	var out []int
@@ -377,10 +353,6 @@ func TierTypeIDs(tier string) []int {
 	return out
 }
 
-// CustomsTax ports the per-row tax math of applyCustomsTax(): tax_rate% on
-// the import and export values, subtracted from profit. Callers pass the
-// planet-level values for simple tiers or the daily import/export values
-// for the P1/P0 → P3 chain tiers.
 func CustomsTax(importVal, exportVal, profit, rate float64) (importTax, exportTax, total, afterTax float64) {
 	importTax = importVal * rate / 100
 	exportTax = exportVal * rate / 100
@@ -388,7 +360,6 @@ func CustomsTax(importVal, exportVal, profit, rate float64) (importTax, exportTa
 	return importTax, exportTax, total, profit - total
 }
 
-// ApplyCustomsTax applies CustomsTax to every simple-tier row in place.
 func ApplyCustomsTax(results []SchematicResult, rate float64) []SchematicResult {
 	for i := range results {
 		it, et, tot, after := CustomsTax(

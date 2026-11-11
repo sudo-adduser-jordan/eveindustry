@@ -44,12 +44,11 @@ task start   # api + worker + scheduler + web UI (demo mode on by default)
 Useful slices of the same flow:
 
 ```sh
-task deps            # install deps only (no network-heavy imports)
-task deps:update     # update Go + frontend deps to latest allowed versions
+task install       # install deps only (no network-heavy imports)
+task update        # update Go + frontend deps to latest allowed versions
 task migrate -- up  # apply pending SQL migrations
-task setup:sde       # fetch SDE reference data now (scheduler runs it daily)
-task setup:demo      # reset demo data now (scheduler runs it daily)
-task job -- <name> [json-payload]  # run any background job once and exit
+task remove        # remove build outputs and ephemeral run files
+task dev           # run api and web UI for local development
 ```
 
 Config is all environment; see `.env.example` (`PORT`, `DB_PATH`,

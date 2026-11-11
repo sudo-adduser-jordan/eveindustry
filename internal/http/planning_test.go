@@ -12,7 +12,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// stubPlanning implements store.PlanningStore in memory.
 type stubPlanning struct {
 	rows   map[int64]store.StationConfig
 	nextID int64
@@ -154,7 +153,6 @@ func TestStationConfigsIndex(t *testing.T) {
 
 func TestStationConfigCRUD(t *testing.T) {
 	d := planningTestDeps()
-	// create (201), becomes only default
 	code, body := postJSON(t, d, "/api/v1/station-configs", `{"name":"Gamma","structure_type":"raitaru","rig_me":"t1","rig_te":"none","system_security":"lowsec","is_default":true}`)
 	if code != http.StatusCreated {
 		t.Fatalf("create = %d %v", code, body)
@@ -162,29 +160,24 @@ func TestStationConfigCRUD(t *testing.T) {
 	if body["data"].(map[string]any)["is_default"] != true {
 		t.Fatalf("default = %v", body)
 	}
-	// foreign id -> 404 on update and delete
 	if code, _ := putJSON(t, d, "/api/v1/station-configs/3", `{"name":"X"}`); code != http.StatusNotFound {
 		t.Fatalf("foreign update = %d", code)
 	}
 	if code, _ := deleteReq(t, d, "/api/v1/station-configs/3"); code != http.StatusNotFound {
 		t.Fatalf("foreign delete = %d", code)
 	}
-	// update own
 	code, body = putJSON(t, d, "/api/v1/station-configs/1", `{"name":"Alpha2"}`)
 	if code != http.StatusOK || body["data"].(map[string]any)["name"] != "Alpha2" {
 		t.Fatalf("update = %d %v", code, body)
 	}
-	// set default flips the flag
 	if code, _ := postJSON(t, d, "/api/v1/station-configs/1/default", `{}`); code != http.StatusOK {
 		t.Fatalf("default = %d", code)
 	}
 	code, body = get(t, d, "/api/v1/station-configs")
 	_ = body
-	// delete own -> 204
 	if code, _ := deleteReq(t, d, "/api/v1/station-configs/1"); code != http.StatusNoContent {
 		t.Fatalf("delete = %d", code)
 	}
-	// bad input -> 422
 	if code, _ := postJSON(t, d, "/api/v1/station-configs", `{"name":""}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad = %d", code)
 	}

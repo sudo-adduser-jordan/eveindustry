@@ -8,8 +8,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// BuildProgram mirrors one build_programs row. Steps and Settings are raw
-// JSON payloads decoded by the handler layer.
 type BuildProgram struct {
 	ID           int64          `db:"id"`
 	UserID       int64          `db:"user_id"`
@@ -23,8 +21,6 @@ type BuildProgram struct {
 	UpdatedAt    time.Time      `db:"updated_at"`
 }
 
-// ProgramStore covers personal build programs. Reads are owner-scoped
-// (nil when missing or another user's, matching the 404 policies).
 type ProgramStore interface {
 	BuildPrograms(ctx context.Context, userID int64) ([]BuildProgram, error)
 	BuildProgram(ctx context.Context, id, userID int64) (*BuildProgram, error)
@@ -110,7 +106,6 @@ func (s *SQL) DeleteBuildProgram(ctx context.Context, id, userID int64) (bool, e
 	return n > 0, err
 }
 
-// CorpProgram mirrors one corporation_build_programs row.
 type CorpProgram struct {
 	ID              int64          `db:"id"`
 	CorporationID   int64          `db:"corporation_id"`
@@ -125,7 +120,6 @@ type CorpProgram struct {
 	UpdatedAt       time.Time      `db:"updated_at"`
 }
 
-// CorpProgramStore covers corporate build programs, scoped by corporation.
 type CorpProgramStore interface {
 	CorpPrograms(ctx context.Context, corpID int64) ([]CorpProgram, error)
 	CorpProgram(ctx context.Context, id, corpID int64) (*CorpProgram, error)

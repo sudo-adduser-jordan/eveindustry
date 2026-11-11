@@ -14,10 +14,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerAvailability mounts the heavy industry reads: slot availability
-// and reprocessing opportunities. Both compute live from ESI (skills, jobs,
-// assets) plus market prices; per-character ESI failures skip that
-// character, mirroring the jobs overview.
 func registerAvailability(v1 *echo.Group, d Deps) {
 	if d.IndustryDeps.Characters == nil || d.IndustryDeps.Universe == nil ||
 		d.Users == nil || d.Market == nil || d.Industry == nil || d.Corp == nil {
@@ -57,8 +53,6 @@ var heavyActivityNames = map[int]string{
 	activityReactions:     "Reactions",
 }
 
-// GET /industry/availability — slots per character + totals + jobs ready
-// within a minute. meta.cached_until is now + 20 minutes.
 func handleAvailability(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -103,7 +97,6 @@ func handleAvailability(d Deps) echo.HandlerFunc {
 	}
 }
 
-// availDeps adapts the handler Deps to the shared computation.
 func availDeps(d Deps) industry.AvailDeps {
 	return industry.AvailDeps{
 		Characters: d.IndustryDeps.Characters,
@@ -112,7 +105,6 @@ func availDeps(d Deps) industry.AvailDeps {
 	}
 }
 
-// availCorpAdapter maps the store corp characters to the shared shape.
 type availCorpAdapter struct{ c store.CorpStore }
 
 func (a availCorpAdapter) UserCorpCharacters(ctx context.Context, userID, corpID int64) ([]industry.CorpMember, error) {
@@ -140,11 +132,6 @@ func corpNameOf(ch auth.Character) any {
 	return nil
 }
 
-// --- reprocessing ---
-
-// GET /industry/reprocessing — items worth more reprocessed than sold, per
-// character and location. Prices are global market_prices (The Forge),
-// so meta.freshness is the Forge freshness block.
 func handleReprocessing(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -177,8 +164,6 @@ func handleReprocessing(d Deps) echo.HandlerFunc {
 	}
 }
 
-// reprocessingForCharacter ports analyzeCharacterAssets: nil when the
-// character's assets cannot be read. Returns the row and its item count.
 func reprocessingForCharacter(ctx context.Context, d Deps, ch auth.Character) (map[string]any, int) {
 	skills, err := d.IndustryDeps.Characters.GetSkills(ctx, ch.CharacterID)
 	if err != nil {
@@ -279,8 +264,6 @@ func charReprocessRow(ch auth.Character, yield float64, skills map[int]int, loca
 	}
 }
 
-// profitableReprocessing ports findProfitableReprocessing: aggregate per
-// type, batch by portion, keep items whose reprocess value exceeds market.
 func profitableReprocessing(ctx context.Context, d Deps, items []map[string]any, yield float64, mats map[int][]industry.ReprocessMaterial, prices map[int]float64, names map[int]string, portions map[int]int) []any {
 	qtys := map[int]int64{}
 	for _, a := range items {
@@ -362,8 +345,6 @@ func profitableReprocessing(ctx context.Context, d Deps, items []map[string]any,
 	return rows
 }
 
-// priceMap ports MarketService::getPrices unit pricing: lowest sell, else
-// average, else 0 — from global market_prices in The Forge.
 func priceMap(ctx context.Context, d Deps, ids []int) map[int]float64 {
 	out := map[int]float64{}
 	rows, err := d.Market.MarketPriceRows(ctx, ids, 10000002)
@@ -382,8 +363,6 @@ func priceMap(ctx context.Context, d Deps, ids []int) map[int]float64 {
 	return out
 }
 
-// reprocessLocationName ports resolveLocationName: station, structure (a
-// scoped character), or bare system.
 func reprocessLocationName(ctx context.Context, d Deps, ch auth.Character, loc int64) string {
 	uv := d.IndustryDeps.Universe
 	if loc >= 60000000 && loc < 64000000 {
@@ -415,8 +394,6 @@ func keysOf(m map[int]bool) []int {
 	}
 	return out
 }
-
-// --- job field coercions ---
 
 func strOfJob(v any) string {
 	s, _ := v.(string)
@@ -501,7 +478,6 @@ func trimFloat(v float64) string {
 	s = itoaJob(iv)
 	frac := v - float64(iv)
 	if frac > 0 {
-		// two decimals, trimmed
 		f := int(math.Round(frac * 100))
 		if f > 0 {
 			fs := itoaJob(f)

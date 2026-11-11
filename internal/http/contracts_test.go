@@ -10,7 +10,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// stubContracts implements store.ContractsStore for handler tests.
 type stubContracts struct {
 	generation *uint64
 	types      map[string]store.TypedName

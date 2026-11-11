@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// Sponsor mirrors one sponsors row.
 type Sponsor struct {
 	ID        int64     `db:"id"`
 	Name      string    `db:"name"`
@@ -18,7 +17,6 @@ type Sponsor struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-// SponsorStore covers the admin sponsor manager.
 type SponsorStore interface {
 	Sponsors(ctx context.Context) ([]Sponsor, error)
 	SponsorByID(ctx context.Context, id int64) (*Sponsor, error)
@@ -29,7 +27,6 @@ type SponsorStore interface {
 
 const sponsorCols = `id, name, url, image_path, is_active, sort_order, created_at, updated_at`
 
-// Sponsors lists all sponsors ordered (active first, sort_order, name).
 func (s *SQL) Sponsors(ctx context.Context) ([]Sponsor, error) {
 	var out []Sponsor
 	err := s.db.SelectContext(ctx, &out, `SELECT `+sponsorCols+`
@@ -50,7 +47,6 @@ func (s *SQL) SponsorByID(ctx context.Context, id int64) (*Sponsor, error) {
 	return &out, err
 }
 
-// CreateSponsor inserts a sponsor row.
 func (s *SQL) CreateSponsor(ctx context.Context, sp Sponsor) (*Sponsor, error) {
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO sponsors (name, url, image_path, is_active, sort_order, created_at, updated_at)
@@ -66,7 +62,6 @@ func (s *SQL) CreateSponsor(ctx context.Context, sp Sponsor) (*Sponsor, error) {
 	return s.SponsorByID(ctx, id)
 }
 
-// UpdateSponsor applies the sponsor edit.
 func (s *SQL) UpdateSponsor(ctx context.Context, sp Sponsor) (*Sponsor, error) {
 	if _, err := s.db.ExecContext(ctx, `UPDATE sponsors SET name = ?, url = ?,
 		image_path = ?, is_active = ?, sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
@@ -81,7 +76,6 @@ func (s *SQL) DeleteSponsor(ctx context.Context, id int64) error {
 	return err
 }
 
-// AdminStats mirrors AdminStatsService::stats().
 type AdminStats struct {
 	Users        int `db:"users"`
 	Characters   int `db:"characters"`
@@ -92,13 +86,11 @@ type AdminStats struct {
 	Logged24h    int `db:"logged_in_24h"`
 }
 
-// AdminSeriesPoint is one day-count pair.
 type AdminSeriesPoint struct {
 	Date  string `db:"date"`
 	Count int    `db:"count"`
 }
 
-// AdminStats loads the dashboard counters.
 func (s *SQL) AdminStats(ctx context.Context) (*AdminStats, error) {
 	var out AdminStats
 	err := s.db.GetContext(ctx, &out, `
@@ -116,7 +108,6 @@ func (s *SQL) AdminStats(ctx context.Context) (*AdminStats, error) {
 	return &out, nil
 }
 
-// AdminRegistrationSeries ports registrationSeries (days with signups only).
 func (s *SQL) AdminRegistrationSeries(ctx context.Context) ([]AdminSeriesPoint, error) {
 	var out []AdminSeriesPoint
 	err := s.db.SelectContext(ctx, &out, `
@@ -129,7 +120,6 @@ func (s *SQL) AdminRegistrationSeries(ctx context.Context) ([]AdminSeriesPoint, 
 	return out, err
 }
 
-// AdminLoginSeries ports loginSeries.
 func (s *SQL) AdminLoginSeries(ctx context.Context) ([]AdminSeriesPoint, error) {
 	var out []AdminSeriesPoint
 	err := s.db.SelectContext(ctx, &out, `

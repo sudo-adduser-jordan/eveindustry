@@ -2,7 +2,6 @@ package calc
 
 import "math"
 
-// MaterialGroups mirrors AssetService::MATERIAL_GROUPS (group_id => name).
 var MaterialGroups = map[int]string{
 	18:   "Minerals",
 	423:  "Ice Products",
@@ -20,27 +19,17 @@ var MaterialGroups = map[int]string{
 	4144: "Mutaplasmids",
 }
 
-// FallbackMaterialGroups maps well-known material type ids to their group
-// when the SDE reference has no row (fresh deployments before sde:import).
-// SDE remains the source of truth; this only fills gaps.
 var FallbackMaterialGroups = map[int]int{
 	34: 18, 35: 18, 36: 18, 37: 18, 38: 18, 39: 18, 40: 18,
 	16274: 423, 17887: 423, 17888: 423, 17889: 423,
 }
 
-// ProgressMeta is the type metadata summarise needs from storage: groups for
-// every material type, names for blueprints, and group/volume for materials.
 type ProgressMeta struct {
-	// Groups maps type_id => group_id (fuel-block detection + group names).
-	Groups map[int]int
-	// BlueprintNames maps blueprint type_id => name.
+	Groups         map[int]int
 	BlueprintNames map[string]string
-	// Volumes maps type_id => packaged_volume ?? volume (missing reads 0).
-	Volumes map[int]float64
+	Volumes        map[int]float64
 }
 
-// ProgressSummary is everything the progress response carries except the
-// owner's names. Key order mirrors the PHP resource.
 type ProgressSummary struct {
 	OverallProgress    float64
 	Steps              []any
@@ -52,9 +41,6 @@ type ProgressSummary struct {
 	HasSections        bool
 }
 
-// SummariseProgress ports BuildProgramProgressCalculator::summarise.
-// inputQuantities feed materials, outputQuantities feed finished products;
-// personal programs pass the same map for both.
 func SummariseProgress(steps []any, settings map[string]any, inputQuantities, outputQuantities map[int]float64, meta ProgressMeta) ProgressSummary {
 	if settings == nil {
 		settings = map[string]any{}
@@ -161,7 +147,6 @@ type nestedResult struct {
 
 func round1(v float64) float64 { return math.Round(v*10) / 10 }
 
-// calcNestedProgress ports calculateNestedProgress.
 func calcNestedProgress(steps []any, inQ, outQ map[int]float64, parentScale float64) nestedResult {
 	out := []any{}
 	var totalReq, totalAvail float64
@@ -269,8 +254,6 @@ func asNum(v any) (float64, bool) {
 	return 0, false
 }
 
-// collectSummaryData ports the PHP collector: blueprints, base materials and
-// fuel blocks keyed by type id.
 func collectSummaryData(steps []any, inQ, outQ map[int]float64, bps, base, fuel map[int]map[string]any, groups map[int]int, parentScale float64) {
 	for _, sv := range steps {
 		sm, ok := sv.(map[string]any)
@@ -399,7 +382,6 @@ type reactionDatum struct {
 	materialNames map[int]string
 }
 
-// collectReactionData ports collectReactionSummaryData, keyed by blueprint.
 func collectReactionData(steps []any, outQ map[int]float64, parentScale float64) map[int]*reactionDatum {
 	out := map[int]*reactionDatum{}
 	var walk func(list []any, scale float64)

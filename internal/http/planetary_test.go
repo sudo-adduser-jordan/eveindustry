@@ -85,7 +85,6 @@ func TestPlanetaryShow(t *testing.T) {
 	}
 	outputs := data["outputs"].([]any)
 	if len(outputs) != 1 || outputs[0].(map[string]any)["source"] != nil {
-		// dashboard outputs carry icon_url not source
 		if len(outputs) != 1 {
 			t.Fatalf("outputs = %v", outputs)
 		}
@@ -104,7 +103,6 @@ func TestPlanetaryShow(t *testing.T) {
 	if code := postRaw(t, d, "/api/v1/planetary/refresh", `{}`); code != http.StatusNoContent {
 		t.Fatalf("refresh = %d", code)
 	}
-	// no scope -> empty dashboard
 	d2 := planetaryTestDeps()
 	d2.Sessions.(*stubAuth).chars[0].Scopes = nil
 	d2.Users.(*stubAuth).chars[0].Scopes = nil

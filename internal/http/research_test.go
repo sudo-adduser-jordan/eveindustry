@@ -9,7 +9,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// stubResearch implements store.ResearchStore.
 type stubResearch struct {
 	blueprints []store.ResearchBlueprint
 	formulas   []store.ResearchFormula
@@ -83,7 +82,6 @@ func TestBlueprintResearch(t *testing.T) {
 	if len(rows) != 2 {
 		t.Fatalf("rows = %v", rows)
 	}
-	// owned first
 	if rows[0].(map[string]any)["type_id"].(float64) != 786 {
 		t.Fatalf("order = %v", rows)
 	}

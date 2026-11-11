@@ -12,7 +12,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// DiagStream abstracts the diagnostics buffer table for the flusher.
 type DiagStream interface {
 	Epoch(ctx context.Context) string
 	TotalAdded(ctx context.Context) int64
@@ -23,14 +22,11 @@ type DiagStream interface {
 	AcknowledgeDrops(ctx context.Context, count int)
 }
 
-// DiagFlusherDeps carries the flush/prune collaborators.
 type DiagFlusherDeps struct {
 	HandlerDeps
 	Stream DiagStream
 }
 
-// RegisterDiagJobs wires esi:diagnostics-flush (every minute) and
-// esi:diagnostics-prune (daily).
 func RegisterDiagJobs(r *Runner, h DiagFlusherDeps) {
 	r.Register("flush-esi-diagnostics", JobDef{
 		Queue: QueueDefault, MaxTries: 2, Timeout: 300 * time.Second,
@@ -53,7 +49,6 @@ func RegisterDiagJobs(r *Runner, h DiagFlusherDeps) {
 	})
 }
 
-// DiagSchedule mirrors the diagnostics cadences.
 func DiagSchedule(h DiagFlusherDeps) []ScheduleEntry {
 	return []ScheduleEntry{
 		{
@@ -71,9 +66,6 @@ func DiagSchedule(h DiagFlusherDeps) []ScheduleEntry {
 	}
 }
 
-// FlushDiagBatch ports EsiDiagnosticsFlusher::flushBatch: one checkpointed
-// transaction of up to 200 events, then trim + drop acknowledgement.
-// Returns events committed and whether more backlog remains.
 func FlushDiagBatch(ctx context.Context, h DiagFlusherDeps, batch ...int) (int, bool, error) {
 	size := 200
 	if len(batch) > 0 && batch[0] > 0 {
@@ -85,8 +77,6 @@ func FlushDiagBatch(ctx context.Context, h DiagFlusherDeps, batch ...int) (int, 
 	if h.Stream == nil {
 		return 0, false, nil
 	}
-	// Lock-free read of the checkpoint; the update path re-checks inside tx.
-	// (Single scheduler => no concurrent flushers.)
 	cp, err := h.DB.DiagCheckpointForUpdate(ctx, nil)
 	if err != nil || cp == nil {
 		return 0, false, err
@@ -149,10 +139,6 @@ func FlushDiagBatch(ctx context.Context, h DiagFlusherDeps, batch ...int) (int, 
 	}
 	consumedOK = consumed
 	_ = consumedOK
-	// Persist inside one transaction would need tx-scoped merges; the store
-	// methods are single-statement and idempotent (insert-or-ignore + add),
-	// so a crash replays at most one batch — replay is deduped by event_id
-	// and dimension hashes.
 	if err := h.DB.InsertDiagEvents(ctx, details); err != nil {
 		return 0, false, err
 	}
@@ -197,7 +183,6 @@ func nullTime(t time.Time) sql.NullTime { return sql.NullTime{Time: t, Valid: tr
 
 func nullInt64(n int64) sql.NullInt64 { return sql.NullInt64{Int64: n, Valid: true} }
 
-// validDiagEvent ports the flusher's event validation.
 func validDiagEvent(ev map[string]any) bool {
 	_, ok1 := ev["event_id"].(string)
 	_, ok2 := ev["kind"].(string)
@@ -208,7 +193,6 @@ func validDiagEvent(ev map[string]any) bool {
 	return true
 }
 
-// applyDiagEvent ports apply(): failure details plus endpoint/budget rollups.
 func applyDiagEvent(ev map[string]any, details *[]store.DiagEventRow, endpoint map[string]*store.EndpointMetricDelta, budget map[string]*store.BudgetMetricDelta) {
 	kind, _ := ev["kind"].(string)
 	var status *int
@@ -308,7 +292,6 @@ func numOf(v any) (float64, bool) {
 	return 0, false
 }
 
-// addEndpoint ports the hourly endpoint rollup.
 func addEndpoint(rows map[string]*store.EndpointMetricDelta, ev map[string]any, status *int) {
 	kind, _ := ev["kind"].(string)
 	occurred, _ := ev["occurred_at"].(string)
@@ -360,7 +343,6 @@ func addEndpoint(rows map[string]*store.EndpointMetricDelta, ev map[string]any, 
 	}
 }
 
-// addBudget ports the minute/hour budget rollup.
 func addBudget(rows map[string]*store.BudgetMetricDelta, ev map[string]any) {
 	kind, _ := ev["kind"].(string)
 	occurred, _ := ev["occurred_at"].(string)
@@ -510,7 +492,6 @@ func itoaJob(n int) string {
 	return string(b[p:])
 }
 
-// PruneDiagnostics ports EsiDiagnosticsRetention::prune (500-row batches).
 func PruneDiagnostics(ctx context.Context, h DiagFlusherDeps, budget time.Duration) (map[string]int64, error) {
 	deadline := time.Now().Add(budget)
 	now := time.Now()

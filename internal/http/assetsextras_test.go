@@ -31,7 +31,6 @@ func TestAssetMaterials(t *testing.T) {
 		t.Fatalf("items = %v", items)
 	}
 	it := items[0].(map[string]any)
-	// 150 Tritanium (100 + 50 nested) — prices stub returns nothing, value 0
 	if it["quantity"] != 150.0 || it["total_value"] != 0.0 {
 		t.Fatalf("item = %v", it)
 	}
@@ -40,8 +39,6 @@ func TestAssetMaterials(t *testing.T) {
 	}
 }
 
-// TestAssetMaterialsUsesCachedTimestamp seeds the asset cache and checks the
-// materials tab reports the cache fill time instead of "Never updated".
 func TestAssetMaterialsUsesCachedTimestamp(t *testing.T) {
 	db, err := store.Connect(filepath.Join(t.TempDir(), "matts.sqlite"))
 	if err != nil {
@@ -96,8 +93,6 @@ func TestAssetMaterialsUsesCachedTimestamp(t *testing.T) {
 	}
 }
 
-// TestAssetMaterialsFallbackGroups covers SDE-less deployments: with no
-// group rows at all, the well-known material types still group.
 func TestAssetMaterialsFallbackGroups(t *testing.T) {
 	d := assetBrowserTestDeps(false)
 	d.Industry.(*stubIndustry).groups = nil
@@ -119,7 +114,6 @@ func TestAssetShips(t *testing.T) {
 	if code != http.StatusOK {
 		t.Fatalf("ships = %d %v", code, body)
 	}
-	// GroupNames stub returns empty -> no ship groups
 	data := body["data"].(map[string]any)
 	if data["total_ships"] != 0.0 || len(data["ship_groups"].([]any)) != 0 {
 		t.Fatalf("ships = %v", data)
@@ -128,7 +122,6 @@ func TestAssetShips(t *testing.T) {
 
 func TestStockSearch(t *testing.T) {
 	d := assetBrowserTestDeps(false)
-	// not a stock manager -> 403
 	if code, _ := get(t, d, "/api/v1/stock/search?q=tri"); code != http.StatusForbidden {
 		t.Fatalf("gate = %d", code)
 	}

@@ -43,7 +43,7 @@ describe('ContractBrowser', () => {
     const rows = screen.getAllByRole('row').slice(1)
     expect(rows).toHaveLength(2)
     expect(within(rows[0]!).getByText('1,500.50')).toBeInTheDocument()
-    // A contract with no title or price shows dashes, not 0.
+    
     expect(within(rows[1]!).getAllByText('—').length).toBeGreaterThanOrEqual(2)
   })
 
@@ -221,7 +221,7 @@ describe('Structures', () => {
     expect(screen.getByText('ME T2')).toBeInTheDocument()
     expect(screen.getByText('Jita')).toBeInTheDocument()
     expect(screen.getByText('Tax 1.50%')).toBeInTheDocument()
-    // Only the non-default structure can be made default.
+    
     expect(screen.getAllByRole('button', { name: 'Make default' })).toHaveLength(1)
   })
 

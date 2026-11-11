@@ -9,7 +9,6 @@ type SolarSystem = components['schemas']['AssetSolarSystemResource']
 type Station = SolarSystem['stations'][number] & { item_count?: number }
 
 
-/** EVE image server icons; hidden when the server has no image. */
 function Icon({ src, size }: { src: string; size: number }) {
   return (
     <img
@@ -128,17 +127,14 @@ function LazyStation({ station, scope, search, revision }: { station: Station; s
 
 export interface AssetLocationsProps {
   solarSystems: SolarSystem[]
-  /** Shown when there is nothing to list. */
+  
   empty: ReactNode
   scope?: AssetScope
   search?: string
   revision?: string | null
 }
 
-/**
- * Assets by solar system (open) and station (collapsed), with ship and
- * container contents behind a toggle on their row.
- */
+
 export function AssetLocations({ solarSystems, empty, scope, search, revision }: AssetLocationsProps) {
   if (solarSystems.length === 0) return <p className="panel muted">{empty}</p>
   return (

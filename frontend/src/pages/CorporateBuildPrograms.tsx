@@ -15,7 +15,7 @@ import { typeIconUrl, iconFallback } from '../components/typeIcon'
 type Overview = NonNullable<ReturnType<typeof useBuildProgramsOverview>['data']>['data']
 type Program = Overview['programs'][number]
 
-/** Bar colour class for a progress percentage, as the Blade page chose it. */
+
 export function progressClass(pct: number): string {
   return pct >= 100 ? 'bar-good' : pct >= 50 ? 'bar-manufacturing' : 'bar-research'
 }

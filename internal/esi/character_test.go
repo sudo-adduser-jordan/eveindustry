@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-// stubCreds implements CredentialStore in memory.
 type stubCreds struct {
 	cred        Credential
 	ok          bool
@@ -62,7 +61,6 @@ func TestCharacterSkills(t *testing.T) {
 	if err != nil || levels[3380] != 5 || levels[3388] != 4 {
 		t.Fatalf("got %+v %v", levels, err)
 	}
-	// cached: server going away still returns data
 	srv.Close()
 	if _, err := cc.GetSkills(context.Background(), 42); err != nil {
 		t.Fatalf("cache: %v", err)
@@ -74,8 +72,6 @@ func TestCharacterCredentialGating(t *testing.T) {
 		w.Write([]byte(`{}`))
 	}))
 	defer srv.Close()
-	// inactive character fails closed at the credential step; GetSkills
-	// maps that to the zeros path (nil map, nil error).
 	cc, _ := charTestStack(srv, Credential{CharacterID: 7, IsEsiActive: false})
 	if levels, err := cc.GetSkills(context.Background(), 7); err != nil || levels != nil {
 		t.Fatalf("inactive must map to zeros path: %+v %v", levels, err)
@@ -97,7 +93,6 @@ func TestCharacterPaginatedAssets(t *testing.T) {
 	if err != nil || len(all) != 2 || calls != 2 {
 		t.Fatalf("got %+v %v calls=%d", all, err, calls)
 	}
-	// empty snapshot is not cached: error next time surfaces
 	srv2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`[]`))
 	}))

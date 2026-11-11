@@ -88,8 +88,6 @@ func optInt64(raw map[string]any, verrs validationErrors, field string) (*int64,
 	return &out, true
 }
 
-// registerPlans mounts the invention/reaction plan CRUD (apiResource without
-// show names: index, store, show, update, destroy) plus moon occupation.
 func registerPlans(v1 *echo.Group, d Deps) {
 	if d.Plans == nil {
 		return
@@ -144,8 +142,6 @@ func reactionPlanShape(p store.ReactionPlan, entries []any) map[string]any {
 		"updated_at":      p.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}
 }
-
-// --- invention plans ---
 
 func handleInventionPlansIndex(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -478,8 +474,6 @@ func handleInventionPlanDestroy(d Deps) echo.HandlerFunc {
 	}
 }
 
-// --- reaction plans ---
-
 func handleReactionPlansIndex(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -771,9 +765,6 @@ func handleReactionPlanDestroy(d Deps) echo.HandlerFunc {
 	}
 }
 
-// PUT /moon-scans/moons/:moonId/occupation — marks who occupies a scanned
-// moon. No corporation on the user: 422. A moon scanned by another
-// corporation: 404. Unoccupying clears the occupier.
 func handleMoonOccupation(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		moonID, err := strconvParseID(c.Param("moonId"))

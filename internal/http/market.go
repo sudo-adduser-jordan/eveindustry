@@ -11,9 +11,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerMarket mounts GET /api/v1/market/* and /market/freshness, mirroring
-// routes/api_v1/market.php and MarketFreshnessController. The trading
-// scanners, appraisals and contracts stay on PHP until their services move.
 func registerMarket(v1 *echo.Group, d Deps) {
 	if d.Market == nil {
 		return
@@ -23,9 +20,6 @@ func registerMarket(v1 *echo.Group, d Deps) {
 	v1.GET("/market/orders", handleOrders(d))
 }
 
-// GET /market/prices?type_ids[]=&region_id= — mirrors MarketDataController@prices:
-// one row per requested type in request order (duplicates removed), with the
-// meta.region_id + meta.freshness block.
 func handlePrices(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -36,8 +30,6 @@ func handlePrices(d Deps) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 
-		// Shared resolver: active-sweep aggregates, else raw orders, with
-		// market_prices fallback for [region, Jita].
 		resolved, err := resolvePrices(ctx, d.Market, typeIDs, regionID)
 		if err != nil {
 			return dbError(c, err)
@@ -65,8 +57,6 @@ func handlePrices(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /market/history/:typeId?region_id=&days=&page=&per_page= — mirrors
-// MarketDataController@history (404 when the type is unknown).
 func handleHistory(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -124,8 +114,6 @@ func handleHistory(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /market/orders?type_id=&region_id=&side=&page=&per_page= — mirrors
-// MarketDataController@orders (best first: sells cheapest, buys highest).
 func handleOrders(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -176,8 +164,6 @@ func handleOrders(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /market/freshness — mirrors MarketFreshnessController@index: the
-// freshness block for every trade region.
 func handleFreshness(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()

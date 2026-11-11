@@ -1,10 +1,10 @@
 export interface FreshnessBadgeProps {
-  /** ISO 8601 UTC time the data is "as of", or null when never refreshed. */
+  
   asOf: string | null | undefined
-  /** True when the data is past its freshness threshold. */
+  
   stale?: boolean
   label?: string
-  /** Override "now" (tests). */
+  
   now?: Date
 }
 
@@ -17,10 +17,7 @@ export function formatAge(asOf: string, now: Date = new Date()): string {
   return `${Math.floor(hours / 24)} d ago`
 }
 
-/**
- * "Prices as of 12 min ago". Amber when stale, and an explicit "no data"
- * instead of ever implying a price of 0.
- */
+
 export function FreshnessBadge({ asOf, stale = false, label = 'Prices', now }: FreshnessBadgeProps) {
   if (!asOf) {
     return (

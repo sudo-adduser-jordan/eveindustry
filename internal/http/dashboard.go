@@ -11,9 +11,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 )
 
-// registerDashboard mounts GET /dashboard: industry + planetary stats with
-// the user's characters and saved plans. Computed live (the jobs phase will
-// warm the dashboard.* caches instead).
 func registerDashboard(v1 *echo.Group, d Deps) {
 	if d.Users == nil || d.Plans == nil {
 		return
@@ -21,7 +18,6 @@ func registerDashboard(v1 *echo.Group, d Deps) {
 	v1.GET("/dashboard", handleDashboardShow(d))
 }
 
-// GET /dashboard — mirrors DashboardController@show.
 func handleDashboardShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -182,8 +178,6 @@ func sortChars(list []any) {
 	})
 }
 
-// rfc3339OrNil renders a timestamp like the other resources (null when
-// missing) so the dashboard matches the DashboardResource contract.
 func rfc3339OrNil(t *time.Time) any {
 	if t == nil || t.IsZero() {
 		return nil

@@ -3,24 +3,20 @@ import { ApiError } from '../api/client'
 import { useRefreshAssets } from '../api/queries'
 import { formatAge } from './FreshnessBadge'
 
-/** Poll every 15 s for up to 10 min after a refresh is queued. */
+
 export const POLL_MS = 15_000
 const POLL_FOR_MS = 10 * 60_000
 
-/** Whether a queued refresh has not yet replaced the data from before it. */
+
 export function isRefreshPending(lastUpdated: string | null | undefined, queuedAt: number | null, now: number): boolean {
   if (queuedAt === null || now - queuedAt > POLL_FOR_MS) return false
-  // last_updated has one-second precision.
+  
   return !lastUpdated || new Date(lastUpdated).getTime() < queuedAt - 1000
 }
 
 type WithLastUpdated = { state: { data?: unknown } }
 
-/**
- * Queues an asset refresh and tells the page's query to poll until
- * `meta.last_updated` moves past the click. Pass `refetchInterval` to that
- * query and render `<RefreshBar>` with the same object.
- */
+
 export function useAssetRefresh() {
   const [queuedAt, setQueuedAt] = useState<number | null>(null)
   const mutation = useRefreshAssets()
@@ -35,7 +31,7 @@ export function useAssetRefresh() {
   }
 }
 
-/** "Updated 5m ago" and the Refresh button of an asset page. */
+
 export function RefreshBar({
   refresh,
   lastUpdated,
@@ -43,7 +39,7 @@ export function RefreshBar({
 }: {
   refresh: ReturnType<typeof useAssetRefresh>
   lastUpdated: string | null | undefined
-  /** Changes on every fetch, so the pending state is re-read while polling. */
+  
   dataUpdatedAt: number
 }) {
   void dataUpdatedAt

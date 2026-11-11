@@ -103,7 +103,6 @@ func TestAssetsIndex(t *testing.T) {
 		t.Fatalf("index = %d %v", code, body)
 	}
 	items := body["data"].([]any)
-	// top-level: Tritanium stack + Rifter; 50 Trit nested in the Rifter
 	if len(items) != 2 {
 		t.Fatalf("items = %v", items)
 	}
@@ -119,21 +118,17 @@ func TestAssetsIndex(t *testing.T) {
 	if rifter["location_name"] != "Jita IV" || rifter["type_name"] != "Rifter" {
 		t.Fatalf("enrich = %v", rifter)
 	}
-	// search narrows to matching parent + matching children
 	code, body = get(t, d, "/api/v1/assets?search=tritanium")
 	if code != http.StatusOK || len(body["data"].([]any)) != 2 {
 		t.Fatalf("search = %d %v", code, body)
 	}
-	// corporate without director -> 403 with reason
 	if code, body := get(t, d, "/api/v1/corporation/assets"); code != http.StatusForbidden {
 		t.Fatalf("corp gate = %d %v", code, body)
 	}
-	// location filter
 	code, body = get(t, d, "/api/v1/assets?location_id=60003760")
 	if code != http.StatusOK || len(body["data"].([]any)) != 2 {
 		t.Fatalf("loc filter = %d %v", code, body)
 	}
-	// station expansion (the lazy per-location list) pages with meta.pagination
 	code, body = get(t, d, "/api/v1/assets?location_id=60003760&include_children=false&per_page=50&page=1")
 	if code != http.StatusOK {
 		t.Fatalf("loc page = %d %v", code, body)
@@ -145,11 +140,9 @@ func TestAssetsIndex(t *testing.T) {
 	if len(body["data"].([]any)) != 2 {
 		t.Fatalf("loc items = %v", body["data"])
 	}
-	// bad sort -> 422
 	if code, _ := get(t, d, "/api/v1/assets?sort=nope"); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad sort = %d", code)
 	}
-	// refresh -> 202
 	if code := postRaw(t, d, "/api/v1/assets/refresh", `{}`); code != http.StatusAccepted {
 		t.Fatalf("refresh = %d", code)
 	}
@@ -171,7 +164,6 @@ func TestAssetsCorporateAndByLocation(t *testing.T) {
 	}
 	data := body["data"].(map[string]any)
 	sum := data["summary"].(map[string]any)
-	// flat: 3 personal items (incl. nested), corp excluded from personal
 	if sum["total_items"] != 3.0 || sum["total_quantity"] != 151.0 {
 		t.Fatalf("summary = %v", sum)
 	}

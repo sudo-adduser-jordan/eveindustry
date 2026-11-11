@@ -16,7 +16,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerMoonScans mounts the three heavy moon-scan routes.
 func registerMoonScans(v1 *echo.Group, d Deps) {
 	if d.MoonScans == nil || d.Users == nil || d.Market == nil ||
 		d.Industry == nil || d.Reference == nil {
@@ -27,8 +26,6 @@ func registerMoonScans(v1 *echo.Group, d Deps) {
 	v1.GET("/moon-scans/systems/:system", handleMoonScanSystem(d))
 }
 
-// moonCorpID ports corporationIdForUser: the main character's corporation,
-// else the first character's.
 func moonCorpID(chars []auth.Character) *int64 {
 	for _, ch := range chars {
 		if ch.IsMain && ch.CorporationID != nil && *ch.CorporationID != 0 {
@@ -43,7 +40,6 @@ func moonCorpID(chars []auth.Character) *int64 {
 	return nil
 }
 
-// POST /moon-scans — parse, price, store. 201 when at least one moon stored.
 func handleMoonScanStore(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -110,8 +106,6 @@ func handleMoonScanStore(d Deps) echo.HandlerFunc {
 	}
 }
 
-// analyseMoonScan ports MoonScanService::analyse + the lookup wrapper:
-// parse, enrich, persist under the user's corporation, attach ids.
 func analyseMoonScan(ctx context.Context, d Deps, uid int64, data string, region int, mode string) ([]map[string]any, []string) {
 	parsed, errs := calc.ParseMoonScan(data)
 	chars, err := d.Users.CharactersForUser(ctx, uid)
@@ -183,7 +177,6 @@ func oresCompact(ores []any) []any {
 	return out
 }
 
-// oreTypeMap batch-loads ore type rows (name, volume, portion).
 func oreTypeMap(ctx context.Context, d Deps, ids []int) map[int]calc.OreType {
 	out := map[int]calc.OreType{}
 	if len(ids) == 0 || d.Reference == nil {
@@ -206,7 +199,6 @@ func oreTypeMap(ctx context.Context, d Deps, ids []int) map[int]calc.OreType {
 	return out
 }
 
-// moonPrices ports resolveEffectivePrices over resolvePrices().
 func moonPrices(ctx context.Context, d Deps, ids []int, types map[int]calc.OreType, region int, mode string) map[int]float64 {
 	priceOf := func(list []int) map[int]float64 {
 		out := map[int]float64{}
@@ -276,8 +268,6 @@ func moonPrices(ctx context.Context, d Deps, ids []int, types map[int]calc.OreTy
 	}
 }
 
-// GET /moon-scans/systems — the corporation's scanned systems, by name.
-// Empty without a character.
 func handleMoonScanSystems(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		page, perPage, ok := listPage(c)
@@ -316,9 +306,6 @@ func moonSystemShape(r store.MoonScanSystem) map[string]any {
 	}
 }
 
-// GET /moon-scans/systems/:system — the system's moons best first, re-priced
-// on the fly. 422 without a corporation, 404 unscanned. system meta carries
-// the stored name/region/mode plus a fresh scanned_at.
 func handleMoonScanSystem(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		page, perPage, ok := listPage(c)
@@ -396,7 +383,6 @@ func pagedMoons(moons []any, page, perPage int) []any {
 	return moons[start:end]
 }
 
-// storedMoons renders rows as-is (stored pricing).
 func storedMoons(rows []store.MoonScanResult) []any {
 	out := make([]any, 0, len(rows))
 	for _, r := range rows {
@@ -425,8 +411,6 @@ func storedMoons(rows []store.MoonScanResult) []any {
 	return out
 }
 
-// repriceMoons ports repriceSystemMoons: stored ore_units kept, prices and
-// totals recomputed under the requested mode.
 func repriceMoons(ctx context.Context, d Deps, rows []store.MoonScanResult, region int, mode string) ([]any, error) {
 	type oreIn struct {
 		name     string

@@ -7,21 +7,17 @@ import (
 	"time"
 )
 
-// ScheduleEntry mirrors one routes/console.php line: when it fires and what
-// it dispatches. withoutOverlapping + onOneServer both map onto the Locker
-// (single scheduler process per environment, like cron + Forge).
 type ScheduleEntry struct {
 	Name     string
 	Every    time.Duration
-	At       string // "15:04" daily time (UTC); "" = pure interval
-	CronDays string // allowed weekdays for At ("*" or e.g. "Sun")
-	CronDOM  string // allowed month days ("*" or "1,15")
+	At       string
+	CronDays string
+	CronDOM  string
 	When     func(ctx context.Context) bool
 	Run      func(ctx context.Context, r *Runner, q Queue) error
-	Overlap  time.Duration // withoutOverlapping window (0 = Every)
+	Overlap  time.Duration
 }
 
-// Scheduler ticks every minute and fires due entries.
 type Scheduler struct {
 	Entries []ScheduleEntry
 	Runner  *Runner
@@ -31,7 +27,6 @@ type Scheduler struct {
 	Log     func(msg string, args ...any)
 }
 
-// Due reports whether an entry fires at now given its last fire time.
 func (e ScheduleEntry) Due(now time.Time, last time.Time) bool {
 	if !last.IsZero() {
 		window := e.Every
@@ -80,7 +75,6 @@ func (e ScheduleEntry) Due(now time.Time, last time.Time) bool {
 	return true
 }
 
-// Tick fires every due entry once. last tracks per-entry fire times.
 func (s *Scheduler) Tick(ctx context.Context, last map[string]time.Time) map[string]time.Time {
 	now := time.Now()
 	if s.Now != nil {

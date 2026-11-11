@@ -26,7 +26,7 @@ interface FormState {
 
 const EMPTY: FormState = { system: null, type: 'upwell', name: '', day: '0', start: '18:00', duration: '60', exit: '', notes: '' }
 
-/** The "datetime-local" value (UTC wall time) of an ISO 8601 instant. */
+
 function toLocalInput(iso: string | null): string {
   return iso ? new Date(iso).toISOString().slice(0, 16) : ''
 }

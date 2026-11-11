@@ -8,21 +8,12 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/market"
 )
 
-// TradingStore covers the station-trading and arbitrage scans.
 type TradingStore interface {
-	// StationCandidates ports the candidate half of scanStationTrading():
-	// per-type best buy/sell with the fee maths evaluated in SQL, filtered
-	// to positive spreads at or above the margin floor. Bound params replace
-	// the PHP string interpolation (SQLite binds reliably in expressions).
 	StationCandidates(ctx context.Context, regionID int, brokerRate, taxRate, minMarginPct float64) ([]market.StationCandidate, error)
-	// BestPrices ports MarketClient::getRegionBestPrices(): MIN sell or MAX
-	// buy per type from local market_orders.
 	BestPrices(ctx context.Context, regionID int, buy bool) (map[int]float64, error)
-	// ArbitrageTypes loads local SDE names + volumes for candidate types.
 	ArbitrageTypes(ctx context.Context, typeIDs []int) (map[int]market.TypeVolume, error)
 }
 
-// StationCandidates implements TradingStore on SQL.
 func (s *SQL) StationCandidates(ctx context.Context, regionID int, brokerRate, taxRate, minMarginPct float64) ([]market.StationCandidate, error) {
 	var rows []struct {
 		TypeID         int      `db:"type_id"`
@@ -115,7 +106,6 @@ func (s *SQL) BestPrices(ctx context.Context, regionID int, buy bool) (map[int]f
 		TypeID    int     `db:"type_id"`
 		BestPrice float64 `db:"best_price"`
 	}
-	// agg is internal only (MIN/MAX): safe to interpolate.
 	err := s.db.SelectContext(ctx, &rows,
 		`SELECT type_id, `+agg+`(price) AS best_price FROM market_orders
 		 WHERE region_id = ? AND is_buy_order = ? GROUP BY type_id`,

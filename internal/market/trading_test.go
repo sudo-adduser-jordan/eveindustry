@@ -6,15 +6,12 @@ import (
 
 func TestCalcStationTradeProfit(t *testing.T) {
 	p := CalcStationTradeProfit(100, 120, 3, 3.6)
-	// buy broker 3, sell broker 3.6, tax 4.32 -> net 120-100-3-3.6-4.32 = 9.08
 	if p.NetProfitPerUnit != 9.08 {
 		t.Fatalf("net = %+v", p)
 	}
-	// gross = 20/120*100 = 16.67
 	if p.GrossMarginPct != 16.67 {
 		t.Fatalf("gross = %+v", p)
 	}
-	// break-even = 103 / (1-0.066) = 110.28
 	if p.BreakEven != 110.28 {
 		t.Fatalf("breakeven = %+v", p)
 	}
@@ -26,7 +23,6 @@ func TestCalcStationTradeProfit(t *testing.T) {
 
 func TestCalcArbitrageProfit(t *testing.T) {
 	p := CalcArbitrageProfit(100, 130, 3, 3.6, 10, 2)
-	// tax 4.68, transport 20 -> net 130-100-4.68-20 = 5.32
 	if p.NetProfitPerUnit != 5.32 {
 		t.Fatalf("net = %+v", p)
 	}
@@ -42,8 +38,6 @@ func TestBuildStationOpportunities(t *testing.T) {
 		{TypeID: 2, BestBuy: 10, BestSell: 11, BuyOrderCount: 1, SellOrderCount: 1},
 	}
 	ten, forty := 10, 40
-	// type 2 has no history entry -> included with volume 0 (ESI-error path);
-	// type 1 below the floor -> dropped.
 	got := BuildStationOpportunities(cands, StationScanInput{BrokerFeePct: 3, SalesTaxPct: 3.6, MinMarginPct: 0, MinDailyVolume: 20},
 		map[int]*int{1: &ten, 99: &forty})
 	if len(got) != 1 || got[0].TypeID != 2 {
@@ -63,8 +57,6 @@ func TestBuildArbitrageOpportunities(t *testing.T) {
 		ArbitrageScanInput{SalesTaxPct: 3.6, MinMarginPct: 5, MinDailyVolume: 5},
 		map[int]*int{1: &five},
 	)
-	// type 2: margin (101-100-3.636)/101*100 < 0 -> dropped; no history entry
-	// for it either, but the margin filter hits first.
 	if len(got) != 1 || got[0].TypeID != 1 {
 		t.Fatalf("got %+v", got)
 	}

@@ -41,15 +41,12 @@ func TestManufacturingBrowserCalculate(t *testing.T) {
 		t.Fatalf("rows = %v", data)
 	}
 	row := data[0].(map[string]any)
-	// materials 100x10 @ME10 x10 runs = 900 units @10.5 = 9450;
-	// output 10 x 1000 = 10000; scc 400; profit 150
 	if row["profit"].(float64) != 150 || row["total_input_cost"].(float64) != 9450 {
 		t.Fatalf("row = %v", row)
 	}
 	if body["meta"].(map[string]any)["effective_structure_me_bonus"].(float64) != 0 {
 		t.Fatalf("meta = %v", body["meta"])
 	}
-	// neither group nor category -> 422
 	if code, _ := post(t, d, "/api/v1/calculators/manufacturing-browser", `{"runs": 1}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("missing scope = %d", code)
 	}
@@ -66,7 +63,6 @@ func TestManufacturingBrowserBrowse(t *testing.T) {
 		t.Fatalf("rows = %v", data)
 	}
 	row := data[0].(map[string]any)
-	// input 900*2=1800, output 1000*2=2000, scc 80, profit 120
 	if row["profit"].(float64) != 120 || row["total_output"].(float64) != 2 {
 		t.Fatalf("row = %v", row)
 	}

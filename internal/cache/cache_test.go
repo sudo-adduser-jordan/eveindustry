@@ -40,7 +40,6 @@ func TestSQLiteCache(t *testing.T) {
 	if !c.Has(ctx, "k") {
 		t.Fatal("Has must be true")
 	}
-	// Overwrite path (ON CONFLICT).
 	c.SetJSON(ctx, "k", map[string]int{"a": 2}, time.Minute)
 	if !c.GetJSON(ctx, "k", &v) || v["a"] != 2 {
 		t.Fatalf("overwrite: %+v", v)
@@ -54,14 +53,12 @@ func TestSQLiteCache(t *testing.T) {
 	if !c.GetJSON(ctx, "forever", &s) || s != "x" {
 		t.Fatal("forever key must hit")
 	}
-	// Expiry is second-granularity: sleep past the tick.
 	c.SetJSON(ctx, "brief", "y", 100*time.Millisecond)
-	time.Sleep(1200 * time.Millisecond)
+	<-time.After(1200 * time.Millisecond)
 	var y string
 	if c.GetJSON(ctx, "brief", &y) {
 		t.Fatal("expired key must miss")
 	}
-	// Nil DB disables caching without panicking.
 	var nilC *Cache
 	nilC.SetJSON(ctx, "k", 1, time.Minute)
 	if nilC.GetJSON(ctx, "k", &v) || nilC.Has(ctx, "k") {

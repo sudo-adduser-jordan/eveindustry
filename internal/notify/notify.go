@@ -10,13 +10,11 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// Recipient is the user plus characters the detectors need.
 type Recipient struct {
 	User  auth.User
 	Chars []auth.Character
 }
 
-// PushStore covers subscriptions, preferences and the dedupe log.
 type PushStore interface {
 	PushSubscriptions(ctx context.Context, userID int64) ([]store.PushSubscription, error)
 	UpdateSubscriptionUsed(ctx context.Context, id int64, at time.Time) error
@@ -28,14 +26,12 @@ type PushStore interface {
 	CorporationIDs(ctx context.Context, userID int64) ([]int64, error)
 }
 
-// QuietWindow mirrors notification_settings for isQuiet checks.
 type QuietWindow struct {
 	Start    string
 	End      string
 	Timezone string
 }
 
-// Message is one notification to deliver.
 type Message struct {
 	Type      string
 	DedupeKey string
@@ -48,12 +44,10 @@ func (m Message) Payload() map[string]any {
 	return map[string]any{"title": m.Title, "body": m.Body, "url": m.URL, "tag": m.DedupeKey}
 }
 
-// Sender delivers a payload to one subscription: sent=true, gone=expired.
 type Sender interface {
 	Send(ctx context.Context, sub store.PushSubscription, payload map[string]any) (sent, gone bool)
 }
 
-// EffectivePrefs mirrors NotificationPreferenceService::effective.
 func EffectivePrefs(stored []store.NotificationPref, charIDs map[int64]bool) map[string]PrefState {
 	byType := map[string]store.NotificationPref{}
 	for _, p := range stored {
@@ -88,7 +82,6 @@ func EffectivePrefs(stored []store.NotificationPref, charIDs map[int64]bool) map
 	return out
 }
 
-// IsQuiet mirrors quiet-hours evaluation in the user's timezone.
 func IsQuiet(q *store.QuietHours, now time.Time) bool {
 	if q == nil || !q.Start.Valid || !q.End.Valid {
 		return false
@@ -105,11 +98,8 @@ func IsQuiet(q *store.QuietHours, now time.Time) bool {
 	return cur >= s || cur < e
 }
 
-// MaxLookbackHours mirrors MAX_LOOKBACK_HOURS.
 const MaxLookbackHours = 6
 
-// NotBefore mirrors the dispatch window floor: the newest of first device
-// subscription and now-6h.
 func NotBefore(subs []store.PushSubscription, now time.Time) time.Time {
 	floor := now.Add(-MaxLookbackHours * time.Hour)
 	earliest := now
@@ -126,14 +116,12 @@ func NotBefore(subs []store.PushSubscription, now time.Time) time.Time {
 	return earliest
 }
 
-// PrefState is one type's effective setting.
 type PrefState struct {
 	Enabled      bool
 	LeadMinutes  *int
 	CharacterIDs []int64
 }
 
-// NotifyType mirrors NotificationType.
 type NotifyType struct {
 	Key            string
 	Label          string

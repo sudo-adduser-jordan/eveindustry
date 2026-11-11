@@ -8,8 +8,7 @@ interface BeforeInstallPromptEvent extends Event {
 const DISMISSED_KEY = 'pwa-install-prompt-dismissed-at'
 export const INSTALL_PROMPT_INTERVAL_MS = 24 * 60 * 60_000
 
-// The browser fires beforeinstallprompt once, early, so it is captured at
-// startup (captureInstallPrompt in main.tsx) and kept here for the UI.
+
 let deferred: BeforeInstallPromptEvent | null = null
 let bannerOpen = false
 let captured = false
@@ -31,7 +30,7 @@ export function isStandalone(): boolean {
     || (navigator as Navigator & { standalone?: boolean }).standalone === true
 }
 
-/** iOS Safari has no install prompt: people add the app from the Share sheet. */
+
 export function isIosInstallable(): boolean {
   const ios = /iPad|iPhone|iPod/.test(navigator.userAgent)
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
@@ -43,10 +42,10 @@ function lastDismissedAt(): number {
 }
 
 function markDismissed() {
-  try { localStorage.setItem(DISMISSED_KEY, String(Date.now())) } catch { /* the banner then returns on the next load */ }
+  try { localStorage.setItem(DISMISSED_KEY, String(Date.now())) } catch {  }
 }
 
-/** Opens the banner unless the user dismissed it in the last 24 hours. It stays up across reloads until dismissed. */
+
 function maybeOpenBanner() {
   if (bannerOpen || isStandalone() || (deferred === null && !isIosInstallable())) return
   if (Date.now() - lastDismissedAt() < INSTALL_PROMPT_INTERVAL_MS) return
@@ -85,7 +84,7 @@ export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unava
 
   await event.prompt()
   const { outcome } = await event.userChoice
-  // A prompt event can only be used once. Backing out of the native dialog counts as dismissing.
+  
   if (outcome === 'dismissed') markDismissed()
   deferred = null
   bannerOpen = false

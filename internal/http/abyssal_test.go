@@ -86,7 +86,6 @@ func abyssalTestDeps() Deps {
 		},
 		Market: &stubMarket{},
 	}
-	// TypeGroupMeta stub: mark 30000 as abyssal (meta group 15)
 	d.Industry.(*stubIndustry).metaGroups = map[int]int64{30000: 15}
 	return d
 }
@@ -117,7 +116,6 @@ func TestAbyssal(t *testing.T) {
 	if a["name"] != "Damage" || a["value"] != "1.2000x" || a["change"] != "+0.2000x" || a["is_good"] != true {
 		t.Fatalf("attr = %v", a)
 	}
-	// no abyssal types -> empty
 	d2 := abyssalTestDeps()
 	d2.Industry.(*stubIndustry).metaGroups = map[int]int64{}
 	code, body = get(t, d2, "/api/v1/assets/abyssal")

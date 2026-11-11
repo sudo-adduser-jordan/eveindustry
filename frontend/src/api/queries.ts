@@ -4,7 +4,7 @@ import type { paths, components } from './schema'
 
 export type AssetScope = 'personal' | 'corporate'
 
-/** The signed-in user and their characters. Cached for the whole session. */
+
 export function useMe() {
   return useQuery({
     queryKey: ['me'],
@@ -13,7 +13,7 @@ export function useMe() {
   })
 }
 
-/** Per-region data age. Polled so the badge turns amber without a reload. */
+
 export function useFreshness() {
   return useQuery({
     queryKey: ['market', 'freshness'],
@@ -23,10 +23,7 @@ export function useFreshness() {
   })
 }
 
-/**
- * Assets grouped by solar system and station. A 403 on corporation assets
- * is final (its message says what to fix), so it is not retried.
- */
+
 export function useAssetsByLocation(scope: AssetScope, search: string, refetchInterval: number | false = false) {
   return useQuery({
     queryKey: ['assets', scope, 'by-location', search],
@@ -42,7 +39,7 @@ export function useAssetsByLocation(scope: AssetScope, search: string, refetchIn
   })
 }
 
-/** Fetch a bounded page only after a station or container is expanded. */
+
 export function useAssetItems(
   scope: AssetScope,
   filters: { location_id?: number; parent_item_id?: number; search?: string },
@@ -66,14 +63,14 @@ export function useAssetItems(
   })
 }
 
-/** Queue a background refresh of personal and corporation assets (202, no body). */
+
 export function useRefreshAssets() {
   return useMutation({
     mutationFn: () => postNoContent(api.POST('/assets/refresh')),
   })
 }
 
-/** Industry slots per character, running jobs and jobs ready for collection. */
+
 export function useIndustryAvailability() {
   return useQuery({
     queryKey: ['industry', 'availability'],
@@ -82,13 +79,13 @@ export function useIndustryAvailability() {
   })
 }
 
-/** Await a write that answers 2xx with no body; throw ApiError otherwise. */
+
 async function postNoContent(request: Promise<{ response: Response; error?: unknown }>) {
   const { response, error } = await request
   if (!response.ok) throw new ApiError(response.status, error as ApiErrorBody | undefined)
 }
 
-/** Recompute the slot data now (204), then reload it. */
+
 export function useRefreshAvailability() {
   const client = useQueryClient()
   return useMutation({
@@ -97,7 +94,7 @@ export function useRefreshAvailability() {
   })
 }
 
-/** Forget every industry and ESI cache of the user's characters. 429 within 30 min of the last clear. */
+
 export function useClearIndustryCaches() {
   const client = useQueryClient()
   return useMutation({
@@ -106,7 +103,7 @@ export function useClearIndustryCaches() {
   })
 }
 
-/** Items in hangars worth more reprocessed than sold. Slow on a cold cache. */
+
 export function useReprocessing() {
   return useQuery({
     queryKey: ['industry', 'reprocessing'],
@@ -117,7 +114,7 @@ export function useReprocessing() {
 
 type RefetchInterval = number | false | ((query: { state: { data?: unknown } }) => number | false)
 
-/** Material stacks in the user's assets, grouped and priced. */
+
 export function useAssetMaterials(refetchInterval: RefetchInterval = false) {
   return useQuery({
     queryKey: ['assets', 'materials'],
@@ -126,7 +123,7 @@ export function useAssetMaterials(refetchInterval: RefetchInterval = false) {
   })
 }
 
-/** Ship hulls in the user's assets, grouped by ship group. */
+
 export function useAssetShips(refetchInterval: RefetchInterval = false) {
   return useQuery({
     queryKey: ['assets', 'ships'],
@@ -135,7 +132,7 @@ export function useAssetShips(refetchInterval: RefetchInterval = false) {
   })
 }
 
-/** Mutated modules ranked by roll. Slow on a cold cache (one ESI call per item). */
+
 export function useAbyssalItems(refetchInterval: RefetchInterval = false) {
   return useQuery({
     queryKey: ['assets', 'abyssal'],
@@ -152,7 +149,7 @@ type RegionArbitrageQuery = NonNullable<
   NonNullable<paths['/market/region-arbitrage']['get']['parameters']['query']>
 >
 
-/** Station trading spreads in one trade hub. The server sorts by daily ISK profit. */
+
 export function useStationTrading(query: StationTradingQuery) {
   return useQuery({
     queryKey: ['market', 'station-trading', query],
@@ -163,7 +160,7 @@ export function useStationTrading(query: StationTradingQuery) {
   })
 }
 
-/** Buy in one hub, sell in another. 422 when both are the same region. */
+
 export function useRegionArbitrage(query: RegionArbitrageQuery) {
   return useQuery({
     queryKey: ['market', 'region-arbitrage', query],
@@ -176,7 +173,7 @@ export function useRegionArbitrage(query: RegionArbitrageQuery) {
 
 export type PricingMode = 'raw' | 'compressed' | 'refined'
 
-/** Systems the user's corporation has scanned (the picker for stored scans). */
+
 export function useMoonSystems() {
   return useQuery({
     queryKey: ['moon-scans', 'systems'],
@@ -185,7 +182,7 @@ export function useMoonSystems() {
   })
 }
 
-/** Price, grade and store a pasted scan. Refreshes the stored systems list. */
+
 export function useAnalyseMoons() {
   const client = useQueryClient()
   return useMutation({
@@ -195,7 +192,7 @@ export function useAnalyseMoons() {
   })
 }
 
-/** The stored moons of one system, optionally re-priced. */
+
 export function useLoadMoonSystem() {
   return useMutation({
     mutationFn: async ({ system, pricing_mode }: { system: string; pricing_mode?: PricingMode }) =>
@@ -207,7 +204,7 @@ export function useLoadMoonSystem() {
   })
 }
 
-/** Mark a stored moon as occupied by a corporation, or clear it. */
+
 export function useSetMoonOccupation() {
   return useMutation({
     mutationFn: async ({
@@ -222,7 +219,7 @@ export function useSetMoonOccupation() {
   })
 }
 
-/** Corporations whose name matches, for the occupation picker (2+ characters). */
+
 export function useCorporationSearch(q: string) {
   return useQuery({
     queryKey: ['corporations', 'search', q],
@@ -232,7 +229,7 @@ export function useCorporationSearch(q: string) {
   })
 }
 
-/** Solar systems whose name contains `q` (2+ characters), for the pickers. */
+
 export function useSystemSearch(q: string) {
   return useQuery({
     queryKey: ['systems', 'search', q],
@@ -242,7 +239,7 @@ export function useSystemSearch(q: string) {
   })
 }
 
-/** Top-level market groups. A small fixed SDE list. */
+
 export function useRootMarketGroups() {
   return useQuery({
     queryKey: ['reference', 'market-groups'],
@@ -251,7 +248,7 @@ export function useRootMarketGroups() {
   })
 }
 
-/** A market group's breadcrumbs, child groups and items. */
+
 export function useMarketGroup(groupId: number | null) {
   return useQuery({
     queryKey: ['reference', 'market-groups', groupId],
@@ -262,7 +259,7 @@ export function useMarketGroup(groupId: number | null) {
   })
 }
 
-/** Market types whose name contains `term` (at most 50). Idle under two characters. */
+
 export function useTypeSearch(term: string) {
   return useQuery({
     queryKey: ['reference', 'types', term],
@@ -274,7 +271,7 @@ export function useTypeSearch(term: string) {
 
 type AppraisalBody = NonNullable<paths['/market/appraisals']['post']['requestBody']>['content']['application/json']
 
-/** Price pasted item names from public contracts. Nothing is stored. */
+
 export function useAppraise() {
   return useMutation({
     mutationFn: async (body: AppraisalBody) => unwrap(await api.POST('/market/appraisals', { body })),
@@ -283,7 +280,7 @@ export function useAppraise() {
 
 type ContractQuery = NonNullable<NonNullable<paths['/market/contracts']['get']['parameters']['query']>>
 
-/** Public contracts, newest first. */
+
 export function useContracts(query: ContractQuery) {
   return useQuery({
     queryKey: ['market', 'contracts', query],
@@ -294,7 +291,7 @@ export function useContracts(query: ContractQuery) {
   })
 }
 
-/** One public contract with its items; 404 once the next import dropped it. */
+
 export function useContract(contractId: number) {
   return useQuery({
     queryKey: ['market', 'contracts', contractId],
@@ -307,7 +304,7 @@ export function useContract(contractId: number) {
 
 export type StructureInput = components['schemas']['StoreStructureRequest']
 
-/** The user's structures, defaults first. */
+
 export function useStructures() {
   return useQuery({
     queryKey: ['structures'],
@@ -315,7 +312,7 @@ export function useStructures() {
   })
 }
 
-/** Create (no `id`) or change (with `id`) a structure, then reload the list. */
+
 export function useSaveStructure() {
   const client = useQueryClient()
   return useMutation({
@@ -336,7 +333,7 @@ export function useDeleteStructure() {
   })
 }
 
-/** Make a structure the default for its activity type. */
+
 export function useSetDefaultStructure() {
   const client = useQueryClient()
   return useMutation({
@@ -346,7 +343,7 @@ export function useSetDefaultStructure() {
   })
 }
 
-/** Planetary colonies of every character. A cold cache reads ESI, so it can be slow. */
+
 export function usePlanetary() {
   return useQuery({
     queryKey: ['planetary'],
@@ -355,7 +352,7 @@ export function usePlanetary() {
   })
 }
 
-/** Drop the cached colonies (204), then read them from ESI again. */
+
 export function useRefreshPlanetary() {
   const client = useQueryClient()
   return useMutation({
@@ -366,10 +363,7 @@ export function useRefreshPlanetary() {
 
 export type FactoryTier = 'p1_to_p2' | 'p2_to_p3' | 'p3_to_p4' | 'p1_to_p3' | 'p0_to_p3'
 
-/**
- * Factory planet profitability for a tier. The endpoint's `results` rows are
- * untyped in the OpenAPI spec (two row shapes), so the page types them itself.
- */
+
 export function useFactoryPlan(query: { tier: FactoryTier; region_id: number; tax_rate: number }) {
   return useQuery({
     queryKey: ['planetary', 'factory-planner', query],
@@ -380,11 +374,7 @@ export function useFactoryPlan(query: { tier: FactoryTier; region_id: number; ta
   })
 }
 
-// ---------------------------------------------------------------------------
-// Phase D slice 6: dashboard, industry tools, stock manager, build programs
-// ---------------------------------------------------------------------------
 
-/** Counts, characters and saved plans for the dashboard. Counts come from a cache refreshed every 15 min. */
 export function useDashboard() {
   return useQuery({
     queryKey: ['dashboard'],
@@ -395,7 +385,7 @@ export function useDashboard() {
 
 type JobsQuery = NonNullable<paths['/industry/jobs']['get']['parameters']['query']>
 
-/** Active industry jobs of all characters, valued at one hub's sell prices. */
+
 export function useJobsOverview(query: JobsQuery) {
   return useQuery({
     queryKey: ['industry', 'jobs', query],
@@ -405,7 +395,7 @@ export function useJobsOverview(query: JobsQuery) {
   })
 }
 
-/** What each character (and corporation) can build from the materials in its hangars. Cached an hour server-side. */
+
 export function useCanProduce() {
   return useQuery({
     queryKey: ['industry', 'can-produce'],
@@ -414,7 +404,7 @@ export function useCanProduce() {
   })
 }
 
-/** Recompute can-produce now (slow: re-reads blueprints and assets), then reload it. */
+
 export function useRefreshCanProduce() {
   const client = useQueryClient()
   return useMutation({
@@ -445,7 +435,7 @@ export function useReactionFormulaResearch(query: FormulaResearchQuery) {
   })
 }
 
-/** The stock watchlist against corporation hangars. 403 unless the stock manager is enabled for the user. */
+
 export function useStockReport() {
   return useQuery({
     queryKey: ['stock'],
@@ -454,7 +444,7 @@ export function useStockReport() {
   })
 }
 
-/** Type name typeahead for the stock manager. Searches from two characters. */
+
 export function useStockSearch(term: string) {
   return useQuery({
     queryKey: ['stock', 'search', term],
@@ -504,7 +494,7 @@ export function useBuildProgram(id: number) {
   })
 }
 
-/** Stock against the program, optionally only at some stations. Slow on a cold ESI cache. */
+
 export function useBuildProgramProgress(id: number, locationIds: number[]) {
   return useQuery({
     queryKey: ['build-programs', id, 'progress', locationIds],
@@ -520,7 +510,7 @@ export function useBuildProgramProgress(id: number, locationIds: number[]) {
   })
 }
 
-/** Stations and structures where the user's characters hold assets. */
+
 export function useBuildProgramLocations(id: number) {
   return useQuery({
     queryKey: ['build-programs', id, 'locations'],

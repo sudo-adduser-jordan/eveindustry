@@ -15,7 +15,7 @@ const SCOPES = [
   { scope: 'esi-industry.read_corporation_jobs.v1', description: 'Read Corporation Industry Jobs' },
 ]
 
-/** Activities that deliver items, so their output has a market value. */
+
 const VALUED = new Set(['Manufacturing', 'Reactions'])
 
 function barKind(activity: string): string {
@@ -24,7 +24,7 @@ function barKind(activity: string): string {
   return 'research'
 }
 
-/** ISK, or an em dash when the item has no price. Never 0. */
+
 export function Value({ value }: { value: number | null }) {
   return value === null || value <= 0 ? <span className="muted">—</span> : <span className="text-warn">{formatIsk(value)} ISK</span>
 }

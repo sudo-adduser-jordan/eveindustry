@@ -77,7 +77,6 @@ func TestAnalyzePlanet(t *testing.T) {
 	if len(a.Outputs) != 1 {
 		t.Fatalf("outputs = %v", a.Outputs)
 	}
-	// expired extractor alerts
 	details["pins"].([]any)[0].(map[string]any)["expiry_time"] = "2026-11-01T10:00:00Z"
 	a = AnalyzePlanet(details, r, func(id int) map[string]any { return nil }, now)
 	if len(a.Alerts) != 1 {

@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-// AdminUser mirrors the admin user index row: account fields plus the main
-// character and character count.
 type AdminUser struct {
 	ID                int64          `db:"id"`
 	Name              string         `db:"name"`
@@ -24,7 +22,6 @@ type AdminUser struct {
 	PasswordHash      sql.NullString `db:"password"`
 }
 
-// AdminUserStore covers the admin user manager.
 type AdminUserStore interface {
 	AdminUsers(ctx context.Context, search, sort, dir string, limit, offset int) ([]AdminUser, int, error)
 	AdminUserByID(ctx context.Context, id int64) (*AdminUser, error)
@@ -34,7 +31,6 @@ type AdminUserStore interface {
 	UpdateAdminAccount(ctx context.Context, id int64, email string, passwordHash *string) (*AdminUser, error)
 }
 
-// AdminStatsStore covers the admin dashboard counters + series.
 type AdminStatsStore interface {
 	AdminStats(ctx context.Context) (*AdminStats, error)
 	AdminRegistrationSeries(ctx context.Context) ([]AdminSeriesPoint, error)
@@ -46,8 +42,6 @@ var adminSorts = map[string]bool{
 	"is_active": true, "last_login_at": true, "created_at": true,
 }
 
-// AdminUsers lists users with main character + counts, searchable by
-// account name, email or any character name.
 func (s *SQL) AdminUsers(ctx context.Context, search, sort, dir string, limit, offset int) ([]AdminUser, int, error) {
 	if !adminSorts[sort] {
 		sort = "created_at"
@@ -83,7 +77,6 @@ func (s *SQL) AdminUsers(ctx context.Context, search, sort, dir string, limit, o
 	return out, total, err
 }
 
-// AdminUserByID loads one admin row with its main character.
 func (s *SQL) AdminUserByID(ctx context.Context, id int64) (*AdminUser, error) {
 	var out AdminUser
 	err := s.db.GetContext(ctx, &out, `
@@ -100,7 +93,6 @@ func (s *SQL) AdminUserByID(ctx context.Context, id int64) (*AdminUser, error) {
 	return &out, err
 }
 
-// UpdateAdminUserFlags flips the given flags (nil = unchanged).
 func (s *SQL) UpdateAdminUserFlags(ctx context.Context, id int64, active, admin, stockManager *bool) (*AdminUser, error) {
 	set := ""
 	var args []any
@@ -125,20 +117,17 @@ func (s *SQL) UpdateAdminUserFlags(ctx context.Context, id int64, active, admin,
 	return s.AdminUserByID(ctx, id)
 }
 
-// DeleteAdminUser deletes the user (characters cascade in the schema).
 func (s *SQL) DeleteAdminUser(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, id)
 	return err
 }
 
-// AdminUserEmailTaken reports whether another user holds the email.
 func (s *SQL) AdminUserEmailTaken(ctx context.Context, email string, exceptID int64) (bool, error) {
 	var n int
 	err := s.db.GetContext(ctx, &n, `SELECT COUNT(*) FROM users WHERE email = ? AND id <> ?`, email, exceptID)
 	return n > 0, err
 }
 
-// UpdateAdminAccount changes email and optionally the password hash.
 func (s *SQL) UpdateAdminAccount(ctx context.Context, id int64, email string, passwordHash *string) (*AdminUser, error) {
 	if passwordHash != nil {
 		_, err := s.db.ExecContext(ctx, `UPDATE users SET email = ?, password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,

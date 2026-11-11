@@ -63,7 +63,7 @@ function SortHead({
   )
 }
 
-/** Search box, a select and a submit; the applied values live in the URL. */
+
 function Filters({
   placeholder,
   selectName,
@@ -116,7 +116,7 @@ function Filters({
   )
 }
 
-/** Query-string helpers shared by both pages. */
+
 function useResearchParams(selectName: string) {
   const [params, setParams] = useSearchParams()
   const sort = params.get('sort') ?? 'name'

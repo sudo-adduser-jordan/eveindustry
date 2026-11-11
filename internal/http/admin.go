@@ -11,8 +11,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// requireAdmin mirrors AdminMiddleware: 403 JSON when the caller is not an
-// admin (super admins count).
 func requireAdminDeps(d Deps) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -32,7 +30,6 @@ func requireAdminDeps(d Deps) echo.MiddlewareFunc {
 	}
 }
 
-// registerAdmin mounts user management, account and the admin jobs view.
 func registerAdmin(v1 *echo.Group, d Deps) {
 	if d.AdminUsers == nil || d.Users == nil {
 		return
@@ -86,7 +83,6 @@ var adminSorts = map[string]bool{
 	"is_active": true, "last_login_at": true, "created_at": true,
 }
 
-// GET /admin/users — searchable, sortable, paginated.
 func handleAdminUserIndex(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		qp := c.QueryParams()
@@ -132,7 +128,6 @@ func handleAdminUserIndex(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST toggles + DELETE. Super admins are immutable (403).
 func handleAdminToggle(d Deps, which string) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := essID(c)
@@ -194,7 +189,6 @@ func handleAdminUserDelete(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /admin/users/:id/industry-jobs — the user's jobs priced at the hub.
 func handleAdminUserJobs(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := essID(c)
@@ -232,7 +226,6 @@ func handleAdminUserJobs(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /admin/account — the admin's login email.
 func handleAdminAccountShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -251,7 +244,6 @@ func handleAdminAccountShow(d Deps) echo.HandlerFunc {
 	}
 }
 
-// PUT /admin/account — email + optional password change (current verified).
 func handleAdminAccountUpdate(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -320,7 +312,6 @@ func handleAdminAccountUpdate(d Deps) echo.HandlerFunc {
 	}
 }
 
-// adminPage parses ?page=&per_page= with the admin default of 20 (max 200).
 func adminPage(c echo.Context) (int, int, bool) {
 	page, ok := queryInt(c, "page", 1, 1, 1<<31-1)
 	if !ok {

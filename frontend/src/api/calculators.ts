@@ -10,7 +10,7 @@ export type Structure = Schemas['StructureResource']
 export type BlueprintActivity = Schemas['ActivityResource']
 export type BuildProgramRequest = Schemas['StoreBuildProgramRequest']
 
-/** The user's saved structures for one activity, defaults first. */
+
 export function useStructures(activity: 'manufacturing' | 'invention' | 'reaction') {
   return useQuery({
     queryKey: ['structures', activity],
@@ -20,7 +20,7 @@ export function useStructures(activity: 'manufacturing' | 'invention' | 'reactio
   })
 }
 
-/** Whether the corporate build program buttons apply to this user. */
+
 export function useCorporateExport() {
   return useQuery({
     queryKey: ['calculators', 'corporate-export'],
@@ -29,7 +29,7 @@ export function useCorporateExport() {
   })
 }
 
-/** Blueprint name search; waits for two characters. */
+
 export function useBlueprintSearch(q: string) {
   return useQuery({
     queryKey: ['reference', 'blueprints', q],
@@ -39,7 +39,7 @@ export function useBlueprintSearch(q: string) {
   })
 }
 
-/** Materials, product and base time of one manufacturing blueprint. */
+
 export function useBlueprintActivity(blueprintTypeId: number | null) {
   return useQuery({
     queryKey: ['reference', 'blueprint', blueprintTypeId],
@@ -51,7 +51,7 @@ export function useBlueprintActivity(blueprintTypeId: number | null) {
   })
 }
 
-/** Solar system name search; waits for two characters. */
+
 export function useSystemSearch(q: string) {
   return useQuery({
     queryKey: ['reference', 'systems', q],
@@ -61,7 +61,7 @@ export function useSystemSearch(q: string) {
   })
 }
 
-/** ESI cost indices of one system, as fractions (0.0412 = 4.12%). */
+
 export function useCostIndices(systemId: number | null) {
   return useQuery({
     queryKey: ['reference', 'cost-indices', systemId],
@@ -73,7 +73,7 @@ export function useCostIndices(systemId: number | null) {
   })
 }
 
-/** Skill levels of one of the user's characters (manufacturing). */
+
 export function useManufacturingSkills(characterId: number | null) {
   return useQuery({
     queryKey: ['calculators', 'manufacturing', 'skills', characterId],
@@ -85,7 +85,7 @@ export function useManufacturingSkills(characterId: number | null) {
   })
 }
 
-/** Run one manufacturing calculation. */
+
 export async function calculateManufacturing(body: ManufacturingRequest) {
   return unwrap(await api.POST('/calculators/manufacturing', { body }))
 }
@@ -100,7 +100,7 @@ export interface QueueSummaryItem {
   fees: number
 }
 
-/** Profit and margin per queued job and in total, computed by the server. */
+
 export function useQueueSummary(items: QueueSummaryItem[]) {
   return useQuery({
     queryKey: ['calculators', 'queue-summary', items],
@@ -111,7 +111,7 @@ export function useQueueSummary(items: QueueSummaryItem[]) {
   })
 }
 
-/** Owned quantity per type across the user's characters. */
+
 export function useAssetStock(typeIds: number[], enabled: boolean) {
   return useQuery({
     queryKey: ['calculators', 'stock', typeIds],
@@ -121,7 +121,7 @@ export function useAssetStock(typeIds: number[], enabled: boolean) {
   })
 }
 
-/** Create a personal or corporate build program from calculator steps. */
+
 export function useCreateBuildProgram(corporate: boolean) {
   return useMutation({
     mutationFn: async (body: BuildProgramRequest) =>
@@ -133,7 +133,7 @@ export function useCreateBuildProgram(corporate: boolean) {
   })
 }
 
-/** Every market group that leads to a Tech I manufacturable item, nested. */
+
 export function useMarketGroupTree() {
   return useQuery({
     queryKey: ['reference', 'market-groups', 'tree'],
@@ -142,7 +142,7 @@ export function useMarketGroupTree() {
   })
 }
 
-/** Items listed directly in one market group. */
+
 export function useMarketGroupItems(groupId: number | null) {
   return useQuery({
     queryKey: ['reference', 'market-groups', groupId],
@@ -153,7 +153,7 @@ export function useMarketGroupItems(groupId: number | null) {
   })
 }
 
-/** Item name search across market types. */
+
 export function useTypeSearch(q: string) {
   return useQuery({
     queryKey: ['reference', 'types', q],
@@ -165,7 +165,7 @@ export function useTypeSearch(q: string) {
 
 type BrowserQuery = NonNullable<paths['/calculators/manufacturing-browser']['get']['parameters']['query']>
 
-/** Precomputed manufacturing profitability of one market group. */
+
 export function useManufacturingBrowse(query: BrowserQuery | null) {
   return useQuery({
     queryKey: ['calculators', 'manufacturing-browser', query],
@@ -177,14 +177,14 @@ export function useManufacturingBrowse(query: BrowserQuery | null) {
   })
 }
 
-/** One structure's effective bonuses, or zeros when none is chosen. */
+
 export function bonusesOf(structure: Structure | undefined): { me: number; te: number } {
   return structure ? structure.effective_bonuses : { me: 0, te: 0 }
 }
 
 export type ReactionBrowserRequest = Schemas['ReactionBrowserRequest']
 
-/** Profitability of every reaction formula with the given structure settings. */
+
 export function useReactionBrowse(body: ReactionBrowserRequest | null) {
   return useQuery({
     queryKey: ['calculators', 'reaction-browser', body],

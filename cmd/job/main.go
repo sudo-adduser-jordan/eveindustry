@@ -1,17 +1,9 @@
-// Command job runs one registered background job once and exits:
-//
-//	go run ./cmd/job <name> [json-payload]
-//
-// Unlike the scheduler tick (which dispatches into queues for the worker),
-// this executes the job inline in this process: handy for setup and manual
-// recovery (sde:import, demo-reset, market:update-prices).
 package main
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"os/signal"
 	"sort"
@@ -23,6 +15,7 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/jobs"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/logx"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
@@ -34,8 +27,6 @@ func main() {
 	}
 }
 
-// parseJobArgs splits <name> [json-payload], rejecting blank names and
-// malformed payloads before anything is wired.
 func parseJobArgs(args []string) (string, json.RawMessage, error) {
 	if len(args) == 0 || strings.TrimSpace(args[0]) == "" {
 		return "", nil, fmt.Errorf("usage: job <name> [json-payload]")
@@ -50,8 +41,6 @@ func parseJobArgs(args []string) (string, json.RawMessage, error) {
 	return args[0], payload, nil
 }
 
-// checkJobGate mirrors the scheduler's When guards for jobs that are unsafe
-// to run unconditionally (wiping demo data on a non-demo install).
 func checkJobGate(name string) error {
 	if name == "demo-reset" && os.Getenv("DEMO_ENABLED") != "true" {
 		return fmt.Errorf("demo-reset needs DEMO_ENABLED=true")
@@ -74,7 +63,7 @@ func run(args []string) error {
 	}
 	defer func() { _ = db.DB.Close() }()
 
-	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	log := logx.New("job")
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -123,7 +112,6 @@ func run(args []string) error {
 	return nil
 }
 
-// jobNames lists registered jobs for the unknown-job error.
 func jobNames(r *jobs.Runner) string {
 	names := make([]string, 0, len(r.Jobs))
 	for name := range r.Jobs {

@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-// Credential is one character's ESI credential as the client needs it.
 type Credential struct {
 	CharacterID    int64
 	AccessToken    string
@@ -18,31 +17,21 @@ type Credential struct {
 	IsEsiActive    bool
 }
 
-// CredentialStore loads credentials and persists rotations. SQL lands in
-// the store package; tests stub it.
 type CredentialStore interface {
 	Credentials(ctx context.Context, characterID int64) (Credential, bool, error)
 	SaveTokens(ctx context.Context, characterID int64, access, refresh string, expiresAt time.Time) error
 	Deactivate(ctx context.Context, characterID int64) error
 }
 
-// CharacterClient ports CharacterClient: public profile/affiliation plus
-// authenticated skills/roles/blueprints/assets/names/location/skillqueue,
-// with the same 1h caches (except empty asset snapshots, which are never
-// cached so a transient failure cannot lock a character into emptiness).
 type CharacterClient struct {
 	client  *Client
 	refresh *Refresher
 	creds   CredentialStore
 	memo    *Memo
-	key     []byte // APP_KEY bytes for encrypted-at-rest tokens; nil = raw only
+	key     []byte
 	Demo    *DemoResponder
 }
 
-// Demo wires demo-character responses (nil disables them).
-
-// NewCharacterClient builds the client. key may be nil when tokens are
-// stored raw; encrypted payloads then fail closed like the PHP cast.
 func NewCharacterClient(client *Client, refresh *Refresher, creds CredentialStore, memo *Memo, appKey []byte) *CharacterClient {
 	if memo == nil {
 		memo = NewMemo()
@@ -50,9 +39,6 @@ func NewCharacterClient(client *Client, refresh *Refresher, creds CredentialStor
 	return &CharacterClient{client: client, refresh: refresh, creds: creds, memo: memo, key: appKey}
 }
 
-// credential resolves a live bearer: inactive or missing characters fail
-// closed (credential outcome, mirroring the is_esi_active guard), expiring
-// tokens rotate through the refresher first.
 func (c *CharacterClient) credential(ctx context.Context, characterID int64) (Auth, error) {
 	cred, ok, err := c.creds.Credentials(ctx, characterID)
 	if err != nil {
@@ -121,7 +107,6 @@ func (c *CharacterClient) authed(ctx context.Context, method, endpoint string, c
 	return resp.JSON(), nil
 }
 
-// GetCharacter ports getCharacter(): public profile, 1h cache.
 func (c *CharacterClient) GetCharacter(ctx context.Context, characterID int64) (map[string]any, error) {
 	key := fmt.Sprintf("esi.character.%d", characterID)
 	if v, ok := c.memo.Get(key); ok {
@@ -136,7 +121,6 @@ func (c *CharacterClient) GetCharacter(ctx context.Context, characterID int64) (
 	return data, nil
 }
 
-// GetAffiliation ports getCharacterAffiliation(): POST ids, 1h cache.
 func (c *CharacterClient) GetAffiliation(ctx context.Context, characterID int64) (map[string]any, error) {
 	key := fmt.Sprintf("esi.affiliation.%d", characterID)
 	if v, ok := c.memo.Get(key); ok {
@@ -160,9 +144,6 @@ func (c *CharacterClient) GetAffiliation(ctx context.Context, characterID int64)
 	return nil, nil
 }
 
-// GetSkills ports getCharacterSkills(): skill_id → trained level, 1h cache.
-// A nil map with nil error means the credential is dead (caller substitutes
-// zeros, like the PHP skillMap default).
 func (c *CharacterClient) GetSkills(ctx context.Context, characterID int64) (map[int]int, error) {
 	key := fmt.Sprintf("esi.skills.%d", characterID)
 	if v, ok := c.memo.Get(key); ok {
@@ -189,10 +170,6 @@ func (c *CharacterClient) GetSkills(ctx context.Context, characterID int64) (map
 	return out, nil
 }
 
-// Paginated ports authenticatedPaginatedRequest(): complete lists only.
-// Guards: non-list JSON, bad/changed X-Pages, Last-Modified drift and the
-// 10000-page safety cap all fail as incomplete, never a prefix. query
-// carries extra params like include_completed=true.
 func (c *CharacterClient) Paginated(ctx context.Context, endpoint string, query map[string]string, characterID int64) ([]map[string]any, error) {
 	if c.Demo != nil && auth.IsDemoID(characterID) {
 		return c.demoPaginated(ctx, endpoint, query, characterID)
@@ -255,9 +232,6 @@ func (c *CharacterClient) Paginated(ctx context.Context, endpoint string, query 
 	return nil, &RequestError{Outcome: OutcomeIncomplete, RetryAfterSecs: 30}
 }
 
-// demoPaginated answers paginated reads for demo characters from the
-// DemoResponder, mirroring ESI's page/X-Pages contract. Corporate endpoints
-// resolve through the same responder keyed off the calling character.
 func (c *CharacterClient) demoPaginated(ctx context.Context, endpoint string, query map[string]string, characterID int64) ([]map[string]any, error) {
 	chars, _ := c.Demo.Chars(ctx)
 	var ch *DemoCharacter
@@ -308,8 +282,6 @@ func (c *CharacterClient) demoPaginated(ctx context.Context, endpoint string, qu
 	return all, nil
 }
 
-// GetAssets ports getCharacterAssets(): full snapshot, 1h cache; empty
-// results are never cached.
 func (c *CharacterClient) GetAssets(ctx context.Context, characterID int64) ([]map[string]any, error) {
 	key := fmt.Sprintf("esi.assets.%d", characterID)
 	if v, ok := c.memo.Get(key); ok {
@@ -325,9 +297,6 @@ func (c *CharacterClient) GetAssets(ctx context.Context, characterID int64) ([]m
 	return all, nil
 }
 
-// GetLocation ports fetchPilotCurrentPosition(): the character's current
-// solar system, never cached (the caller stores the name). A nil map with
-// nil error means ESI has no position (docked?) — the caller 502s.
 func (c *CharacterClient) GetLocation(ctx context.Context, characterID int64) (map[string]any, error) {
 	raw, err := c.authed(ctx, http.MethodGet, fmt.Sprintf("/characters/%d/location/", characterID), characterID, nil)
 	if err != nil {
@@ -340,7 +309,6 @@ func (c *CharacterClient) GetLocation(ctx context.Context, characterID int64) (m
 	return m, nil
 }
 
-// GetBlueprints ports getCharacterBlueprints(): full snapshot, 1h cache.
 func (c *CharacterClient) GetBlueprints(ctx context.Context, characterID int64) ([]map[string]any, error) {
 	key := fmt.Sprintf("esi.blueprints.%d", characterID)
 	if v, ok := c.memo.Get(key); ok {
@@ -354,7 +322,6 @@ func (c *CharacterClient) GetBlueprints(ctx context.Context, characterID int64) 
 	return all, nil
 }
 
-// GetSkillqueue ports fetchPilotTrainingQueue(): training queue, 1h memo.
 func (c *CharacterClient) GetSkillqueue(ctx context.Context, characterID int64) ([]map[string]any, error) {
 	key := fmt.Sprintf("esi.skillqueue.%d", characterID)
 	if v, ok := c.memo.Get(key); ok {
@@ -381,8 +348,6 @@ func (c *CharacterClient) GetSkillqueue(ctx context.Context, characterID int64) 
 	return out, nil
 }
 
-// GetIndustryJobs ports getCharacterIndustryJobs(): active jobs (or with
-// completed), 5 minute cache. Scope/active gating is the caller's job.
 func (c *CharacterClient) GetIndustryJobs(ctx context.Context, characterID int64, includeCompleted bool) ([]map[string]any, error) {
 	key := fmt.Sprintf("esi.industry_jobs.%d.active", characterID)
 	query := map[string]string{}
@@ -401,7 +366,6 @@ func (c *CharacterClient) GetIndustryJobs(ctx context.Context, characterID int64
 	return all, nil
 }
 
-// GetCharacterRoles ports getCharacterRoles(): the roles object, 1h memo.
 func (c *CharacterClient) GetCharacterRoles(ctx context.Context, characterID int64) (map[string]any, error) {
 	key := fmt.Sprintf("esi.roles.%d", characterID)
 	if v, ok := c.memo.Get(key); ok {
@@ -419,8 +383,6 @@ func (c *CharacterClient) GetCharacterRoles(ctx context.Context, characterID int
 	return out, nil
 }
 
-// GetCorporationBlueprints ports getCorporationBlueprints(): full snapshot,
-// 1h memo.
 func (c *CharacterClient) GetCorporationBlueprints(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error) {
 	key := fmt.Sprintf("esi.corp_blueprints.%d", corporationID)
 	if v, ok := c.memo.Get(key); ok {
@@ -434,8 +396,6 @@ func (c *CharacterClient) GetCorporationBlueprints(ctx context.Context, characte
 	return all, nil
 }
 
-// GetCorporationAssets ports getCorporationAssets(): full snapshot, 1h memo;
-// empty results are never cached.
 func (c *CharacterClient) GetCorporationAssets(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error) {
 	key := fmt.Sprintf("esi.corp_assets.%d", corporationID)
 	if v, ok := c.memo.Get(key); ok {
@@ -451,8 +411,6 @@ func (c *CharacterClient) GetCorporationAssets(ctx context.Context, characterID,
 	return all, nil
 }
 
-// GetCorporationIndustryJobs ports getCorporationIndustryJobs(): corp jobs
-// started by the corp, 5 minute cache. Eligibility gating is the caller's job.
 func (c *CharacterClient) GetCorporationIndustryJobs(ctx context.Context, characterID int64, corporationID int64, includeCompleted bool) ([]map[string]any, error) {
 	key := fmt.Sprintf("esi.corp_industry_jobs.%d.active", corporationID)
 	query := map[string]string{}
@@ -471,7 +429,6 @@ func (c *CharacterClient) GetCorporationIndustryJobs(ctx context.Context, charac
 	return all, nil
 }
 
-// GetCharacterPlanets ports getCharacterPlanets(): colony list, 10-minute memo.
 func (c *CharacterClient) GetCharacterPlanets(ctx context.Context, characterID int64) ([]map[string]any, error) {
 	key := fmt.Sprintf("esi.planets.%d", characterID)
 	if v, ok := c.memo.Get(key); ok {
@@ -495,8 +452,6 @@ func (c *CharacterClient) GetCharacterPlanets(ctx context.Context, characterID i
 	return out, nil
 }
 
-// GetCharacterPlanetDetails ports getCharacterPlanetDetails(): full colony
-// layout, 10-minute memo.
 func (c *CharacterClient) GetCharacterPlanetDetails(ctx context.Context, characterID int64, planetID int) (map[string]any, error) {
 	key := fmt.Sprintf("esi.planet_details.%d.%d", characterID, planetID)
 	if v, ok := c.memo.Get(key); ok {
@@ -517,13 +472,10 @@ func (c *CharacterClient) GetCharacterPlanetDetails(ctx context.Context, charact
 	return m, nil
 }
 
-// ClearPlanetaryCache drops colony memos for a character.
 func (c *CharacterClient) ClearPlanetaryCache(characterID int64) {
 	c.memo.Forget(fmt.Sprintf("esi.planets.%d", characterID))
 }
 
-// GetDynamicItem ports getDynamicItem(): mutated-item dogma attributes for one
-// abyssal item, 1-hour memo.
 func (c *CharacterClient) GetDynamicItem(ctx context.Context, typeID int, itemID int64, characterID int64) (map[string]any, error) {
 	key := fmt.Sprintf("esi.dynamic_item.%d", itemID)
 	if v, ok := c.memo.Get(key); ok {
@@ -544,8 +496,6 @@ func (c *CharacterClient) GetDynamicItem(ctx context.Context, typeID int, itemID
 	return m, nil
 }
 
-// GetCorporationAssetNames ports getCorporationAssetNames(): POST chunks of
-// 1000 against the corporation endpoint, skipping blank/'None' names.
 func (c *CharacterClient) GetCorporationAssetNames(ctx context.Context, characterID, corporationID int64, itemIDs []int64) (map[int64]string, error) {
 	out := map[int64]string{}
 	for i := 0; i < len(itemIDs); i += 1000 {
@@ -575,9 +525,6 @@ func (c *CharacterClient) GetCorporationAssetNames(ctx context.Context, characte
 	return out, nil
 }
 
-// GetCorporationWallets ports getCorporationWallets(): division balances,
-// 5-minute memo. A nil slice with nil error means the provider may not
-// collect (eligibility handled by the caller).
 func (c *CharacterClient) GetCorporationWallets(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error) {
 	key := fmt.Sprintf("esi.corp_wallets.%d", corporationID)
 	if v, ok := c.memo.Get(key); ok {
@@ -601,8 +548,6 @@ func (c *CharacterClient) GetCorporationWallets(ctx context.Context, characterID
 	return out, nil
 }
 
-// GetCorporationWalletJournal ports getCorporationWalletJournal(): journal
-// entries for one division, 5-minute memo.
 func (c *CharacterClient) GetCorporationWalletJournal(ctx context.Context, characterID, corporationID int64, division int) ([]map[string]any, error) {
 	key := fmt.Sprintf("esi.corp_wallet_journal.%d.%d", corporationID, division)
 	if v, ok := c.memo.Get(key); ok {
@@ -616,7 +561,6 @@ func (c *CharacterClient) GetCorporationWalletJournal(ctx context.Context, chara
 	return out, nil
 }
 
-// ClearCorporationWalletCache drops memoized wallets + journals for a corp.
 func (c *CharacterClient) ClearCorporationWalletCache(corporationID int64) {
 	c.memo.Forget(fmt.Sprintf("esi.corp_wallets.%d", corporationID))
 	for d := 1; d <= 7; d++ {
@@ -624,9 +568,6 @@ func (c *CharacterClient) ClearCorporationWalletCache(corporationID int64) {
 	}
 }
 
-// cursorProjects walks opaque cursors until exhausted, keyed by idField
-// (falling back to project_id); any failure aborts the whole collection,
-// like the PHP cursorPages (never publish a prefix).
 func (c *CharacterClient) cursorProjects(ctx context.Context, characterID int64, endpoint, field, idField string, params map[string]string) ([]map[string]any, error) {
 	auth, err := c.credential(ctx, characterID)
 	if err != nil {
@@ -690,8 +631,6 @@ func (c *CharacterClient) cursorProjects(ctx context.Context, characterID int64,
 	return out, nil
 }
 
-// GetCorporationProjects ports getCorporationProjects(): all projects via
-// cursor pagination, 5-minute memo.
 func (c *CharacterClient) GetCorporationProjects(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error) {
 	key := fmt.Sprintf("esi.corp_projects.%d", corporationID)
 	if v, ok := c.memo.Get(key); ok {
@@ -710,8 +649,6 @@ func (c *CharacterClient) GetCorporationProjects(ctx context.Context, characterI
 	return out, nil
 }
 
-// GetCorporationProjectContributors ports getCorporationProjectContributors(),
-// 5-minute memo.
 func (c *CharacterClient) GetCorporationProjectContributors(ctx context.Context, characterID, corporationID int64, projectID string) ([]map[string]any, error) {
 	key := fmt.Sprintf("esi.corp_project_contributors.%d.%s", corporationID, projectID)
 	if v, ok := c.memo.Get(key); ok {
@@ -730,18 +667,14 @@ func (c *CharacterClient) GetCorporationProjectContributors(ctx context.Context,
 	return out, nil
 }
 
-// ClearCorporationProjectsCache drops memoized projects + contributors.
 func (c *CharacterClient) ClearCorporationProjectsCache(corporationID int64) {
 	c.memo.Forget(fmt.Sprintf("esi.corp_projects.%d", corporationID))
 }
 
-// ClearCorporationProjectContributorsCache drops one project's contributors.
 func (c *CharacterClient) ClearCorporationProjectContributorsCache(corporationID int64, projectID string) {
 	c.memo.Forget(fmt.Sprintf("esi.corp_project_contributors.%d.%s", corporationID, projectID))
 }
 
-// GetAssetNames ports getCharacterAssetNames(): POST chunks of 1000,
-// skipping blank/'None' names.
 func (c *CharacterClient) GetAssetNames(ctx context.Context, characterID int64, itemIDs []int64) (map[int64]string, error) {
 	out := map[int64]string{}
 	for i := 0; i < len(itemIDs); i += 1000 {
@@ -767,7 +700,6 @@ func (c *CharacterClient) GetAssetNames(ctx context.Context, characterID int64, 
 	return out, nil
 }
 
-// ClearCache ports clearCharacterCache().
 func (c *CharacterClient) ClearCache(characterID int64) {
 	c.memo.Forget(fmt.Sprintf("esi.character.%d", characterID))
 	c.memo.Forget(fmt.Sprintf("esi.skills.%d", characterID))

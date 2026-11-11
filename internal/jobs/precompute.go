@@ -12,8 +12,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// RegisterPrecomputeJobs wires manufacturing:precompute-costs
-// (updates, 3 tries, 600s, per-region lock).
 func RegisterPrecomputeJobs(r *Runner, h HandlerDeps) {
 	r.Register("manufacturing-precompute-costs", JobDef{
 		Queue: QueueUpdates, MaxTries: 3, Timeout: 600 * time.Second, Unique: 30 * time.Minute,
@@ -29,8 +27,6 @@ func RegisterPrecomputeJobs(r *Runner, h HandlerDeps) {
 	})
 }
 
-// PrecomputeSchedule mirrors manufacturing:precompute-costs every 4 hours
-// across the five trade hubs.
 func PrecomputeSchedule(h HandlerDeps) []ScheduleEntry {
 	return []ScheduleEntry{
 		{
@@ -48,8 +44,6 @@ func PrecomputeSchedule(h HandlerDeps) []ScheduleEntry {
 	}
 }
 
-// PrecomputeManufacturingCosts ports PrecomputeManufacturingCostsChunk for
-// one region: every T1 manufacturing blueprint × ME 0-10.
 func PrecomputeManufacturingCosts(ctx context.Context, h HandlerDeps, regionID int) error {
 	acts, err := h.Industry.AllManufacturingActivities(ctx)
 	if err != nil {
@@ -97,7 +91,6 @@ func PrecomputeManufacturingCosts(ctx context.Context, h HandlerDeps, regionID i
 		}
 		nameIDs[bp] = true
 	}
-	// Deterministic winner per product: lowest blueprint id first.
 	sort.Slice(items, func(i, j int) bool { return items[i].BlueprintTypeID < items[j].BlueprintTypeID })
 	if len(items) == 0 {
 		return nil

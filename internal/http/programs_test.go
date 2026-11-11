@@ -14,7 +14,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// stubPrograms implements store.ProgramStore in memory.
 type stubPrograms struct {
 	rows map[int64]store.BuildProgram
 	next int64
@@ -120,7 +119,6 @@ func TestBuildProgramCRUD(t *testing.T) {
 	if code, _ := get(t, d, "/api/v1/build-programs/9"); code != http.StatusNotFound {
 		t.Fatalf("foreign = %d", code)
 	}
-	// create with nested materials: Trit is raw, no sub-blueprint in fixture
 	code, body := post(t, d, "/api/v1/build-programs", `{"name":"Rifter x10","t2_type_id":587,"steps":[{"type_id":587,"name":"Rifter","quantity_required":10,"materials":[{"type_id":34,"name":"Tritanium","quantity":100}]}]}`)
 	if code != http.StatusCreated {
 		t.Fatalf("create = %d %v", code, body)
@@ -129,19 +127,15 @@ func TestBuildProgramCRUD(t *testing.T) {
 	if len(steps) != 1 || steps[0].(map[string]any)["blueprint_type_id"].(float64) != 786 {
 		t.Fatalf("nested = %v", steps)
 	}
-	// invalid: missing name
 	if code, _ := post(t, d, "/api/v1/build-programs", `{"steps":[]}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad = %d", code)
 	}
-	// rename
 	if code, body := putJSON(t, d, "/api/v1/build-programs/1", `{"name":"A2"}`); code != http.StatusOK || body["data"].(map[string]any)["name"] != "A2" {
 		t.Fatalf("rename = %d %v", code, body)
 	}
-	// location filter
 	if code, _ := patchReq(t, d, "/api/v1/build-programs/1/location-filter", `{"location_ids":[30000142]}`); code != http.StatusOK {
 		t.Fatalf("filter = %d", code)
 	}
-	// delete
 	if code, _ := deleteReq(t, d, "/api/v1/build-programs/1"); code != http.StatusNoContent {
 		t.Fatalf("delete = %d", code)
 	}

@@ -15,9 +15,6 @@ func nullStringOf(ns sql.NullString) *string {
 	return &ns.String
 }
 
-// Reaction rig ME tables mirror ReactionsCalculatorService::RIG_ME_BONUS
-// and SECURITY_MULTIPLIER. Note the multipliers: reactions lowsec 1.0,
-// nullsec 1.1 (unlike manufacturing rigs).
 func ResolveRigBonus(rigTier, securitySpace string) float64 {
 	base := 0.0
 	switch rigTier {
@@ -33,16 +30,12 @@ func ResolveRigBonus(rigTier, securitySpace string) float64 {
 	return base * mult
 }
 
-// JobCost ports IndustryProfitCalculator::jobCost(): job fee on the input
-// cost, facility tax on the job fee.
 func JobCost(inputCost, systemCostIndexPct, facilityTaxPct float64) (jobFee, facilityTax, total float64) {
 	jobFee = inputCost * (systemCostIndexPct / 100)
 	facilityTax = jobFee * (facilityTaxPct / 100)
 	return jobFee, facilityTax, jobFee + facilityTax
 }
 
-// PlanEntry is one requested composite: formula, slots, runs per slot and an
-// optional per-entry rig bonus overriding the global one.
 type PlanEntry struct {
 	FormulaTypeID int
 	Slots         int
@@ -50,7 +43,6 @@ type PlanEntry struct {
 	RigBonus      *float64
 }
 
-// CompositeOutput mirrors one resolveChain() composite_outputs row.
 type CompositeOutput struct {
 	FormulaTypeID int    `json:"formula_type_id"`
 	ProductTypeID *int   `json:"product_type_id"`
@@ -62,7 +54,6 @@ type CompositeOutput struct {
 	PortionSize   int    `json:"portion_size"`
 }
 
-// PlanSlot mirrors composite/intermediate slot rows.
 type PlanSlot struct {
 	FormulaTypeID int    `json:"formula_type_id"`
 	ProductTypeID *int   `json:"product_type_id,omitempty"`
@@ -72,7 +63,6 @@ type PlanSlot struct {
 	TotalRuns     *int   `json:"total_runs,omitempty"`
 }
 
-// RawMaterial is one aggregated priced raw material.
 type RawMaterial struct {
 	TypeID      int     `json:"type_id"`
 	Name        string  `json:"name"`
@@ -83,7 +73,6 @@ type RawMaterial struct {
 	Volume      float64 `json:"volume"`
 }
 
-// PlanChain is the priced reaction plan before the summary block.
 type PlanChain struct {
 	CompositeOutputs       []CompositeOutput `json:"composite_outputs"`
 	CompositeSlots         []PlanSlot        `json:"composite_slots"`
@@ -96,9 +85,6 @@ type PlanChain struct {
 	TotalOutputValue       float64           `json:"total_output_value"`
 }
 
-// ResolveReactionChain ports ReactionPlannerService::resolveChain() over the
-// industry store: composite formulas from SDE activity 11, intermediates via
-// producer lookup, raw goo aggregated by type and sorted by name.
 func ResolveReactionChain(ctx context.Context, st industry.IndustryStore, entries []PlanEntry, globalRigBonus float64) (PlanChain, error) {
 	var out PlanChain
 	out.CompositeOutputs = []CompositeOutput{}

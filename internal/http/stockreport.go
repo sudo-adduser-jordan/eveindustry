@@ -12,20 +12,16 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// StockReportDeps carries the ESI + stock stores for the stock report.
 type StockReportDeps struct {
 	Characters StockReportESI
 	Stock      store.StockStore
 }
 
-// StockReportESI is the ESI surface the report needs.
 type StockReportESI interface {
 	GetCharacterRoles(ctx context.Context, characterID int64) (map[string]any, error)
 	GetCorporationAssets(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error)
 }
 
-// registerStockReport mounts GET /industry/stock behind the stock-manager
-// gate (403 like the PHP stock-manager middleware).
 func registerStockReport(v1 *echo.Group, d Deps) {
 	if d.StockReport.Characters == nil || d.StockReport.Stock == nil || d.Users == nil {
 		return
@@ -33,8 +29,6 @@ func registerStockReport(v1 *echo.Group, d Deps) {
 	v1.GET("/stock", handleStockReport(d), requireStockManager)
 }
 
-// requireStockManager mirrors the stock-manager middleware: 403 without the
-// feature flag.
 func requireStockManager(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		if u, ok := CurrentUser(c); !ok || !u.IsStockManager {
@@ -44,8 +38,6 @@ func requireStockManager(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-// corpAssetsWarning ports AssetService::getCorporationAssetsWarning(): nil
-// when corporate assets are readable, else the human reason.
 func corpAssetsWarning(ctx context.Context, d Deps, main *auth.Character) *string {
 	if main == nil {
 		return strPtr("No main character is set. Corporation assets can only be retrieved by your main character. Please mark a character as your main.")
@@ -83,9 +75,6 @@ func corpAssetsWarning(ctx context.Context, d Deps, main *auth.Character) *strin
 	return nil
 }
 
-// GET /industry/stock — mirrors StockReportController@index. Reads live
-// corporation hangars instead of the snapshot pipeline (which warms in the
-// jobs phase); the refresh route is a later slice.
 func handleStockReport(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)

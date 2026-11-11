@@ -175,7 +175,6 @@ func TestMigrationChainConsistent(t *testing.T) {
 					}
 					break
 				}
-				// SQLite form: DROP INDEX [IF EXISTS] name (no table).
 				if m := dropIndexRe.FindStringSubmatch(s); len(m) == 2 {
 					found := ""
 					for tbl, idx := range indexes {

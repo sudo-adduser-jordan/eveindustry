@@ -69,7 +69,6 @@ func TestSQLQueueFIFO(t *testing.T) {
 	if n, err := q.Len(ctx, QueueDefault); err != nil || n != 1 {
 		t.Fatalf("Len: %v %d", err, n)
 	}
-	// Empty pop waits out the deadline instead of erroring.
 	start := time.Now()
 	_, _, ok, err = q.Pop(ctx, []string{"missing"}, 300*time.Millisecond)
 	if err != nil || ok || time.Since(start) < 300*time.Millisecond {
@@ -112,11 +111,10 @@ func TestDBLocker(t *testing.T) {
 	if !l.Acquire(ctx, "k", time.Minute) {
 		t.Fatal("re-acquire after release must win")
 	}
-	// Expiry lapses (second granularity, so sleep past the tick).
 	if !l.Acquire(ctx, "short", 100*time.Millisecond) {
 		t.Fatal("short acquire must win")
 	}
-	time.Sleep(1200 * time.Millisecond)
+	<-time.After(1200 * time.Millisecond)
 	if !l.Acquire(ctx, "short", time.Minute) {
 		t.Fatal("expired lock must be acquirable")
 	}

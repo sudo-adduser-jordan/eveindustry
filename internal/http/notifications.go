@@ -14,7 +14,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// notifyType mirrors NotificationType.
 type notifyType struct {
 	key            string
 	label          string
@@ -41,14 +40,11 @@ var notifyTypes = []notifyType{
 		"Corporation", false, []int{15, 60, 360}, false, true},
 }
 
-// NotifyPush carries the web-push configuration (VAPID public key only);
-// sending lives in the jobs phase, so test always 503s until then.
 type NotifyPush struct {
 	Enabled        bool
 	VapidPublicKey string
 }
 
-// registerNotifications mounts push subscription + preference endpoints.
 func registerNotifications(v1 *echo.Group, d Deps) {
 	if d.Notify == nil || d.Users == nil {
 		return
@@ -152,7 +148,6 @@ func strOrNil(s string) any {
 	return s
 }
 
-// GET /notifications — preference center state.
 func handleNotifyShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -164,7 +159,6 @@ func handleNotifyShow(d Deps) echo.HandlerFunc {
 	}
 }
 
-// PUT /notifications/subscription — register this device (upsert by endpoint).
 func handleNotifySubscribe(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -226,7 +220,6 @@ func handleNotifySubscribe(d Deps) echo.HandlerFunc {
 	}
 }
 
-// DELETE /notifications/subscription — remove this device.
 func handleNotifyUnsubscribe(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -255,7 +248,6 @@ func handleNotifyUnsubscribe(d Deps) echo.HandlerFunc {
 	}
 }
 
-// PUT /notifications — partial preference change + quiet hours.
 func handleNotifyUpdate(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -432,8 +424,6 @@ func handleNotifyUpdate(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /notifications/test — delivers a sample to every device, 503 when
-// no sender is configured.
 func handleNotifyTest(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		if d.NotifySender == nil {

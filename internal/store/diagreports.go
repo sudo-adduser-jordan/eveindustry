@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// DiagFilters mirrors the ESI diagnostics report filters.
 type DiagFilters struct {
 	Operation     *string
 	Dataset       *string
@@ -17,7 +16,6 @@ type DiagFilters struct {
 	CorporationID *int64
 }
 
-// DiagStore covers the read-only ESI diagnostics reports.
 type DiagStore interface {
 	DiagSummary(ctx context.Context, from, to time.Time, f DiagFilters) (*DiagSummary, error)
 	DiagTrends(ctx context.Context, from, to time.Time, f DiagFilters) (*DiagTrends, error)
@@ -27,8 +25,6 @@ type DiagStore interface {
 	DiagCheckpoint(ctx context.Context) (*DiagCheckpoint, error)
 }
 
-// DiagSummary mirrors the report service's summary payload (minus from/to,
-// rendered by the handler).
 type DiagSummary struct {
 	UpstreamRequests     int
 	Errors               int
@@ -50,13 +46,11 @@ type DiagSummary struct {
 	Releases             []DiagRelease
 }
 
-// DiagRelease is one release first-seen pair.
 type DiagRelease struct {
 	Release   string
 	FirstSeen time.Time
 }
 
-// DiagTrendBucket is one time bucket.
 type DiagTrendBucket struct {
 	At             time.Time
 	Requests       int
@@ -70,27 +64,23 @@ type DiagTrendBucket struct {
 	CacheHits      int
 }
 
-// DiagLegacyPoint is one legacy-budget point.
 type DiagLegacyPoint struct {
 	At                 time.Time
 	RemainingMin       *int
 	ProtectionEpisodes int
 }
 
-// DiagTokenPoint is one token-group point.
 type DiagTokenPoint struct {
 	At           time.Time
 	RemainingMin *int
 	Used         *int
 }
 
-// DiagTokenGroup is one limiter group's series.
 type DiagTokenGroup struct {
 	Group  string
 	Points []DiagTokenPoint
 }
 
-// DiagTrends mirrors the trends payload.
 type DiagTrends struct {
 	Granularity string
 	Buckets     []DiagTrendBucket
@@ -98,7 +88,6 @@ type DiagTrends struct {
 	TokenGroups []DiagTokenGroup
 }
 
-// DiagOperation is one top operation row.
 type DiagOperation struct {
 	Operation     string
 	Requests      int
@@ -106,7 +95,6 @@ type DiagOperation struct {
 	ErrorsPer1000 *float64
 }
 
-// DiagReason is one top reason row.
 type DiagReason struct {
 	Operation             string
 	HTTPStatus            *int
@@ -117,7 +105,6 @@ type DiagReason struct {
 	ErrorsPer1000Requests *float64
 }
 
-// DiagEndpoints mirrors the endpoints payload.
 type DiagEndpoints struct {
 	TotalRequests int
 	TotalErrors   int
@@ -125,7 +112,6 @@ type DiagEndpoints struct {
 	Reasons       []DiagReason
 }
 
-// DiagEvent is one failure-detail row.
 type DiagEvent struct {
 	ID                int64
 	OccurredAt        time.Time
@@ -150,7 +136,6 @@ type DiagEvent struct {
 	Release           *string
 }
 
-// DiagBatch is one repeated-fingerprint row.
 type DiagBatch struct {
 	Fingerprint string
 	Operation   string
@@ -195,7 +180,6 @@ func endpointWhere(f DiagFilters) (string, []any) {
 	return q, args
 }
 
-// DiagSummary ports the report service's summary query.
 func (s *SQL) DiagSummary(ctx context.Context, from, to time.Time, f DiagFilters) (*DiagSummary, error) {
 	out := &DiagSummary{}
 	fw, args := endpointWhere(f)
@@ -309,7 +293,6 @@ func (s *SQL) DiagSummary(ctx context.Context, from, to time.Time, f DiagFilters
 	return out, nil
 }
 
-// DiagTrends ports the trends query (hour or minute granularity).
 func (s *SQL) DiagTrends(ctx context.Context, from, to time.Time, f DiagFilters) (*DiagTrends, error) {
 	out := &DiagTrends{Buckets: []DiagTrendBucket{}, Legacy: []DiagLegacyPoint{}, TokenGroups: []DiagTokenGroup{}}
 	fw, args := endpointWhere(f)
@@ -432,7 +415,6 @@ func (s *SQL) DiagTrends(ctx context.Context, from, to time.Time, f DiagFilters)
 	return out, nil
 }
 
-// DiagEndpoints ports the endpoints + reasons queries.
 func (s *SQL) DiagEndpoints(ctx context.Context, from, to time.Time, f DiagFilters, limit int) (*DiagEndpoints, error) {
 	out := &DiagEndpoints{Operations: []DiagOperation{}, Reasons: []DiagReason{}}
 	fw, args := endpointWhere(f)
@@ -510,7 +492,6 @@ func (s *SQL) DiagEndpoints(ctx context.Context, from, to time.Time, f DiagFilte
 	return out, nil
 }
 
-// DiagEvents ports the failure-detail cursor page (newest first).
 func (s *SQL) DiagEvents(ctx context.Context, from, to time.Time, f DiagFilters, beforeID *int64, perPage int) ([]DiagEvent, bool, error) {
 	q := `SELECT id, occurred_at, kind, operation_key, http_status, reason, dataset, job_class,
 		correlation_id, character_id, corporation_id, resource_id, page, batch_size, duration_ms,
@@ -661,7 +642,6 @@ func (s *SQL) DiagEvents(ctx context.Context, from, to time.Time, f DiagFilters,
 	return out, more, nil
 }
 
-// DiagBatches ports the repeated-fingerprint query.
 func (s *SQL) DiagBatches(ctx context.Context, from, to time.Time, f DiagFilters, limit int) ([]DiagBatch, error) {
 	q := `SELECT batch_fingerprint, operation_key, dataset, reason, COUNT(*) AS occurrences,
 		COUNT(DISTINCT character_id) AS characters, MIN(batch_size) AS batch_size,
@@ -727,7 +707,6 @@ func (s *SQL) DiagBatches(ctx context.Context, from, to time.Time, f DiagFilters
 	return out, nil
 }
 
-// DiagCheckpoint loads the flusher checkpoint (nil when never flushed).
 func (s *SQL) DiagCheckpoint(ctx context.Context) (*DiagCheckpoint, error) {
 	var r struct {
 		LastFlushed sql.NullTime   `db:"last_flushed_at"`

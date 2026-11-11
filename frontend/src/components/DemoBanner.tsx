@@ -1,4 +1,4 @@
-/** Shown on the shared demo account: the data is generated and reset daily. */
+
 export function DemoBanner() {
   return (
     <div className="demo-banner" role="note">

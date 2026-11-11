@@ -1,4 +1,4 @@
-/** Counts per day, as plain SVG bars (no chart library). Days with no data are zero. */
+
 export function BarChart({ title, series, days = 30, now = new Date() }: {
   title: string
   series: Array<{ date: string; count: number }>

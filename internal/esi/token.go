@@ -11,18 +11,12 @@ import (
 	"time"
 )
 
-// TokenPair is one rotated credential.
 type TokenPair struct {
 	AccessToken  string
 	RefreshToken string
 	ExpiresIn    int
 }
 
-// Refresher ports EsiAuthClient: SSO token rotation with a per-character
-// lock (a waiting worker uses the winner's credential) and cooldowns.
-// Credential storage is the caller-provided CredentialStore (raw tokens;
-// encrypted-at-rest rows decrypt in the character client when APP_KEY is
-// configured).
 type Refresher struct {
 	store  CoordStore
 	creds  CredentialStore
@@ -32,8 +26,6 @@ type Refresher struct {
 	secret string
 }
 
-// NewRefresher builds a refresher against the SSO login host.
-// RevokeToken ports EsiAuthClient::revokeToken: best-effort SSO revocation.
 func (r *Refresher) RevokeToken(ctx context.Context, refreshToken string) {
 	form := url.Values{
 		"token":           {refreshToken},
@@ -78,8 +70,6 @@ func (r *Refresher) request(ctx context.Context, form url.Values) (map[string]an
 	return data, resp.StatusCode, nil
 }
 
-// RefreshToken ports refreshTokenOrFail(): transient on transport trouble,
-// credential on invalid_grant, else the token payload.
 func (r *Refresher) RefreshToken(ctx context.Context, refreshToken string) (TokenPair, error) {
 	form := url.Values{
 		"grant_type":    {"refresh_token"},
@@ -112,10 +102,6 @@ func (r *Refresher) RefreshToken(ctx context.Context, refreshToken string) (Toke
 	return TokenPair{AccessToken: access, RefreshToken: refresh, ExpiresIn: expires}, nil
 }
 
-// RefreshCharacterToken ports refreshCharacterTokenOrFail(): rotates when
-// the stored access token is stale (or differs, meaning another worker won
-// the race), honors SSO cooldowns, and deactivates on invalid_grant. force
-// rotates even a fresh token (the post-401 retry path).
 func (r *Refresher) RefreshCharacterToken(ctx context.Context, characterID int64, priorAccess string, force bool) error {
 	key := fmt.Sprintf("esi.refresh.%d", characterID)
 	return r.store.Lock(key, 45*time.Second, 5*time.Second, func() error {

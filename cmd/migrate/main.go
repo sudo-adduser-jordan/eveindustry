@@ -19,12 +19,6 @@ func dirOf(p string) string { return filepath.Dir(p) }
 
 var migrationFS = migrations.FS
 
-// Minimal migrate runner: `migrate up|down [n]|status`.
-//
-// Each migrations/<version>_<name>.up.sql/.down.sql pair is one version,
-// applied in filename order like Laravel. Applied versions live in
-// schema_migrations. Statements run one at a time and a failure stops the
-// run (same as `php artisan migrate`).
 func main() {
 	if err := run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, "migrate: "+err.Error())
@@ -189,8 +183,6 @@ func applyFile(db *sql.DB, name string) error {
 	return nil
 }
 
-// splitStatements splits on semicolons outside strings, quoted identifiers,
-// line comments and block comments.
 func splitStatements(src string) []string {
 	var out []string
 	var cur strings.Builder

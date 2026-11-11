@@ -23,7 +23,7 @@ const trade = (attrs: object) => ({
   ...attrs,
 })
 
-// The query key is what the page asks for with the default form values.
+
 const stationKey = [
   'market',
   'station-trading',

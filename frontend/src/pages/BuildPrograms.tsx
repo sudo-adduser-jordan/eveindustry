@@ -9,7 +9,7 @@ type Program = components['schemas']['BuildProgramSummaryResource']
 
 const icon = (typeId: number) => typeIconUrl(typeId)
 
-/** Colour class for a percentage: done, halfway, or just started. */
+
 export function progressTone(pct: number): 'done' | 'mid' | 'low' {
   return pct >= 100 ? 'done' : pct >= 50 ? 'mid' : 'low'
 }

@@ -1,11 +1,3 @@
-// Package http implements the /api/v1 JSON surface.
-//
-// Envelope contract (must match App\Http\Responses\ApiResponse in PHP):
-//
-//	Success: {"data": ..., "meta": {...}}
-//	Error:   {"message": ..., "code": ..., "errors"?: {...}}
-//
-// where code is the machine-readable string from codeForStatus.
 package http
 
 import (
@@ -14,8 +6,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// ErrorCodes mirrors ApiResponse::ERROR_CODES in
-// app/Http/Responses/ApiResponse.php.
 var ErrorCodes = map[int]string{
 	400: "bad_request",
 	401: "unauthenticated",
@@ -40,8 +30,6 @@ func codeForStatus(status int) string {
 	return "http_error"
 }
 
-// Success writes {"data": ..., "meta": {...}}. meta is {} when nil so the
-// frontend always sees an object, matching the PHP `(object) $meta` cast.
 func Success(c echo.Context, status int, data any, meta map[string]any) error {
 	if meta == nil {
 		meta = map[string]any{}
@@ -49,7 +37,6 @@ func Success(c echo.Context, status int, data any, meta map[string]any) error {
 	return c.JSON(status, map[string]any{"data": data, "meta": meta})
 }
 
-// Failure writes {"message": ..., "code": ...} plus optional "errors".
 func Failure(c echo.Context, status int, message string, errors map[string][]string) error {
 	body := map[string]any{"message": message, "code": codeForStatus(status)}
 	if errors != nil {
@@ -58,8 +45,6 @@ func Failure(c echo.Context, status int, message string, errors map[string][]str
 	return c.JSON(status, body)
 }
 
-// NotFound and MethodNotAllowed keep unknown /api/v1 paths inside the
-// envelope instead of Echo's default HTML/plain errors.
 func jsonNotFound(c echo.Context) error {
 	return Failure(c, http.StatusNotFound, "Not Found.", nil)
 }

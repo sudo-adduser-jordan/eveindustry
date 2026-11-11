@@ -16,17 +16,11 @@ func TestPercentileAverage(t *testing.T) {
 	}{
 		{"empty", nil, 5, 0},
 		{"zero volume", []Order{{Price: 10, VolumeRemain: 0}}, 5, 0},
-		// total 200, target 10: first order crosses -> 10 units @ 10.0
 		{"single crossing", []Order{{10, 100}, {11, 100}}, 5, 10},
-		// total 100, target 5: full first order (5 units @ 8) fits exactly
 		{"exact fit", []Order{{8, 5}, {20, 95}}, 5, 8},
-		// total 1000, target 50: 50 units @ 5.0
 		{"partial first", []Order{{5, 100}, {7, 900}}, 5, 5},
-		// total 100, target 50 (50th pct): 30@10 + 20 of 40@20 -> (300+400)/50 = 14
 		{"spanning two", []Order{{10, 30}, {20, 40}, {30, 30}}, 50, 14},
-		// rounding: (0.105*1)/1 = 0.105 -> 0.11? weighted/acc = 0.105 -> round 0.11
 		{"rounds half up", []Order{{0.105, 1}}, 100, 0.11},
-		// percentile 100 takes everything: (10*1+20*1)/2 = 15
 		{"full volume", []Order{{10, 1}, {20, 1}}, 100, 15},
 	}
 	for _, tc := range tests {
@@ -57,7 +51,7 @@ func TestResolveSellPrices(t *testing.T) {
 		{TypeID: 36, RegionID: 10000043, SellMin: fp(3.25)},
 	}
 	got := ResolveSellPrices(
-		[]int{34, 35, 36, 37, 34}, // duplicate 34 collapses
+		[]int{34, 35, 36, 37, 34},
 		map[int]float64{34: 10.5},
 		rows,
 	)
@@ -88,19 +82,15 @@ func TestBuildFreshness(t *testing.T) {
 	if m.Source != FreshnessSourceOrders || m.Stale || m.PricesAsOf == nil {
 		t.Errorf("fresh orders: %+v", m)
 	}
-	// stale orders make the whole block stale (isStale ORs the windows)
 	m = BuildFreshness(now, &staleTs, &costs, &global)
 	if !m.Stale || m.Source != FreshnessSourceOrders {
 		t.Errorf("old orders should be stale: %+v", m)
 	}
-	// missing costs alone also stale
 	m = BuildFreshness(now, &fresh, nil, &global)
 	if !m.Stale {
 		t.Errorf("missing costs should be stale: %+v", m)
 	}
 	m = BuildFreshness(now, nil, &costs, &fresh)
-	// Missing orders timestamps count as stale (PHP olderThan(null) is true),
-	// even when global prices are fresh.
 	if m.Source != FreshnessSourcePrices || !m.Stale {
 		t.Errorf("global fallback: %+v", m)
 	}

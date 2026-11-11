@@ -99,7 +99,6 @@ func TestDemoShipsAndAbyssal(t *testing.T) {
 	if len(seenAbyssal) != len(DemoAbyssal) {
 		t.Fatalf("abyssal = %v, want all %v", seenAbyssal, DemoAbyssal)
 	}
-	// Dynamic payload for a mutated type carries source + mutated attrs.
 	st, body, _ := r.Respond(ctx, "get", "/dogma/dynamic/items/99101/2000000000001/", &ch, nil, nil)
 	if st != 200 {
 		t.Fatalf("dynamic = %d %v", st, body)
@@ -204,7 +203,6 @@ func TestRouteGroups(t *testing.T) {
 	if routeGroups["get /markets/{region_id}/orders/"] == "" && routeGroups["get /markets/{region_id}/orders"] == "" {
 		t.Fatal("orders group missing")
 	}
-	// placeholder-insensitive matching is in resolveGroup; table sanity:
 	n := 0
 	for k := range routeGroups {
 		if k == "" {
@@ -220,7 +218,6 @@ func TestRouteGroups(t *testing.T) {
 func TestMarketClientPages(t *testing.T) {
 	c := NewClient(NewMemStore(), NewLimiter(NewMemStore(), "t"), NewCircuit(NewMemStore()), "test")
 	if c.Cache == nil {
-		// Cache is opt-in; client works without it.
 	}
 	mc := NewMarketClient(c, NewMemo())
 	_ = mc

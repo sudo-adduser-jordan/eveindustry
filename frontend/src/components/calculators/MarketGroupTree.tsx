@@ -17,7 +17,7 @@ function useTypeHits(q: string) {
   return { data: r.data?.data, isFetching: r.isFetching, isError: r.isError }
 }
 
-/** Ids from the root down to `target`, or null when it is not in the tree. */
+
 export function pathTo(nodes: GroupNode[], target: number): number[] | null {
   for (const n of nodes) {
     if (n.market_group_id === target) return [n.market_group_id]
@@ -27,10 +27,7 @@ export function pathTo(nodes: GroupNode[], target: number): number[] | null {
   return null
 }
 
-/**
- * The market group tree. Clicking a group expands it and, when items are
- * listed directly in it, selects it. Searching for an item opens its group.
- */
+
 export function MarketGroupTree({
   selected,
   onSelect,

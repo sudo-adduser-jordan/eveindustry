@@ -64,7 +64,6 @@ func TestProjectsIndex(t *testing.T) {
 	if len(items) != 3 {
 		t.Fatalf("items = %v", items)
 	}
-	// sorted by last_modified desc: p3 first
 	if items[0].(map[string]any)["id"] != "p3" {
 		t.Fatalf("order = %v", items[0])
 	}
@@ -82,7 +81,6 @@ func TestProjectsIndex(t *testing.T) {
 	if sum["total_reward_earned"] != 2600.0 || sum["overall_completion_pct"] != 50.0 {
 		t.Fatalf("totals = %v", sum)
 	}
-	// no scope -> 403
 	d2 := projectsTestDeps()
 	d2.Sessions.(*stubAuth).chars[0].Scopes = nil
 	d2.Users.(*stubAuth).chars[0].Scopes = nil
@@ -101,7 +99,6 @@ func TestProjectContributors(t *testing.T) {
 		t.Fatalf("leaders = %d %v", code, body)
 	}
 	items := body["data"].([]any)
-	// only p2 is Closed/Completed + rewarded: Builder 6*200=1200, Helper 4*200=800
 	if len(items) != 2 {
 		t.Fatalf("items = %v", items)
 	}
@@ -116,12 +113,10 @@ func TestProjectContributors(t *testing.T) {
 	if sum["total_attributed_isk"] != 2000.0 || sum["total_rewarded_projects"] != 1.0 {
 		t.Fatalf("summary = %v", sum)
 	}
-	// project name filter excluding all
 	code, body = get(t, d, "/api/v1/corporation/projects/contributors?project_name=zzz")
 	if code != http.StatusOK || len(body["data"].([]any)) != 0 {
 		t.Fatalf("filter = %d %v", code, body)
 	}
-	// date filter excluding all
 	code, body = get(t, d, "/api/v1/corporation/projects/contributors?date_from=2020-01-01&date_to=2020-12-31")
 	if code != http.StatusOK || len(body["data"].([]any)) != 0 {
 		t.Fatalf("dates = %d %v", code, body)

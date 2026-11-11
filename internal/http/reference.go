@@ -11,10 +11,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerReference mounts the stateless GET /api/v1 reference group,
-// mirroring routes/api_v1/reference.php. Only DB-backed reads are ported:
-// /blueprints, /reactions/*, /invention/*, /manufacturing/* and /corporations
-// stay 404 until their services move over.
 func registerReference(v1 *echo.Group, d Deps) {
 	if d.Reference == nil {
 		return
@@ -32,8 +28,6 @@ func registerReference(v1 *echo.Group, d Deps) {
 	v1.GET("/stations/:stationId", handleStationShow(d))
 }
 
-// requireDB answers 503 when no database is configured, so data routes
-// degrade exactly like the readiness check instead of 500ing on nil.
 func requireDB(d Deps) (store.ReferenceStore, bool) {
 	return d.Reference, d.Reference != nil
 }
@@ -73,8 +67,6 @@ func nullStrPtr(ns sql.NullString) *string {
 	return &ns.String
 }
 
-// GET /types?q=&exclude_meta_groups[] — mirrors TypeController@index via
-// MarketGroupService::searchTypes (min 2 chars, max 50, by name).
 func handleTypeSearch(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		rs, ok := requireDB(d)
@@ -104,7 +96,6 @@ func handleTypeSearch(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /types/:typeId — mirrors TypeController@show (404 unknown).
 func handleTypeShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		rs, ok := requireDB(d)
@@ -136,7 +127,6 @@ func handleTypeShow(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /market-groups — mirrors MarketGroupController@index.
 func handleRootGroups(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		rs, ok := requireDB(d)
@@ -166,8 +156,6 @@ func handleRootGroups(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /market-groups/tree — mirrors MarketGroupController@tree: groups
-// leading to manufacturable items, nested, without items.
 func handleGroupTree(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		rs, ok := requireDB(d)
@@ -210,14 +198,11 @@ func handleGroupTree(d Deps) echo.HandlerFunc {
 			}
 			return out
 		}
-		// Root groups have NULL parent; byParent[0] collects them since no
-		// real group id is 0.
 		tree := build(0)
 		return Success(c, http.StatusOK, tree, nil)
 	}
 }
 
-// GET /market-groups/:id — mirrors MarketGroupController@show (404 unknown).
 func handleGroupContents(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		rs, ok := requireDB(d)
@@ -300,7 +285,6 @@ func handleGroupContents(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /systems?q= — mirrors SolarSystemController search (limit 20).
 func handleSystemSearch(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		rs, ok := requireDB(d)
@@ -320,7 +304,6 @@ func handleSystemSearch(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /systems/:systemId — mirrors SolarSystemController@show (404 unknown).
 func handleSystemShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		rs, ok := requireDB(d)
@@ -342,15 +325,12 @@ func handleSystemShow(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /systems/:systemId/cost-indices — the PHP cost-indices endpoint reads
-// live ESI industry data, which is not ported yet: 501, not a silent 404.
 func handleCostIndices(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		return Failure(c, http.StatusNotImplemented, "Cost indices are not ported to the Go API yet.", nil)
 	}
 }
 
-// GET /systems/:systemId/stations — mirrors StationController@inSystem.
 func handleSystemStations(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		rs, ok := requireDB(d)
@@ -375,7 +355,6 @@ func handleSystemStations(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /stations?q=&solar_system_id= — mirrors StationController@index.
 func handleStationSearch(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		rs, ok := requireDB(d)
@@ -404,7 +383,6 @@ func handleStationSearch(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /stations/:stationId — mirrors StationController@show (404 unknown).
 func handleStationShow(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		rs, ok := requireDB(d)
@@ -465,7 +443,6 @@ func stationList(stations []store.Station) []any {
 	return out
 }
 
-// parseIntList reads ?key[]= / ?key= repeated ints, skipping invalid values.
 func parseIntList(c echo.Context, keys ...string) []int {
 	var out []int
 	seen := map[int]bool{}

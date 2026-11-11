@@ -2,7 +2,7 @@ import createClient, { type Middleware } from 'openapi-fetch'
 import type { paths } from './schema'
 import { leaveSession } from './persistence'
 
-/** Laravel's `{message, errors?, code}` error body. */
+
 export interface ApiErrorBody {
   message?: string
   errors?: Record<string, string[]>
@@ -32,13 +32,13 @@ function readCookie(name: string): string | null {
 
 let csrfReady: Promise<void> | null = null
 
-/** Sanctum SPA flow: GET /sanctum/csrf-cookie once, then echo XSRF-TOKEN. */
+
 function ensureCsrfCookie(): Promise<void> {
   csrfReady ??= fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' }).then(() => undefined)
   return csrfReady
 }
 
-/** Where a signed-out visitor goes: the in-app login page. */
+
 export const LOGIN_URL = '/app/login'
 
 export const authMiddleware: Middleware = {
@@ -53,9 +53,9 @@ export const authMiddleware: Middleware = {
     return request
   },
   async onResponse({ response }) {
-    // 401 never renders as a page error: the session is gone, sign in again.
-    // Except on the login page itself, which renders from the 401 state —
-    // without this guard it would reload itself forever.
+    
+    
+    
     if (response.status === 401 && window.location.pathname !== LOGIN_URL) {
       await leaveSession(LOGIN_URL)
     }
@@ -66,7 +66,7 @@ export const authMiddleware: Middleware = {
 export const api = createClient<paths>({ baseUrl: '/api/v1', credentials: 'same-origin' })
 api.use(authMiddleware)
 
-/** Unwraps an openapi-fetch result: returns `data`, throws ApiError otherwise. */
+
 export function unwrap<T>(result: { data?: T; error?: unknown; response: Response }): T {
   if (result.data === undefined) {
     throw new ApiError(result.response.status, result.error as ApiErrorBody | undefined)

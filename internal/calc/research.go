@@ -5,15 +5,12 @@ import (
 	"strings"
 )
 
-// OwnedBlueprint is one owned copy: best ME/TE wins across copies.
 type OwnedBlueprint struct {
 	MaterialEfficiency int
 	TimeEfficiency     int
 	OwnerNames         []string
 }
 
-// MergeOwnedBlueprints ports getOwnedBlueprints(): best ME wins (ties broken
-// by TE), owner names unioned.
 func MergeOwnedBlueprints(entries []OwnedEntry) map[int]OwnedBlueprint {
 	out := map[int]OwnedBlueprint{}
 	for _, e := range entries {
@@ -40,7 +37,6 @@ func MergeOwnedBlueprints(entries []OwnedEntry) map[int]OwnedBlueprint {
 	return out
 }
 
-// OwnedEntry is one ESI blueprint line.
 type OwnedEntry struct {
 	TypeID int
 	ME     int
@@ -48,8 +44,6 @@ type OwnedEntry struct {
 	Owner  string
 }
 
-// SortOwnedFirst ports the 'owned' post-sort: owned first ascending, last
-// descending; stable within each half (input already by name).
 func SortOwnedFirst[T any](items []T, owned func(T) bool, desc bool) {
 	sort.SliceStable(items, func(i, j int) bool {
 		oi, oj := owned(items[i]), owned(items[j])
@@ -63,10 +57,6 @@ func SortOwnedFirst[T any](items []T, owned func(T) bool, desc bool) {
 	})
 }
 
-// SortByGroupName sorts by group name with empty names last, like MySQL
-// ORDER BY on a nullable left-joined column in ascending order... in MySQL
-// NULLs sort first; case-insensitive PHP display sort uses strcmp (byte
-// order). Mirrors PHP: plain ascending by name string (empty first).
 func SortByGroupName[T any](items []T, name func(T) string, desc bool) {
 	sort.SliceStable(items, func(i, j int) bool {
 		a, b := name(items[i]), name(items[j])

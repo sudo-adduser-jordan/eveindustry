@@ -12,7 +12,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerAssetExtras mounts materials, ships and the stock-manager type search.
 func registerAssetExtras(v1 *echo.Group, d Deps) {
 	if d.AssetBrowser.Characters == nil || d.Users == nil || d.Industry == nil || d.Market == nil || d.Reference == nil {
 		return
@@ -22,9 +21,6 @@ func registerAssetExtras(v1 *echo.Group, d Deps) {
 	v1.GET("/stock/search", handleStockSearch(d), requireStockManager)
 }
 
-// GET /assets/materials — mineral/PI/material stacks summed per type and
-// grouped, priced at the Forge market. Corporate assets included only when
-// the main may fetch them (else meta.corporation_assets_warning explains).
 func handleAssetMaterials(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -143,7 +139,6 @@ type matAgg struct {
 	qty      int64
 }
 
-// GET /assets/ships — hulls grouped by ship group, sorted by name.
 func handleAssetShips(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -235,7 +230,6 @@ type shipGroup struct {
 	ships []enrichedAsset
 }
 
-// GET /stock/search — published types matching ?q (max 20), stock managers only.
 func handleStockSearch(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		q := firstParam(c.QueryParams()["q"])

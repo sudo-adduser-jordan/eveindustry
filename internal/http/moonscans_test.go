@@ -120,7 +120,6 @@ func TestMoonScanStore(t *testing.T) {
 	if _, ok := body["meta"].(map[string]any)["freshness"]; !ok {
 		t.Fatalf("freshness missing: %v", body["meta"])
 	}
-	// errors-only scan still 200 with errors
 	code, body = post(t, d, "/api/v1/moon-scans", `{"scan_data":""}`)
 	if code != http.StatusUnprocessableEntity {
 		t.Fatalf("empty = %d %v", code, body)
@@ -175,7 +174,6 @@ func TestMoonScanSystems(t *testing.T) {
 	if _, ok := meta["freshness"]; !ok {
 		t.Fatalf("freshness missing: %v", meta)
 	}
-	// reprice to refined on the fly
 	code, body = get(t, d, "/api/v1/moon-scans/systems/Aldali?pricing_mode=refined")
 	if code != http.StatusOK {
 		t.Fatalf("reprice = %d %v", code, body)
@@ -189,7 +187,6 @@ func TestMoonScanSystems(t *testing.T) {
 	if code, _ := get(t, d, "/api/v1/moon-scans/systems/Aldali?pricing_mode=nope"); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad mode = %d", code)
 	}
-	// no corporation -> 422 on system, empty on systems
 	d2 := moonScanTestDeps()
 	d2.Sessions.(*stubAuth).chars = []auth.Character{{CharacterID: 11, Name: "X"}}
 	d2.Users.(*stubAuth).chars = []auth.Character{{CharacterID: 11, Name: "X"}}

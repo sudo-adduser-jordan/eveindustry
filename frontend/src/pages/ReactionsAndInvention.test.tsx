@@ -125,7 +125,7 @@ describe('ReactionPlanner saved plans', () => {
     expect(screen.getByLabelText('Slots for Advanced Composite Formula')).toHaveValue(2)
     expect(screen.getByLabelText('Plan name')).toHaveValue('Two week cycle')
     expect(screen.getByRole('status')).toHaveTextContent('Plan "Two week cycle" loaded')
-    // A loaded plan can be updated as well as saved anew.
+    
     expect(screen.getByRole('button', { name: 'Update' })).toBeInTheDocument()
   })
 })

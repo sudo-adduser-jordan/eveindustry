@@ -29,10 +29,8 @@ func TestDedupeMaterials(t *testing.T) {
 	}
 }
 
-// stubStore is an in-memory IndustryStore: one T2 chain (Rifter)
-// T2 item 587 -> T2 bp 786, T1 item 588 via T1 bp 787.
 type stubStore struct {
-	activities map[string]*BlueprintActivityRow // "bp:activity"
+	activities map[string]*BlueprintActivityRow
 }
 
 func (s *stubStore) SearchBlueprintTypes(ctx context.Context, like string, limit int) ([]BlueprintTypeHit, error) {

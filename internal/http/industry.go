@@ -13,8 +13,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/market"
 )
 
-// IndustryJobReader is the ESI surface the jobs overview needs.
-// *esi.CharacterClient satisfies it; tests stub it.
 type IndustryJobReader interface {
 	GetIndustryJobs(ctx context.Context, characterID int64, includeCompleted bool) ([]map[string]any, error)
 	GetCorporationIndustryJobs(ctx context.Context, characterID, corporationID int64, includeCompleted bool) ([]map[string]any, error)
@@ -22,8 +20,6 @@ type IndustryJobReader interface {
 	GetAssets(ctx context.Context, characterID int64) ([]map[string]any, error)
 }
 
-// UniverseReader is the ESI/store surface the jobs overview needs.
-// *esi.UniverseClient satisfies it; tests stub it.
 type UniverseReader interface {
 	GetTypeInfo(ctx context.Context, typeID int) (map[string]any, error)
 	GetBestTypeImageUrl(ctx context.Context, typeID int, isBlueprint bool) string
@@ -32,22 +28,16 @@ type UniverseReader interface {
 	GetStructure(ctx context.Context, structureID uint64, characterID int64) (map[string]any, error)
 }
 
-// DogmaReader is the dogma subset UniverseReader gains for abyssal analysis.
 type DogmaReader interface {
 	GetDogmaAttribute(ctx context.Context, attributeID int) (map[string]any, error)
 	DogmaTypeAttributes(ctx context.Context, typeID int) (map[int]float64, error)
 }
 
-// IndustryDeps carries the ESI clients the industry group needs.
 type IndustryDeps struct {
 	Characters IndustryJobReader
 	Universe   UniverseReader
 }
 
-// registerIndustry mounts GET /dashboard (warm-cache subset omitted: see
-// below) and GET /industry/jobs. Dashboard planetary alerts and slot
-// caches come with the refresh jobs in the jobs phase; /dashboard itself
-// lands with the planetary slice.
 func registerIndustry(v1 *echo.Group, d Deps) {
 	if d.IndustryDeps.Characters == nil || d.IndustryDeps.Universe == nil || d.Users == nil || d.Market == nil || d.Industry == nil {
 		return
@@ -55,8 +45,6 @@ func registerIndustry(v1 *echo.Group, d Deps) {
 	v1.GET("/industry/jobs", handleJobsOverview(d))
 }
 
-// industryScopes mirrors the RefreshEligibility 'industry' dataset: active
-// characters holding the industry jobs or skills scope.
 func industryEligible(ch auth.Character) bool {
 	if !ch.IsEsiActive {
 		return false
@@ -69,10 +57,6 @@ func industryEligible(ch auth.Character) bool {
 	return false
 }
 
-// GET /industry/jobs — mirrors JobsOverviewController@show: active jobs
-// across the user's industry-eligible characters, grouped by activity with
-// priced manufacturing/reaction output. Computed live; the 20-minute
-// overview cache warms with the refresh jobs in the jobs phase.
 func handleJobsOverview(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -268,8 +252,6 @@ func numFloat(v any) (float64, bool) {
 	return 0, false
 }
 
-// enrichJob resolves names, images, portions, locations and progress for one
-// job, mirroring buildJobsOverview()'s per-job block.
 func enrichJob(ctx context.Context, d Deps, ch auth.Character, raw industry.RawJob, now time.Time) industry.JobRow {
 	var productID *int64 = raw.ProductTypeID
 	if productID == nil {
@@ -357,10 +339,6 @@ func resolveJobLocation(ctx context.Context, d Deps, ch auth.Character, raw indu
 	return "Unknown Location"
 }
 
-// corpJobsFor ports getCorporationJobsForCharacter(): corp jobs started by
-// this character, via the character itself when it may collect (scope plus
-// Director/CEO/Factory_Manager) or a same-corp sibling with the scope and
-// Factory_Manager role.
 func corpJobsFor(ctx context.Context, d Deps, uid int64, ch auth.Character) []map[string]any {
 	corpID := ch.CorporationID
 	if corpID == nil || *corpID == 0 || d.Corp == nil {

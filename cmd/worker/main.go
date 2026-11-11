@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,16 +12,14 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/esi"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/jobs"
+	"github.com/sudo-adduser-jordan/eveindustry/internal/logx"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// Command worker consumes queues and runs jobs. APP_ROLE selects lanes:
-// "worker" runs default, "worker-market" runs market, "worker-updates"
-// runs updates, "worker-all" runs everything (dev default).
 func main() {
 	cfg := config.Load()
-	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	log := logx.New("worker")
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -73,8 +70,6 @@ func main() {
 		hd.ESIChars = esi.NewCharacterClient(esiClient, nil, hd.DB, nil, nil)
 		hd.ESIUniverse = esi.NewUniverseClient(esiClient, hd.DB, nil, hd.DB)
 		hd.ESIMarket = esi.NewMarketClient(esiClient, nil)
-		// Demo stack mirrors cmd/api: refresh jobs rebuild demo users' caches
-		// through the responder, never live ESI.
 		jobs.WireDemo(&hd)
 		hd.Sender = &notify.WebPushSender{
 			Subject: os.Getenv("VAPID_SUBJECT"), PublicKey: os.Getenv("VAPID_PUBLIC_KEY"),
@@ -108,11 +103,11 @@ func main() {
 		queue, env, ok, err := q.Pop(ctx, queues, 5*time.Second)
 		if err != nil {
 			log.Error("queue pop failed", "err", err)
-			time.Sleep(5 * time.Second)
+			<-time.After(5 * time.Second)
 			continue
 		}
 		if !ok {
-			time.Sleep(time.Second)
+			<-time.After(time.Second)
 			continue
 		}
 		if err := r.RunOne(ctx, env); err != nil {

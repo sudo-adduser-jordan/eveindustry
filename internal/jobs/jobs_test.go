@@ -82,7 +82,7 @@ func TestSchedulerDue(t *testing.T) {
 		t.Fatal("daily should fire at 04:00")
 	}
 	weekly := ScheduleEntry{Name: "z", Every: 7 * 24 * time.Hour, At: "03:00", CronDays: "Sun"}
-	sunday := time.Date(2026, 11, 8, 3, 0, 0, 0, time.UTC) // a Sunday
+	sunday := time.Date(2026, 11, 8, 3, 0, 0, 0, time.UTC)
 	if sunday.Weekday() != time.Sunday {
 		t.Fatalf("test date is not Sunday: %v", sunday.Weekday())
 	}

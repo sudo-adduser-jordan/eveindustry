@@ -7,21 +7,15 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// SQLStream ports the diagnostics buffer onto the go_diag_stream table so
-// the flag-gated ESI capture works without Redis. Row ids are the stream
-// ids (plain integers compare correctly via CompareStreamIDs); drops are
-// one row per event in go_diag_drops. A nil DB disables buffering.
 type SQLStream struct {
 	DB *sqlx.DB
 }
 
-// StreamEntry is one buffered event: id => payload.
 type StreamEntry struct {
 	ID   string
 	JSON any
 }
 
-// Add appends one JSON event.
 func (s *SQLStream) Add(ctx context.Context, payload string) error {
 	if s == nil || s.DB == nil {
 		return nil
@@ -30,7 +24,6 @@ func (s *SQLStream) Add(ctx context.Context, payload string) error {
 	return err
 }
 
-// Read returns up to count entries after afterID (exclusive), id => payload.
 func (s *SQLStream) Read(ctx context.Context, after string, count int) ([]StreamEntry, error) {
 	if s == nil || s.DB == nil {
 		return nil, nil
@@ -59,7 +52,6 @@ func (s *SQLStream) Read(ctx context.Context, after string, count int) ([]Stream
 	return out, nil
 }
 
-// Len returns the buffered entry count.
 func (s *SQLStream) Len(ctx context.Context) int {
 	if s == nil || s.DB == nil {
 		return 0
@@ -71,7 +63,6 @@ func (s *SQLStream) Len(ctx context.Context) int {
 	return n
 }
 
-// OldestID returns the lowest entry id, or "".
 func (s *SQLStream) OldestID(ctx context.Context) string {
 	if s == nil || s.DB == nil {
 		return ""
@@ -83,7 +74,6 @@ func (s *SQLStream) OldestID(ctx context.Context) string {
 	return strconv.FormatInt(id, 10)
 }
 
-// TotalAdded returns the highest id ever issued, or -1 when unknown.
 func (s *SQLStream) TotalAdded(ctx context.Context) int64 {
 	if s == nil || s.DB == nil {
 		return -1
@@ -95,11 +85,8 @@ func (s *SQLStream) TotalAdded(ctx context.Context) int64 {
 	return id
 }
 
-// Epoch identifies the buffer generation. SQLite never resets the table,
-// so the epoch is stable and the flusher's gap logic stays dormant.
 func (s *SQLStream) Epoch(_ context.Context) string { return "sqlite" }
 
-// TrimThrough drops every entry at or below id.
 func (s *SQLStream) TrimThrough(ctx context.Context, id string) error {
 	if s == nil || s.DB == nil {
 		return nil
@@ -112,7 +99,6 @@ func (s *SQLStream) TrimThrough(ctx context.Context, id string) error {
 	return err
 }
 
-// RecordDrop counts one lost event (oversized payload or failed emit).
 func (s *SQLStream) RecordDrop(ctx context.Context) {
 	if s == nil || s.DB == nil {
 		return
@@ -120,7 +106,6 @@ func (s *SQLStream) RecordDrop(ctx context.Context) {
 	_, _ = s.DB.ExecContext(ctx, `INSERT INTO go_diag_drops DEFAULT VALUES`)
 }
 
-// PendingDrops returns the unacknowledged drop count.
 func (s *SQLStream) PendingDrops(ctx context.Context) int {
 	if s == nil || s.DB == nil {
 		return 0
@@ -132,7 +117,6 @@ func (s *SQLStream) PendingDrops(ctx context.Context) int {
 	return n
 }
 
-// AcknowledgeDrops clears up to count drop rows.
 func (s *SQLStream) AcknowledgeDrops(ctx context.Context, count int) {
 	if s == nil || s.DB == nil || count <= 0 {
 		return
@@ -141,8 +125,6 @@ func (s *SQLStream) AcknowledgeDrops(ctx context.Context, count int) {
 		(SELECT id FROM go_diag_drops ORDER BY id LIMIT ?)`, count)
 }
 
-// CompareStreamIDs ports StreamId::compare for "ms-seq" ids (plain integer
-// row ids compare as ms with seq 0).
 func CompareStreamIDs(a, b string) int {
 	am, as := splitStreamID(a)
 	bm, bs := splitStreamID(b)
@@ -161,7 +143,6 @@ func CompareStreamIDs(a, b string) int {
 	return 0
 }
 
-// StreamIDMillis ports StreamId::milliseconds.
 func StreamIDMillis(id string) int64 {
 	ms, _ := splitStreamID(id)
 	return ms
@@ -197,7 +178,6 @@ func splitStreamID(id string) (int64, int64) {
 	return ms, seq
 }
 
-// nextStreamID bumps the sequence so MINID trims through id.
 func nextStreamID(id string) string {
 	ms, seq := splitStreamID(id)
 	return strconv.FormatInt(ms, 10) + "-" + strconv.FormatInt(seq+1, 10)

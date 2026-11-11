@@ -13,9 +13,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerCorpPrograms mounts corporate build programs. Every route resolves
-// the user's managed corporation first and 404s when there is none, like the
-// old routes did.
 func registerCorpPrograms(v1 *echo.Group, d Deps) {
 	if d.CorpPrograms == nil || d.Corp == nil || d.Users == nil || d.Industry == nil {
 		return
@@ -28,9 +25,6 @@ func registerCorpPrograms(v1 *echo.Group, d Deps) {
 	v1.DELETE("/corporation/build-programs/:id", handleCorpProgramDestroy(d))
 }
 
-// managedCorpID mirrors CorporationBuildProgramService::getConfigForUser +
-// canUserManage: the active corp config whose corp the user directs or
-// factory-manages. Nil when the user manages nothing (callers 404).
 func managedCorpID(ctx context.Context, d Deps, uid int64) (*int64, error) {
 	chars, err := d.Users.CharactersForUser(ctx, uid)
 	if err != nil {
@@ -104,7 +98,6 @@ func corpProgramDetailShape(p store.CorpProgram) (map[string]any, map[string]any
 	return data, map[string]any{}
 }
 
-// POST /corporation/build-programs — 201.
 func handleCorpProgramStore(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -162,7 +155,6 @@ func handleCorpProgramStore(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /corporation/build-programs/from-reaction-plan — 201 or 422.
 func handleCorpProgramFromReactionPlan(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -300,7 +292,6 @@ func intSliceAny(ids []int) []any {
 	return out
 }
 
-// POST /corporation/build-programs/merge — 201 or 422.
 func handleCorpProgramMerge(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		verrs := validationErrors{}
@@ -376,7 +367,6 @@ func handleCorpProgramMerge(d Deps) echo.HandlerFunc {
 	}
 }
 
-// PUT /corporation/build-programs/:id — rename.
 func handleCorpProgramUpdate(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := planID(c)
@@ -416,7 +406,6 @@ func handleCorpProgramUpdate(d Deps) echo.HandlerFunc {
 	}
 }
 
-// PATCH /corporation/build-programs/:id/location-filter — input+output lists.
 func handleCorpProgramLocationFilter(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := planID(c)
@@ -475,7 +464,6 @@ func handleCorpProgramLocationFilter(d Deps) echo.HandlerFunc {
 	}
 }
 
-// DELETE /corporation/build-programs/:id — 204.
 func handleCorpProgramDestroy(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, ok := planID(c)

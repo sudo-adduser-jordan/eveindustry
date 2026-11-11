@@ -6,7 +6,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
-// Characters is the ESI surface asset fetching needs.
 type Characters interface {
 	GetAssets(ctx context.Context, characterID int64) ([]map[string]any, error)
 	GetCorporationAssets(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error)
@@ -14,7 +13,6 @@ type Characters interface {
 	GetCorporationAssetNames(ctx context.Context, characterID, corporationID int64, itemIDs []int64) (map[int64]string, error)
 }
 
-// Universe resolves type, station, structure and system names.
 type Universe interface {
 	GetTypeInfo(ctx context.Context, typeID int) (map[string]any, error)
 	GetStation(ctx context.Context, stationID uint64) (map[string]any, error)
@@ -22,18 +20,15 @@ type Universe interface {
 	GetStructure(ctx context.Context, structureID uint64, characterID int64) (map[string]any, error)
 }
 
-// Reference is the SDE surface for stations and systems.
 type Reference interface {
 	FindStation(ctx context.Context, stationID uint64) (name string, sysID *int, ok bool)
 	FindSystem(ctx context.Context, systemID int) (name string, ok bool)
 }
 
-// Industry resolves bulk type names.
 type Industry interface {
 	TypeNames(ctx context.Context, ids []int) (map[int]string, error)
 }
 
-// Deps carries the asset fetch collaborators.
 type Deps struct {
 	Characters Characters
 	Universe   Universe
@@ -41,7 +36,6 @@ type Deps struct {
 	Industry   Industry
 }
 
-// Asset is one flat ESI asset with resolved names.
 type Asset struct {
 	ItemID     int64
 	TypeID     int
@@ -66,8 +60,6 @@ var corpHangarFlags = map[string]string{
 	"CorpSAG7": "Corp Hangar 7", "CorpDeliveries": "Corp Deliveries",
 }
 
-// FetchUserAssets ports AssetService::fetchAndCacheAssets without the cache:
-// live ESI per character plus corporate via the main (director/CEO + scope).
 func FetchUserAssets(ctx context.Context, d Deps, chars []auth.Character, corpOK bool) []Asset {
 	var out []Asset
 	var scoped []auth.Character
@@ -218,7 +210,6 @@ func ResolveTypeName(ctx context.Context, d Deps, typeID int) string {
 	return "Type " + itoa(typeID)
 }
 
-// locationName resolves stations, structures (scoped chars) and systems.
 func locationName(ctx context.Context, d Deps, a map[string]any, scoped []auth.Character) string {
 	locID, _ := asInt64(a["location_id"])
 	if locID <= 0 {
@@ -263,8 +254,6 @@ func locationName(ctx context.Context, d Deps, a map[string]any, scoped []auth.C
 	return "Location #" + itoa(int(locID))
 }
 
-// CorpDenial ports corporationAssetsDenial's static checks (no re-verify
-// roundtrip: the Go port trusts the stored Director/CEO flag + scope).
 func CorpDenial(chars []auth.Character) *string {
 	msg := func(s string) *string { return &s }
 	var main *auth.Character

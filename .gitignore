@@ -20,5 +20,5 @@ eveapi
 /api
 /migrate
 /.run/
-# Local SQLite database (DB_PATH default).
 /storage/
+/logs/

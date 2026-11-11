@@ -6,14 +6,12 @@ import (
 	"strings"
 )
 
-// Moon scan constants mirroring MoonScanService.
 const (
 	TotalMoonM3       = 10_000_000
 	DefaultOreVolume  = 10.0
 	RefinedEfficiency = 0.85
 )
 
-// OreTiers mirrors MoonScanService::ORE_TIERS (moon ore type_id => tier 1-5).
 var OreTiers = map[int]int{
 	45490: 1, 45491: 1, 45492: 1, 45493: 1,
 	45494: 2, 45495: 2, 45496: 2, 45497: 2,
@@ -22,23 +20,17 @@ var OreTiers = map[int]int{
 	45506: 5, 45507: 5, 45508: 5, 45509: 5,
 }
 
-// MoonOre is one parsed ore row.
 type MoonOre struct {
 	Name     string
 	TypeID   int
 	Quantity float64
 }
 
-// ParsedMoon is one moon header with its ore rows.
 type ParsedMoon struct {
 	Name string
 	Ores []MoonOre
 }
 
-// ParseMoonScan ports the first pass of MoonScanService::analyse: moon
-// headers (first column set, rest empty) with ore rows (first column empty,
-// ore name second, fraction third, type id fourth) under them. TSV, header
-// row skipped, errors collected.
 func ParseMoonScan(raw string) ([]ParsedMoon, []string) {
 	var moons []ParsedMoon
 	var errs []string
@@ -107,7 +99,6 @@ func parseMoonInt(s string) int {
 }
 
 func scanNum(s string, out *float64) (int, error) {
-	// Accept plain decimals like "0.25" or "25".
 	neg := false
 	i := 0
 	if len(s) > 0 && (s[0] == '-' || s[0] == '+') {
@@ -146,7 +137,6 @@ type moonNumErr struct{}
 
 func (moonNumErr) Error() string { return "not a number" }
 
-// OreType carries the type-table data moon valuation needs.
 type OreType struct {
 	TypeID  int
 	Name    string
@@ -154,7 +144,6 @@ type OreType struct {
 	Portion int
 }
 
-// ValuedOre is one enriched ore row.
 type ValuedOre struct {
 	Name              string
 	TypeID            int
@@ -165,7 +154,6 @@ type ValuedOre struct {
 	ValueContribution float64
 }
 
-// ValuedMoon is one enriched moon.
 type ValuedMoon struct {
 	Name       string
 	TotalValue float64
@@ -174,9 +162,6 @@ type ValuedMoon struct {
 	Ores       []ValuedOre
 }
 
-// ValueMoons ports the second pass: name/volume fallback, ore units from
-// composition fractions, effective prices, tiers, grades; sorted by value
-// descending.
 func ValueMoons(moons []ParsedMoon, types map[int]OreType, prices map[int]float64) []ValuedMoon {
 	out := make([]ValuedMoon, 0, len(moons))
 	for _, m := range moons {
@@ -221,7 +206,6 @@ func ValueMoons(moons []ParsedMoon, types map[int]OreType, prices map[int]float6
 	return out
 }
 
-// MoonGrade ports gradeFromTierAndValue (tier only; value unused in PHP).
 func MoonGrade(maxTier int) string {
 	switch {
 	case maxTier >= 5:
@@ -244,7 +228,6 @@ func sortMoons(moons []ValuedMoon) {
 	}
 }
 
-// EffectivePricesRaw resolves per-unit prices for raw mode (identity).
 func EffectivePricesRaw(ids []int, prices map[int]float64) map[int]float64 {
 	out := make(map[int]float64, len(ids))
 	for _, id := range ids {
@@ -253,8 +236,6 @@ func EffectivePricesRaw(ids []int, prices map[int]float64) map[int]float64 {
 	return out
 }
 
-// EffectivePricesCompressed maps raw ore ids to their compressed variant's
-// price (0 when the compressed type is unknown or unpriced).
 func EffectivePricesCompressed(ids []int, byName map[string]int, prices map[int]float64, rawNames map[int]string) map[int]float64 {
 	out := make(map[int]float64, len(ids))
 	for _, id := range ids {
@@ -268,14 +249,11 @@ func EffectivePricesCompressed(ids []int, byName map[string]int, prices map[int]
 	return out
 }
 
-// RefinedMaterial is one type_materials row for refined-mode pricing.
 type RefinedMaterial struct {
 	Quantity int
 	Mineral  int
 }
 
-// EffectivePricesRefined ports the refined branch: per-unit value =
-// sum(floor(mat_qty * efficiency) * mineral_price) / portion_size.
 func EffectivePricesRefined(ids []int, portions map[int]int, mats map[int][]RefinedMaterial, mineralPrices map[int]float64) map[int]float64 {
 	out := make(map[int]float64, len(ids))
 	for _, id := range ids {
@@ -294,7 +272,6 @@ func EffectivePricesRefined(ids []int, portions map[int]int, mats map[int][]Refi
 
 var romanSuffix = regexp.MustCompile(`\s+[IVXLC]+$`)
 
-// ParsePlanetName ports MoonScanService::parsePlanetName ("Aldali II - Moon 12" -> "Aldali II").
 func ParsePlanetName(moonName string) string {
 	if pos := strings.Index(moonName, " - Moon"); pos >= 0 {
 		return strings.TrimSpace(moonName[:pos])
@@ -305,7 +282,6 @@ func ParsePlanetName(moonName string) string {
 	return ""
 }
 
-// ParseSystemName ports parseSystemName ("Aldali II" -> "Aldali").
 func ParseSystemName(planetName string) string {
 	if planetName == "" {
 		return ""

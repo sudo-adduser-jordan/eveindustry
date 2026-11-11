@@ -118,7 +118,6 @@ func TestAdminUsers(t *testing.T) {
 	if code, _ := get(t, d, "/api/v1/admin/users?sort=nope"); code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad sort = %d", code)
 	}
-	// toggles
 	if code, body := post(t, d, "/api/v1/admin/users/2/toggle-status", `{}`); code != http.StatusOK {
 		t.Fatalf("toggle = %d %v", code, body)
 	} else if body["data"].(map[string]any)["is_active"] != false {
@@ -132,7 +131,6 @@ func TestAdminUsers(t *testing.T) {
 	} else if body["data"].(map[string]any)["is_stock_manager_enabled"] != true {
 		t.Fatalf("stocked = %v", body["data"])
 	}
-	// delete
 	if code, _ := deleteReq(t, d, "/api/v1/admin/users/3"); code != http.StatusForbidden {
 		t.Fatalf("super delete = %d", code)
 	}
@@ -150,25 +148,20 @@ func TestAdminAccount(t *testing.T) {
 	if code != http.StatusOK || body["data"].(map[string]any)["email"] != "admin@x.io" {
 		t.Fatalf("show = %d %v", code, body)
 	}
-	// email only
 	if code, body := putJSON(t, d, "/api/v1/admin/account", `{"email":"new@x.io"}`); code != http.StatusOK {
 		t.Fatalf("email = %d %v", code, body)
 	} else if body["data"].(map[string]any)["email"] != "new@x.io" {
 		t.Fatalf("updated = %v", body["data"])
 	}
-	// taken email -> 422
 	if code, _ := putJSON(t, d, "/api/v1/admin/account", `{"email":"user@x.io"}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("taken = %d", code)
 	}
-	// password change with wrong current -> 422
 	if code, _ := putJSON(t, d, "/api/v1/admin/account", `{"email":"new@x.io","password":"newpassword","password_confirmation":"newpassword","current_password":"wrong"}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("wrong current = %d", code)
 	}
-	// password change success
 	if code, _ := putJSON(t, d, "/api/v1/admin/account", `{"email":"new@x.io","password":"newpassword","password_confirmation":"newpassword","current_password":"oldpassword"}`); code != http.StatusOK {
 		t.Fatalf("password = %d", code)
 	}
-	// short password -> 422
 	if code, _ := putJSON(t, d, "/api/v1/admin/account", `{"email":"new@x.io","password":"short","password_confirmation":"short","current_password":"newpassword"}`); code != http.StatusUnprocessableEntity {
 		t.Fatalf("short = %d", code)
 	}

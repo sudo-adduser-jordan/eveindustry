@@ -14,17 +14,14 @@ func TestParseMoonScan(t *testing.T) {
 	if len(moons[0].Ores) != 2 || moons[0].Ores[0].TypeID != 45490 || moons[0].Ores[0].Quantity != 0.5 {
 		t.Fatalf("ores = %+v", moons[0].Ores)
 	}
-	// ore before header
 	_, errs = ParseMoonScan("\tZeolites\t0.5\t45490\n")
 	if len(errs) == 0 {
 		t.Fatal("expected orphan-ore error")
 	}
-	// a lone non-tabbed line is a moon header with no ores (PHP behaves the same)
 	m2, _ := ParseMoonScan("nothing here\n")
 	if len(m2) != 1 || len(m2[0].Ores) != 0 {
 		t.Fatalf("lone line = %+v", m2)
 	}
-	// empty
 	_, errs = ParseMoonScan("\n")
 	if len(errs) == 0 {
 		t.Fatal("expected no-data error")
@@ -52,7 +49,6 @@ func TestValueMoons(t *testing.T) {
 		},
 	}}
 	types := map[int]OreType{45490: {TypeID: 45490, Name: "Zeolites", Volume: 10, Portion: 100}}
-	// units = floor(0.5 * 10M / 10) = 500000; price 2 -> 1M
 	valued := ValueMoons(moons, types, map[int]float64{45490: 2})
 	if len(valued) != 1 {
 		t.Fatalf("valued = %+v", valued)
@@ -64,7 +60,6 @@ func TestValueMoons(t *testing.T) {
 	if vm.Ores[0].OreUnits != 500000 || vm.Ores[0].ValueContribution != 1000000 {
 		t.Fatalf("ore0 = %+v", vm.Ores[0])
 	}
-	// unknown type: default 10m3 volume, no price, tier 0
 	if vm.Ores[1].PricePerUnit != 0 || vm.Ores[1].Tier != 0 {
 		t.Fatalf("ore1 = %+v", vm.Ores[1])
 	}
@@ -82,7 +77,6 @@ func TestEffectivePrices(t *testing.T) {
 	ref := EffectivePricesRefined([]int{1}, map[int]int{1: 100}, map[int][]RefinedMaterial{
 		1: {{Quantity: 100, Mineral: 34}},
 	}, map[int]float64{34: 10})
-	// floor(100*.85)=85 *10 /100 = 8.5
 	if ref[1] != 8.5 {
 		t.Fatalf("ref = %v", ref)
 	}

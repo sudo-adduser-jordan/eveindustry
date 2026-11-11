@@ -31,14 +31,14 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      // Stored data renders at once, then anything older than this revalidates
-      // when the app opens, regains focus or the connection returns.
+      
+      
       staleTime: 30_000,
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
-      // Serve cached data while offline instead of showing an error.
+      
       networkMode: 'offlineFirst',
-      // Must outlive the persisted maxAge or restored queries are collected.
+      
       gcTime: PERSIST_MAX_AGE,
     },
   },

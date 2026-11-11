@@ -12,7 +12,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// DonationESI is the ESI surface donation tracking needs.
 type DonationESI interface {
 	GetCorporationWallets(ctx context.Context, characterID, corporationID int64) ([]map[string]any, error)
 	GetCorporationWalletJournal(ctx context.Context, characterID, corporationID int64, division int) ([]map[string]any, error)
@@ -20,8 +19,6 @@ type DonationESI interface {
 	GetCharacter(ctx context.Context, characterID int64) (map[string]any, error)
 }
 
-// registerDonations mounts donation tracking: status, enable/disable,
-// refresh and the donation index.
 func registerDonations(v1 *echo.Group, d Deps) {
 	if d.Donations == nil || d.Users == nil || d.Corp == nil {
 		return
@@ -33,8 +30,6 @@ func registerDonations(v1 *echo.Group, d Deps) {
 	v1.POST("/corporation/donations/refresh", handleDonationRefresh(d))
 }
 
-// walletChars mirrors getUserWalletCharacters: user characters holding the
-// corporate wallet scope (any corporation).
 func walletChars(chars []auth.Character) []auth.Character {
 	var out []auth.Character
 	for _, ch := range chars {
@@ -79,7 +74,6 @@ func donationStatusShape(cfg *store.DonationConfig, chars []auth.Character, uid 
 	return out
 }
 
-// GET /corporation/donations/status — open to any signed-in user.
 func handleDonationStatus(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -96,7 +90,6 @@ func handleDonationStatus(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /corporation/donations/enable — 422 without an eligible character.
 func handleDonationEnable(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -157,7 +150,6 @@ func handleDonationEnable(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /corporation/donations/disable — 403 unless the enabler.
 func handleDonationDisable(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -184,7 +176,6 @@ func handleDonationDisable(d Deps) echo.HandlerFunc {
 	}
 }
 
-// POST /corporation/donations/refresh — forget memoized journals, 204.
 func handleDonationRefresh(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid := c.Get(string(ctxUIDKey)).(int64)
@@ -204,8 +195,6 @@ func handleDonationRefresh(d Deps) echo.HandlerFunc {
 	}
 }
 
-// GET /corporation/donations — player donations grouped by donator.
-// 403 when tracking is off for the user's corporations.
 func handleDonationIndex(d Deps) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		qp := c.QueryParams()

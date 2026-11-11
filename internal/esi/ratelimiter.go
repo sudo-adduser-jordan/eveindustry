@@ -15,7 +15,6 @@ func sha256hex(s string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// rateEntry is one sliding-window ledger entry.
 type rateEntry struct {
 	ID      string  `json:"id"`
 	At      float64 `json:"at"`
@@ -23,28 +22,21 @@ type rateEntry struct {
 	Pending bool    `json:"pending"`
 }
 
-// remoteCeiling mirrors the PHP remote remaining/until pair.
 type remoteCeiling struct {
 	Remaining int   `json:"remaining"`
 	Until     int64 `json:"until"`
 }
 
-// limitConfig mirrors the advertised X-Ratelimit-Limit override.
 type limitConfig struct {
 	Limit  int `json:"limit"`
 	Window int `json:"window"`
 }
 
-// Limiter ports EsiRateLimiter over a CoordStore: sliding-window floating
-// token budgets per (group, identity), remote-ceiling reconciliation,
-// 429 cooldowns and advertised limit overrides.
 type Limiter struct {
 	store CoordStore
 	appID string
 }
 
-// NewLimiter builds a limiter. appID scopes identity keys like the PHP
-// application_id ('eve-industrialist').
 func NewLimiter(store CoordStore, appID string) *Limiter {
 	if appID == "" {
 		appID = "eve-industrialist"
@@ -87,7 +79,6 @@ func (l *Limiter) putEntries(key string, entries []rateEntry, window int) {
 	storeJSON(l.store, key, entries, time.Duration(window+60)*time.Second)
 }
 
-// Remaining mirrors remaining(): local budget floored by the remote ceiling.
 func (l *Limiter) Remaining(group, identity string) int {
 	window, limit := l.config(group)
 	spent := 0
@@ -103,7 +94,6 @@ func (l *Limiter) Remaining(group, identity string) int {
 	return int(local)
 }
 
-// ResetsIn mirrors resetsInSeconds(): 0 when cost fits, else seconds until it does.
 func (l *Limiter) ResetsIn(group, identity string, cost int) int {
 	key := l.key(group, identity)
 	cooldown := l.cooldownLeft(key)
@@ -130,7 +120,6 @@ func (l *Limiter) ResetsIn(group, identity string, cost int) int {
 	return int(w)
 }
 
-// IsLimited mirrors isLimited().
 func (l *Limiter) IsLimited(group, identity string) bool {
 	return l.ResetsIn(group, identity, 2) > 0
 }
@@ -151,8 +140,6 @@ func (l *Limiter) cooldownLeft(key string) int {
 	return int(left)
 }
 
-// Reserve mirrors reserve(): records a pending cost-5 entry, or "" when the
-// budget does not cover cost. tryConsume uses cost 2.
 func (l *Limiter) Reserve(group, identity string, cost int) (string, error) {
 	key := l.key(group, identity)
 	var id string
@@ -184,24 +171,19 @@ func (l *Limiter) Reserve(group, identity string, cost int) (string, error) {
 	return id, nil
 }
 
-// TryConsume mirrors tryConsume(): a cost-2 probe.
 func (l *Limiter) TryConsume(group, identity string) (bool, error) {
 	id, err := l.Reserve(group, identity, 2)
 	return id != "", err
 }
 
-// ResponseHeaders carries the rate-limit headers of a finished response.
 type ResponseHeaders struct {
 	Status         int
 	Used           *int
 	Remaining      *int
-	Advertised     string // raw X-Ratelimit-Limit, e.g. "600/900s", "100/1m"
+	Advertised     string
 	RetryAfterSecs *int
 }
 
-// Reconcile mirrors reconcile(): replaces the pending cost with the actual
-// one (status-derived, or X-Ratelimit-Used), lowers the remote ceiling
-// monotonically, learns advertised limits and records 429 cooldowns.
 func (l *Limiter) Reconcile(group, identity, reservation string, h ResponseHeaders) error {
 	key := l.key(group, identity)
 	return l.store.Lock("lock."+key, 10*time.Second, 2*time.Second, func() error {
@@ -270,7 +252,6 @@ func (l *Limiter) Reconcile(group, identity, reservation string, h ResponseHeade
 	})
 }
 
-// parseAdvertised parses "600/900s", "600/15m", "100/1h" like the PHP regex.
 func parseAdvertised(raw string) (limit, window int, ok bool) {
 	parts := strings.SplitN(raw, "/", 2)
 	if len(parts) != 2 {

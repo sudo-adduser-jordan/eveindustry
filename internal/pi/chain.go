@@ -5,7 +5,6 @@ import (
 	"sort"
 )
 
-// Factory counts mirror the P1_TO_P3_* and P0_TO_P3_* constants.
 const (
 	P1ToP3P3Factories = 6
 	P1ToP3P2A         = 6
@@ -19,7 +18,6 @@ const (
 	P0ToP3BifTotal    = 11
 )
 
-// P1ToP3Result mirrors calculateP1toP3Plan().
 type P1ToP3Result struct {
 	OutputTypeID        int            `json:"output_type_id"`
 	OutputName          string         `json:"output_name"`
@@ -46,7 +44,6 @@ type P1ToP3Result struct {
 	PricesAvailable     bool           `json:"prices_available"`
 }
 
-// P2Input is one intermediate P2 line.
 type P2Input struct {
 	TypeID        int     `json:"type_id"`
 	Name          string  `json:"name"`
@@ -55,7 +52,6 @@ type P2Input struct {
 	DailyConsumed float64 `json:"daily_consumed"`
 }
 
-// DailyInput is one priced daily input line (P1 or P0).
 type DailyInput struct {
 	TypeID      int     `json:"type_id"`
 	Name        string  `json:"name"`
@@ -111,8 +107,6 @@ func p1ToP2ByOutput(output int) *Schematic {
 	return nil
 }
 
-// P1ToP3Plan ports calculateP1toP3Plan(). Nil when a P2 input has no
-// P1→P2 schematic or the P3 recipe has an unsupported input count.
 func P1ToP3Plan(p3 Schematic, prices map[int]PriceRow) *P1ToP3Result {
 	n := len(p3.Inputs)
 	var p3Factories int
@@ -220,7 +214,6 @@ func P1ToP3Plan(p3 Schematic, prices map[int]PriceRow) *P1ToP3Result {
 	return r
 }
 
-// P0ToP3Result mirrors calculateP0toP3Plan().
 type P0ToP3Result struct {
 	OutputTypeID        int              `json:"output_type_id"`
 	OutputName          string           `json:"output_name"`
@@ -248,7 +241,6 @@ type P0ToP3Result struct {
 	PricesAvailable     bool             `json:"prices_available"`
 }
 
-// P1Intermediate is one P1 line with its BIF count.
 type P1Intermediate struct {
 	TypeID   int     `json:"type_id"`
 	Name     string  `json:"name"`
@@ -265,8 +257,6 @@ func p0ToP1ByOutput(output int) *Schematic {
 	return nil
 }
 
-// P0ToP3Plan ports calculateP0toP3Plan(). Nil on missing schematics.
-// Insertion order of first-seen P1 types drives the BIF allocation, as in PHP.
 func P0ToP3Plan(p3 Schematic, prices map[int]PriceRow) *P0ToP3Result {
 	n := len(p3.Inputs)
 	var p2Counts []int
@@ -284,13 +274,12 @@ func P0ToP3Plan(p3 Schematic, prices map[int]PriceRow) *P0ToP3Result {
 		p2Schematics[i] = s
 	}
 
-	const bifPerDay = 20 * SecondsPerDay / CycleP0ToP1   // 960
-	const p1PerAifDay = 40 * SecondsPerDay / CycleP1ToP2 // 960 per input type
+	const bifPerDay = 20 * SecondsPerDay / CycleP0ToP1
+	const p1PerAifDay = 40 * SecondsPerDay / CycleP1ToP2
 	const p2PerCycle = 5
 	p2CyclesDay := float64(SecondsPerDay) / CycleP1ToP2
 	p3CyclesDay := float64(SecondsPerDay) / CycleP2ToP3
 
-	// P1 demand per group, first-seen order preserved.
 	demands := map[int][]float64{}
 	var p1Order []int
 	for i := 0; i < n; i++ {
@@ -357,7 +346,6 @@ func P0ToP3Plan(p3 Schematic, prices map[int]PriceRow) *P0ToP3Result {
 		assigned++
 	}
 
-	// P1 supply split per group proportionally to demand.
 	supplyFor := map[int]map[int]float64{}
 	for _, id := range p1Order {
 		supply := float64(bif[id]) * bifPerDay
@@ -480,8 +468,6 @@ func P0ToP3Plan(p3 Schematic, prices map[int]PriceRow) *P0ToP3Result {
 	return r
 }
 
-// CalculateChainTier ports the p1_to_p3/p0_to_p3 branch, sorted by daily
-// profit descending.
 func CalculateChainTier(tier string, prices map[int]PriceRow) []any {
 	out := []any{}
 	for _, p3 := range SchematicsP2ToP3 {
