@@ -80,6 +80,10 @@ tasks:
     cmds:
       - |
         set -e
+        # Local dev defaults to demo on so "Try the demo" works out of the
+        # box. Explicit env (or .env) still wins: DEMO_ENABLED=false disables.
+        export DEMO_ENABLED="${DEMO_ENABLED:-true}"
+        echo "demo mode: $DEMO_ENABLED"
         mkdir -p .run/bin .run/log
         # Kill anything already running: tracked pidfiles plus orphans
         # (previous runs, crashed starts) matched by binary path.
@@ -99,6 +103,9 @@ tasks:
         go build -o .run/bin/api ./cmd/api
         go build -o .run/bin/worker ./cmd/worker
         go build -o .run/bin/scheduler ./cmd/scheduler
+        # Fresh checkouts have an empty SQLite file; migrate before launch so
+        # /demo/login (and everything else) has its tables.
+        go run ./cmd/migrate up
         for svc in api worker scheduler; do
           nohup sh -c 'echo $$ > .run/$0.pid; exec ./.run/bin/$0' "$svc" >.run/log/$svc.log 2>&1 < /dev/null &
           sleep 0.5
