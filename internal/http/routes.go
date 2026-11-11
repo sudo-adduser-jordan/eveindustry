@@ -60,12 +60,10 @@ type Deps struct {
 	SponsorImages      SponsorStorage
 	Diag               store.DiagStore
 	Cache              *cache.Cache
-	Discord            store.DiscordStore
 	Notify             store.NotifyStore
 	NotifySender       notify.Sender
 	NotifyPush         NotifyPush
 	Abyssal            AbyssalDeps
-	DiscordBotEnabled  bool
 	Planetary          PlanetaryDeps
 
 	// Login surface: GET /login and /welcome render the public sign-in
@@ -165,7 +163,6 @@ func New(d Deps) *echo.Echo {
 	registerAdmin(authed, d)
 	registerSponsors(authed, d)
 	registerDiagnostics(authed, d)
-	registerDiscordBot(authed, d)
 	registerCharacters(authed, d)
 	registerNotifications(authed, d)
 	registerDashboard(authed, d)

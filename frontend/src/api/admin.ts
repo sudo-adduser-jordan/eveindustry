@@ -4,7 +4,6 @@ import type { components, paths } from './schema'
 
 export type AdminUser = components['schemas']['AdminUserResource']
 export type Sponsor = components['schemas']['SponsorResource']
-export type DiscordBotUpdate = components['schemas']['DiscordBotUpdateRequest']
 export type AccountUpdate = {
   email: string
   current_password?: string
@@ -156,22 +155,6 @@ export function useUpdateAccount() {
   return useMutation({
     mutationFn: async (body: AccountUpdate) => unwrap(await api.PUT('/admin/account', { body })),
     onSuccess: () => client.invalidateQueries({ queryKey: ['admin', 'account'] }),
-  })
-}
-
-export function useDiscordBot() {
-  return useQuery({
-    queryKey: ['admin', 'discord-bot'],
-    queryFn: async () => unwrap(await api.GET('/admin/discord-bot')),
-    retry: retryUnlessForbidden,
-  })
-}
-
-export function useUpdateDiscordBot() {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: async (body: DiscordBotUpdate) => unwrap(await api.PUT('/admin/discord-bot', { body })),
-    onSuccess: () => client.invalidateQueries({ queryKey: ['admin', 'discord-bot'] }),
   })
 }
 

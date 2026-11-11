@@ -7,18 +7,16 @@ import (
 // Config mirrors the subset of .env the Go API needs. The database is an
 // embedded SQLite file (DB_PATH); no MySQL or Redis is required.
 type Config struct {
-	AppEnv     string
-	Port       string
-	AppURL     string
-	SourceURL  string
-	DiscordURL string
+	AppEnv    string
+	Port      string
+	AppURL    string
+	SourceURL string
 
 	DBPath string
 
 	SessionKey    string
 	SessionSecure bool
 	SessionDomain string
-	DiscordBot    bool
 
 	ESIClientID          string
 	ESIClientSecret      string
@@ -36,11 +34,10 @@ func getenv(key, fallback string) string {
 // Load reads configuration from the environment.
 func Load() Config {
 	return Config{
-		AppEnv:     getenv("APP_ENV", "local"),
-		Port:       getenv("PORT", "8080"),
-		AppURL:     getenv("APP_URL", "http://localhost:8080"),
-		SourceURL:  getenv("APP_SOURCE_URL", "https://github.com/sudo-adduser-jordan/eveindustry"),
-		DiscordURL: getenv("DISCORD_INVITE_URL", ""),
+		AppEnv:    getenv("APP_ENV", "local"),
+		Port:      getenv("PORT", "8080"),
+		AppURL:    getenv("APP_URL", "http://localhost:8080"),
+		SourceURL: getenv("APP_SOURCE_URL", "https://github.com/sudo-adduser-jordan/eveindustry"),
 
 		// Embedded SQLite file. The directory is created on open.
 		DBPath: getenv("DB_PATH", "storage/eveindustry.sqlite"),
@@ -48,7 +45,6 @@ func Load() Config {
 		SessionKey:    os.Getenv("SESSION_KEY"),
 		SessionSecure: getenv("SESSION_SECURE_COOKIE", "") == "true",
 		SessionDomain: os.Getenv("SESSION_DOMAIN"),
-		DiscordBot:    getenv("DISCORD_BOT", "") == "true",
 
 		ESIClientID:          os.Getenv("EVE_CLIENT_ID"),
 		ESIClientSecret:      os.Getenv("EVE_CLIENT_SECRET"),

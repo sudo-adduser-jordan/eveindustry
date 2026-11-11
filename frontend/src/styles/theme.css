@@ -115,32 +115,6 @@ code { background: rgba(var(--accent-rgb), 0.08); color: var(--accent2); padding
 .nav-group-toggle:hover, .nav-group-toggle.has-active-page { opacity: 1; color: var(--accent); background: transparent; }
 .nav-submenu { background: none; border-left: 0; margin: 0.1rem 0 0.4rem 0.75rem; padding: 0; }
 .nav-submenu a { font-size: 1rem; }
-/* Orange Discord button; the extra specificity beats the sidebar link styling above. */
-.button.discord-link, .sidebar nav a.button.discord-link {
-  --btn: #ff6600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--btn);
-  border-radius: 0;
-  background: color-mix(in srgb, var(--btn) 12%, transparent);
-  color: var(--btn);
-  font: 700 0.8rem var(--font-display);
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  text-decoration: none;
-}
-.button.discord-link:hover, .sidebar nav a.button.discord-link:hover {
-  background: color-mix(in srgb, var(--btn) 25%, transparent);
-  border-color: var(--btn);
-  color: #ffd2b0;
-  text-decoration: none;
-  box-shadow: inset 0 0 14px color-mix(in srgb, var(--btn) 30%, transparent);
-}
-.discord-link svg { flex-shrink: 0; }
 .sidebar-foot { padding: 0.75rem 1rem; border-top: 1px solid rgba(var(--accent-rgb), 0.2); background: rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0; }
 .sidebar-foot p { margin: 0; }
 .sidebar-user { display: flex; align-items: center; gap: 0.5rem; color: var(--text); font-weight: 600; }

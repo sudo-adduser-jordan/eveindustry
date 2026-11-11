@@ -12,9 +12,7 @@ import (
 
 // AppConfig carries the public app metadata MeResource exposes.
 type AppConfig struct {
-	SourceURL  string
-	DiscordURL string
-	DiscordBot bool
+	SourceURL string
 }
 
 type ctxKey string
@@ -85,7 +83,7 @@ func handleMe(d Deps) echo.HandlerFunc {
 		if err != nil {
 			return dbError(c, err)
 		}
-		return Success(c, http.StatusOK, auth.MePayload(u, chars, d.App.SourceURL, d.App.DiscordURL, d.App.DiscordBot), nil)
+		return Success(c, http.StatusOK, auth.MePayload(u, chars, d.App.SourceURL), nil)
 	}
 }
 

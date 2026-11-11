@@ -6,7 +6,6 @@ import { AdminError, AdminGuard } from '../../components/AdminGuard'
 import { BarChart } from '../../components/BarChart'
 import { renderWithData } from '../../test/render'
 import AdminDashboard from './AdminDashboard'
-import AdminDiscordBot from './AdminDiscordBot'
 import AdminSponsorForm from './AdminSponsorForm'
 import AdminSponsors from './AdminSponsors'
 import AdminUserJobs from './AdminUserJobs'
@@ -249,36 +248,6 @@ describe('sponsors', () => {
     expect(form.get('sort_order')).toBe('2')
     expect((form.get('image') as File).name).toBe('b.png')
     expect(sponsorFormData({ name: 'A', url: 'https://a.test', sort_order: 0, is_active: false, image: null }).has('image')).toBe(false)
-  })
-})
-
-describe('AdminDiscordBot', () => {
-  const settings = { is_enabled: true, has_bot_token: true, bot_name: 'Welcomer', bot_avatar_url: null, welcome_channel_id: '123456789012345678', welcome_message: 'Hi {user}' }
-  const enabled: [readonly unknown[], unknown] = [['me'], { data: { admin: true, features: { discord_bot: true } }, meta: {} }]
-
-  it('is not found while its feature switch is off', () => {
-    renderWithData(<AdminDiscordBot />, [[['me'], { data: { admin: true, features: { discord_bot: false } }, meta: {} }], [['admin', 'discord-bot'], { data: settings, meta: {} }]])
-    expect(screen.getByText('Page not found.')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Bot token')).not.toBeInTheDocument()
-  })
-
-  it('is labelled as a work in progress', () => {
-    renderWithData(<AdminDiscordBot />, [enabled, [['admin', 'discord-bot'], { data: settings, meta: {} }]])
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Work in progress')
-  })
-
-  it('never shows the token, only that one is stored', () => {
-    renderWithData(<AdminDiscordBot />, [enabled, [['admin', 'discord-bot'], { data: settings, meta: {} }]])
-    expect(screen.getByLabelText('Bot token')).toHaveValue('')
-    expect(screen.getByLabelText('Bot token')).toHaveAttribute('placeholder', 'Stored: leave empty to keep it')
-    expect(screen.getByLabelText('Remove the stored token')).not.toBeChecked()
-    expect(screen.getByLabelText('Bot display name')).toHaveValue('Welcomer')
-    expect(screen.getByText('Channel ID: 123456789012345678')).toBeInTheDocument()
-  })
-
-  it('has no remove option when no token is stored', () => {
-    renderWithData(<AdminDiscordBot />, [enabled, [['admin', 'discord-bot'], { data: { ...settings, has_bot_token: false }, meta: {} }]])
-    expect(screen.queryByLabelText('Remove the stored token')).not.toBeInTheDocument()
   })
 })
 

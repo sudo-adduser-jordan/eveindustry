@@ -42,7 +42,7 @@ Request flow: route → handler → domain package → sqlx store / SQLite / `in
 | Market and contracts | `MarketTradingService`, `MarketBrowserService`, `ContractAppraisalService` |
 | Corporation | `CorporateDonationService`, `CorporationProjectsService`, `MoonScanService`, `EsiService` |
 | Wormholes | `EsiService` |
-| Admin | `DiscordBotService` (Discord welcome bot, work in progress: off via `FEATURE_DISCORD_BOT`) |
+| Admin | Admin users, sponsors and ESI diagnostics |
 | Install and themes | `SetupStatusService`, `ThemeService`, command `app:install` |
 
 Market prices for calculators come from `MarketService::getSellPrices()`: a 5th-percentile average of sell orders, read from `market_aggregates` (the region's last complete order sweep, cached per sweep) or from raw `market_orders` for a region never swept, falling back to `market_prices`. Region order sweeps are run by `MarketOrderSweepService` (see `docs/phase-c.md`). The five trade regions are in `MarketTradingService::REGIONS` (Jita, Amarr, Dodixie, Rens, Hek).
@@ -53,7 +53,6 @@ Market prices for calculators come from `MarketService::getSellPrices()`: a 5th-
 - CCP SDE JSONL zip (`developers.eveonline.com`): static data, via `SdeImportService`.
 - Fuzzwork blueprint API: blueprint/reaction activities.
 - everef.net: daily market history CSVs and public contract snapshots.
-- Discord gateway: welcome bot (work in progress, hidden by default).
 
 ## Scheduled tasks
 
@@ -89,7 +88,6 @@ Dispatched by `cmd/scheduler` (one tick loop, run every minute). Times are UTC. 
 - SQLite has one file for everything: tables, the `go_jobs` queue, the `go_locks` overlap/unique locks, the `go_cache` shared cache and the `go_diag_stream` diagnostics buffer (WAL mode, 5 s busy timeout). Scheduler and worker share it across processes; `MemoryQueue` is tests-only.
 - Sessions are stateless HMAC cookies (`eve_auth_session`, 120 min); no server storage. See `docs/operations/esi-scaling.md` for the legacy rollout notes.
 - ESI-calling jobs check the error limiter and back off until the error window resets.
-- Discord bot (work in progress): off unless `FEATURE_DISCORD_BOT=true` and enabled in Admin → Discord Bot.
 
 ## ESI diagnostics
 

@@ -886,24 +886,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/discord-bot": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Discord welcome bot settings. The token is never returned, only whether one is stored */
-        get: operations["v1.admin.discord-bot.show"];
-        /** Save the bot settings */
-        put: operations["v1.admin.discord-bot.update"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/corporation/donations": {
         parameters: {
             query?: never;
@@ -3593,32 +3575,6 @@ export interface components {
             reaction_plans: components["schemas"]["DashboardPlanResource"][];
             invention_plans: components["schemas"]["DashboardPlanResource"][];
         };
-        /** DiscordBotSettingsResource */
-        DiscordBotSettingsResource: {
-            is_enabled: boolean;
-            /** @description A token is stored (it cannot be read back). */
-            has_bot_token: string;
-            bot_name: string;
-            bot_avatar_url: string;
-            welcome_channel_id: string;
-            welcome_message: string;
-        };
-        /** DiscordBotUpdateRequest */
-        DiscordBotUpdateRequest: {
-            /** @description Left out or empty keeps the stored token. */
-            bot_token?: string | null;
-            /** @description Remove the stored token (ignored when a new `bot_token` is sent). */
-            clear_bot_token?: boolean;
-            bot_name: string;
-            /** Format: uri */
-            bot_avatar_url?: string | null;
-            /** @description A Discord snowflake, 17 to 20 digits. */
-            welcome_channel_id?: string | null;
-            /** @description `{user}` is replaced with the mention of the new member. */
-            welcome_message: string;
-            /** @description Off when left out. */
-            is_enabled?: boolean;
-        };
         /** DonatorResource */
         DonatorResource: {
             donator_id: number;
@@ -4492,12 +4448,6 @@ export interface components {
             demo: boolean;
             /** @description Where the source code of this running instance is available (AGPL). */
             source_url: string;
-            /** @description Optional community invite link. */
-            discord_url: string | null;
-            features: {
-                /** @description Discord welcome bot admin page (work in progress, off by default). */
-                discord_bot: boolean;
-            };
             characters: components["schemas"]["CharacterResource"][];
         };
         /**
@@ -7252,58 +7202,6 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["DashboardResource"];
-                        meta: Record<string, never>;
-                    };
-                };
-            };
-            401: components["responses"]["AuthenticationException"];
-            422: components["responses"]["ValidationException"];
-        };
-    };
-    "v1.admin.discord-bot.show": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["DiscordBotSettingsResource"];
-                        meta: Record<string, never>;
-                    };
-                };
-            };
-            401: components["responses"]["AuthenticationException"];
-            422: components["responses"]["ValidationException"];
-        };
-    };
-    "v1.admin.discord-bot.update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DiscordBotUpdateRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["DiscordBotSettingsResource"];
                         meta: Record<string, never>;
                     };
                 };

@@ -102,12 +102,8 @@
   background: var(--panel2);
 }
 
-/* The mobile top bar and Discord hover are hard-coded dark in theme.css;
-   re-tint them from tokens so the light bridge stays light. */
+/* The mobile top bar is hard-coded dark in theme.css;
+   re-tint it from tokens so the light bridge stays light. */
 :root[data-theme='light'] .topbar {
   background: linear-gradient(to bottom, var(--panel), color-mix(in srgb, var(--panel) 80%, transparent));
-}
-:root[data-theme='light'] .button.discord-link:hover,
-:root[data-theme='light'] .sidebar nav a.button.discord-link:hover {
-  color: var(--text);
 }

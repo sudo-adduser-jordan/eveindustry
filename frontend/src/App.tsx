@@ -23,7 +23,6 @@ const AdminUserJobs = lazy(() => import('./pages/admin/AdminUserJobs'))
 const AdminSponsors = lazy(() => import('./pages/admin/AdminSponsors'))
 const AdminSponsorForm = lazy(() => import('./pages/admin/AdminSponsorForm'))
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
-const AdminDiscordBot = lazy(() => import('./pages/admin/AdminDiscordBot'))
 const AdminEsiDiagnostics = lazy(() => import('./pages/admin/AdminEsiDiagnostics'))
 const MoonScan = lazy(() => import('./pages/MoonScan'))
 const Planetary = lazy(() => import('./pages/Planetary'))
@@ -97,7 +96,6 @@ export function App() {
             <Route path="sponsors" element={<AdminSponsors />} />
             <Route path="sponsors/:sponsor" element={<AdminSponsorForm />} />
             <Route path="settings" element={<AdminSettings />} />
-            <Route path="discord-bot" element={<AdminDiscordBot />} />
             <Route path="esi-diagnostics" element={<AdminEsiDiagnostics />} />
           </Route>
           <Route path="tools/moon-scan" element={<MoonScan />} />

@@ -60,15 +60,6 @@ it('remembers the open group across reloads', () => {
   expect(screen.getByRole('button', { name: 'Planetary' })).toHaveAttribute('aria-expanded', 'true')
 })
 
-it('hides the work-in-progress Discord bot from admins until its feature switch is on', () => {
-  const view = renderWithData(<Shell />, [[['me'], { data: { display_name: 'Admin', admin: true, features: { discord_bot: false } } }]], ['/admin/dashboard'])
-  expect(screen.getByRole('link', { name: 'ESI Diagnostics' })).toBeInTheDocument()
-  expect(screen.queryByRole('link', { name: /Discord Bot/ })).not.toBeInTheDocument()
-  view.unmount()
-  renderWithData(<Shell />, [[['me'], { data: { display_name: 'Admin', admin: true, features: { discord_bot: true } } }]], ['/admin/dashboard'])
-  expect(screen.getByRole('link', { name: 'Discord Bot (WIP)' })).toHaveAttribute('href', '/admin/discord-bot')
-})
-
 it('switches themes from the sidebar and remembers the choice', () => {
   renderWithData(<Shell />, [[['me'], { data: { display_name: 'Pilot', admin: false } }]], ['/dashboard'])
   const select = screen.getByLabelText('Theme')

@@ -36,7 +36,6 @@ h1 { font: 600 1.5rem var(--font-display); letter-spacing: 0.04em; margin: 0 0 1
 .nav-submenu { display: flex; flex-direction: column; gap: 0.15rem; margin: 0.15rem 0 0.5rem 0.65rem; padding-left: 0.4rem; border-left: 1px solid var(--line); }
 .nav-submenu[hidden] { display: none; }
 .nav-submenu a { font-size: 0.9rem; }
-.discord-link { margin-top: 0.5rem; }
 .content { padding: 1.5rem max(16px, 2vw); min-width: 0; }
 .badge { display: inline-block; padding: 0.1rem 0.6rem; border-radius: 999px; font-size: 0.85rem; border: 1px solid var(--line); margin-left: 0.4rem; }
 .badge-fresh { color: var(--ok); }

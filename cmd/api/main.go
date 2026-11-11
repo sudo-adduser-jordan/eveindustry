@@ -42,7 +42,7 @@ func main() {
 	deps := gohttp.Deps{
 		Cache: &cache.Cache{DB: sqlxDB},
 		App: gohttp.AppConfig{
-			SourceURL: cfg.SourceURL, DiscordURL: cfg.DiscordURL, DiscordBot: cfg.DiscordBot,
+			SourceURL: cfg.SourceURL,
 		},
 	}
 	key, ephemeral := auth.SessionKeyFromEnv(cfg.SessionKey, os.Getenv("APP_KEY"))
@@ -114,7 +114,6 @@ func main() {
 		deps.Sponsors = queries
 		deps.AdminStats = queries
 		deps.Diag = queries
-		deps.Discord = queries
 		deps.Notify = queries
 		deps.Abyssal.Characters = esiChars
 		deps.Abyssal.Reference = queries
@@ -125,7 +124,6 @@ func main() {
 			Subject: os.Getenv("VAPID_SUBJECT"), PublicKey: os.Getenv("VAPID_PUBLIC_KEY"),
 			PrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
 		}
-		deps.DiscordBotEnabled = os.Getenv("FEATURE_DISCORD_BOT") == "true"
 		deps.Planetary.Characters = esiChars
 		deps.Planetary.Universe = esiUniverse
 		deps.SponsorImages = gohttp.DiskSponsorStorage{Dir: sponsorDir()}

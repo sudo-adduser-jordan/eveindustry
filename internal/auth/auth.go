@@ -70,7 +70,7 @@ func (c Character) PortraitURL() string { return PortraitURL(c.CharacterID) }
 // MePayload mirrors MeResource::toArray(): the user, main-first characters
 // and feature flags. DisplayName falls back to the account name without a
 // main character; AvatarURL is the main character portrait (nil without one).
-func MePayload(u *User, characters []Character, sourceURL, discordURL string, discordBot bool) map[string]any {
+func MePayload(u *User, characters []Character, sourceURL string) map[string]any {
 	display := u.Name
 	var avatar any
 	for _, ch := range characters {
@@ -91,15 +91,10 @@ func MePayload(u *User, characters []Character, sourceURL, discordURL string, di
 			"portrait_url": ch.PortraitURL(), "scopes": nonNilStrings(ch.Scopes),
 		})
 	}
-	var discord any
-	if discordURL != "" {
-		discord = discordURL
-	}
 	return map[string]any{
 		"id": u.ID, "name": u.Name, "display_name": display, "avatar_url": avatar,
 		"admin": u.Admin(), "stock_manager": u.IsStockManager, "demo": u.IsDemo,
-		"source_url": sourceURL, "discord_url": discord,
-		"features":   map[string]any{"discord_bot": discordBot},
+		"source_url": sourceURL,
 		"characters": chars,
 	}
 }

@@ -2,8 +2,6 @@ export interface NavigationLink {
   label: string
   to: string
   stockManager?: boolean
-  /** Shown only when this `/me` feature switch is on (see config/features.php). */
-  feature?: 'discord_bot'
 }
 
 export interface NavigationGroup {
@@ -66,7 +64,6 @@ export const navigationGroups: NavigationGroup[] = [
     { label: 'Dashboard', to: '/admin/dashboard' },
     { label: 'Users', to: '/admin/users' },
     { label: 'Sponsors', to: '/admin/sponsors' },
-    { label: 'Discord Bot (WIP)', to: '/admin/discord-bot', feature: 'discord_bot' },
     { label: 'ESI Diagnostics', to: '/admin/esi-diagnostics' },
     { label: 'Settings', to: '/admin/settings' },
   ] },
