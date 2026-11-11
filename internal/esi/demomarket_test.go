@@ -72,6 +72,52 @@ func TestDemoCharacterEndpoints(t *testing.T) {
 	}
 }
 
+func TestDemoShipsAndAbyssal(t *testing.T) {
+	r := demoResponder()
+	ctx := context.Background()
+	ch := DemoCharacter{ID: 99000000001, Name: "Demo One", CorporationID: 99100000001, CorpName: "Demo Corp"}
+	assets := r.demoAssets(ch)
+	seenShip := map[int]bool{}
+	seenAbyssal := map[int]bool{}
+	for _, it := range assets {
+		m := it.(map[string]any)
+		tid := m["type_id"].(int)
+		for _, s := range DemoShips {
+			if tid == s {
+				seenShip[s] = true
+			}
+		}
+		for _, ab := range DemoAbyssal {
+			if tid == ab.Mutated {
+				seenAbyssal[ab.Mutated] = true
+			}
+		}
+	}
+	if len(seenShip) != len(DemoShips) {
+		t.Fatalf("ships = %v, want all %v", seenShip, DemoShips)
+	}
+	if len(seenAbyssal) != len(DemoAbyssal) {
+		t.Fatalf("abyssal = %v, want all %v", seenAbyssal, DemoAbyssal)
+	}
+	// Dynamic payload for a mutated type carries source + mutated attrs.
+	st, body, _ := r.Respond(ctx, "get", "/dogma/dynamic/items/99101/2000000000001/", &ch, nil, nil)
+	if st != 200 {
+		t.Fatalf("dynamic = %d %v", st, body)
+	}
+	dyn := body.(map[string]any)
+	if dyn["source_type_id"] != float64(2048) {
+		t.Fatalf("source = %v, want 2048", dyn["source_type_id"])
+	}
+	attrs, _ := dyn["dogma_attributes"].([]any)
+	if len(attrs) == 0 {
+		t.Fatalf("dogma attrs empty in %v", dyn)
+	}
+	st, _, _ = r.Respond(ctx, "get", "/dogma/dynamic/items/34/1/", &ch, nil, nil)
+	if st != 404 {
+		t.Fatalf("non-abyssal dynamic = %d, want 404", st)
+	}
+}
+
 func TestDemoCorporationEndpoints(t *testing.T) {
 	r := demoResponder()
 	ctx := context.Background()

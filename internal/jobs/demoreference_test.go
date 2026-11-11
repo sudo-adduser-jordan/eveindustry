@@ -39,7 +39,8 @@ func TestDemoReferenceTypeIDs(t *testing.T) {
 			t.Fatalf("not sorted/deduped: %v", ids)
 		}
 	}
-	for _, want := range []int{34, 35, 36, 37, 38, 39, 40, 17887, 17888, 17889, 16274, 587, 24702, 24698, 638, 17480, 32880} {
+	for _, want := range []int{34, 35, 36, 37, 38, 39, 40, 17887, 17888, 17889, 16274, 587, 24702, 24698, 638, 17480, 32880,
+		2048, 3839, 2281, 3178, 47831, 47775, 99101, 99102, 99103, 99104} {
 		found := false
 		for _, id := range ids {
 			if id == want {
@@ -68,9 +69,14 @@ func TestCollectDemoReference(t *testing.T) {
 		failIDs: map[int]bool{35: true},
 	}
 	ref := collectDemoReference(context.Background(), src)
-	// Only Tritanium resolves: Pyerite fails, the rest are absent.
-	if len(ref.Types) != 1 {
-		t.Fatalf("types = %+v, want only Tritanium", ref.Types)
+	// Tritanium resolves; Pyerite fails and has no fallback so it is skipped.
+	// Other demo types resolve via static fallbacks when ESI is unreachable.
+	byID := map[int]bool{}
+	for _, row := range ref.Types {
+		byID[row.TypeID] = true
+		if row.TypeID == 35 {
+			t.Fatal("failed type must be skipped")
+		}
 	}
 	var tritFound, tritPublished bool
 	var tritGID int64
@@ -82,12 +88,48 @@ func TestCollectDemoReference(t *testing.T) {
 				tritGID = *row.GroupID
 			}
 		}
-		if row.TypeID == 35 {
-			t.Fatal("failed type must be skipped")
-		}
 	}
 	if !tritFound || tritGID != 18 || !tritPublished {
 		t.Fatalf("tritanium row found=%v gid=%d published=%v", tritFound, tritGID, tritPublished)
+	}
+	// Demo ships fall back to static names when the stub has no ESI row.
+	if !byID[587] {
+		t.Fatalf("ship fallback missing in %+v", ref.Types)
+	}
+	// Mutated abyssal types are demo-only: they carry meta group 15.
+	foundMut := false
+	for _, row := range ref.Types {
+		if row.TypeID == 99101 {
+			foundMut = true
+			if row.MetaGroupID == nil || *row.MetaGroupID != 15 {
+				t.Fatalf("mutated meta = %+v, want 15", row)
+			}
+			if !row.Published {
+				t.Fatal("mutated must be published")
+			}
+		}
+	}
+	if !foundMut {
+		t.Fatalf("mutated 99101 missing in %+v", ref.Types)
+	}
+	// Ship groups/categories seed alongside types so the ships tab groups.
+	foundGroup := false
+	for _, g := range ref.Groups {
+		if g.GroupID == 25 && g.Name == "Frigate" {
+			foundGroup = true
+		}
+	}
+	if !foundGroup {
+		t.Fatalf("ship groups = %+v, want Frigate 25", ref.Groups)
+	}
+	foundCat := false
+	for _, c := range ref.Categories {
+		if c.CategoryID == 6 && c.Name == "Ship" {
+			foundCat = true
+		}
+	}
+	if !foundCat {
+		t.Fatalf("ship categories = %+v, want Ship 6", ref.Categories)
 	}
 	if len(ref.Stations) != 1 || ref.Stations[0].StationID != 60003760 {
 		t.Fatalf("stations = %+v", ref.Stations)

@@ -18,14 +18,16 @@ type demoReferenceSource interface {
 
 // demoReference is the set of reference rows the demo needs to render.
 type demoReference struct {
-	Types    []store.SdeType
-	Stations []store.SdeStation
-	Systems  []store.SdeSystem
+	Types      []store.SdeType
+	Stations   []store.SdeStation
+	Systems    []store.SdeSystem
+	Groups     []store.SdeGroup
+	Categories []store.SdeCategory
 }
 
 // demoReferenceTypeIDs lists every static demo type: mineral and isotope
-// stacks plus ships (materials grouping and type names). Sorted for stable
-// seeding order.
+// stacks plus ships and abyssal modules (sources, mutators, mutated).
+// Sorted for stable seeding order.
 func demoReferenceTypeIDs() []int {
 	seen := map[int]bool{}
 	var out []int
@@ -44,6 +46,11 @@ func demoReferenceTypeIDs() []int {
 	for _, id := range esi.DemoShips {
 		add(id)
 	}
+	for _, ab := range esi.DemoAbyssal {
+		add(ab.Source)
+		add(ab.Mutator)
+		add(ab.Mutated)
+	}
 	sort.Ints(out)
 	return out
 }
@@ -56,20 +63,61 @@ func collectDemoReference(ctx context.Context, src demoReferenceSource) demoRefe
 	for _, id := range demoReferenceTypeIDs() {
 		info, err := src.GetTypeInfo(ctx, id)
 		if err != nil || info == nil {
-			continue
+			info = nil
 		}
-		name, _ := info["name"].(string)
+		name, _ := mapStr(info)["name"].(string)
+		var gid *int64
+		if g, ok := intOfESI(mapStr(info)["group_id"]); ok && g > 0 {
+			gid = &g
+		}
+		pub, _ := mapStr(info)["published"].(bool)
+		if name == "" {
+			// Offline fallback: static demo names so ships/abyssal tabs still
+			// render without ESI.
+			if fb, ok := esi.DemoTypeFallbacks[id]; ok {
+				name = fb.Name
+				g := int64(fb.Group)
+				gid = &g
+				pub = true
+			}
+		}
 		if name == "" {
 			continue
 		}
-		row := store.SdeType{TypeID: id, Name: name}
-		if gid, ok := intOfESI(info["group_id"]); ok && gid > 0 {
-			row.GroupID = &gid
-		}
-		if pub, _ := info["published"].(bool); pub {
-			row.Published = true
-		}
+		row := store.SdeType{TypeID: id, Name: name, GroupID: gid, Published: pub}
 		ref.Types = append(ref.Types, row)
+	}
+	// Mutated abyssal types are demo-only: ESI has no such type, so force the
+	// abyssal meta group and a source-matching group for each.
+	meta := int64(15)
+	byID := map[int]*store.SdeType{}
+	for i := range ref.Types {
+		byID[ref.Types[i].TypeID] = &ref.Types[i]
+	}
+	for _, ab := range esi.DemoAbyssal {
+		name := esi.DemoAbyssalNames[ab.Mutated]
+		if name == "" {
+			name = "Abyssal Module " + itoaDemo(ab.Mutated)
+		}
+		var gid *int64
+		if srcRow, ok := byID[ab.Source]; ok && srcRow.GroupID != nil {
+			gid = srcRow.GroupID
+		} else if fb, ok := esi.DemoTypeFallbacks[ab.Source]; ok {
+			g := int64(fb.Group)
+			gid = &g
+		}
+		if row, ok := byID[ab.Mutated]; ok {
+			row.Name = name
+			row.GroupID = gid
+			row.MetaGroupID = &meta
+			row.Published = true
+		} else {
+			ref.Types = append(ref.Types, store.SdeType{
+				TypeID: ab.Mutated, Name: name, GroupID: gid,
+				MetaGroupID: &meta, Published: true,
+			})
+			byID[ab.Mutated] = &ref.Types[len(ref.Types)-1]
+		}
 	}
 	seenSys := map[int]bool{}
 	for _, hub := range esi.DemoHubs {
@@ -106,6 +154,17 @@ func collectDemoReference(ctx context.Context, src demoReferenceSource) demoRefe
 		}
 		ref.Systems = append(ref.Systems, sysRow)
 	}
+	// Ship/module groups and categories: without these GroupsInCategory(6)
+	// is empty and the ships tab renders empty.
+	groupCat := map[int]int{25: 6, 27: 6, 419: 6, 463: 6, 60: 7, 38: 7, 77: 7, 74: 7, 1964: 17}
+	for _, g := range esi.DemoShipGroups {
+		cat := groupCat[g.GroupID]
+		c := cat
+		ref.Groups = append(ref.Groups, store.SdeGroup{GroupID: g.GroupID, Name: g.Name, CategoryID: &c, Published: true})
+	}
+	for _, c := range esi.DemoShipCategories {
+		ref.Categories = append(ref.Categories, store.SdeCategory{CategoryID: c.CategoryID, Name: c.Name, Published: true})
+	}
 	return ref
 }
 
@@ -133,4 +192,43 @@ func seedDemoReferenceData(ctx context.Context, h HandlerDeps) {
 			h.logger().Warn("demo reference systems failed", "err", err)
 		}
 	}
+	if len(ref.Groups) > 0 {
+		if err := h.DB.UpsertInvGroups(ctx, ref.Groups); err != nil {
+			h.logger().Warn("demo reference groups failed", "err", err)
+		}
+	}
+	if len(ref.Categories) > 0 {
+		if err := h.DB.UpsertInvCategories(ctx, ref.Categories); err != nil {
+			h.logger().Warn("demo reference categories failed", "err", err)
+		}
+	}
+}
+
+func mapStr(m map[string]any) map[string]any {
+	if m == nil {
+		return map[string]any{}
+	}
+	return m
+}
+
+func itoaDemo(i int) string {
+	if i == 0 {
+		return "0"
+	}
+	neg := i < 0
+	if neg {
+		i = -i
+	}
+	var b [20]byte
+	p := len(b)
+	for i > 0 {
+		p--
+		b[p] = byte('0' + i%10)
+		i /= 10
+	}
+	if neg {
+		p--
+		b[p] = '-'
+	}
+	return string(b[p:])
 }
