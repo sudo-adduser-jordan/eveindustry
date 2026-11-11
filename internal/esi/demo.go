@@ -51,6 +51,80 @@ var DemoIsotopes = []int{17887, 17888, 17889, 16274}
 // DemoShips mirrors the demo ship list.
 var DemoShips = []int{587, 24702, 24698, 638, 17480, 32880}
 
+// DemoShipGroups mirrors the inv_groups rows the ships tab needs: without
+// them GroupsInCategory(6) is empty and the ships page renders empty even
+// though the demo assets contain hulls.
+var DemoShipGroups = []struct {
+	GroupID int
+	Name    string
+}{
+	{25, "Frigate"},
+	{27, "Battleship"},
+	{419, "Combat Battlecruiser"},
+	{463, "Mining Barge"},
+	{60, "Damage Control"},
+	{38, "Shield Extender"},
+	{77, "Shield Hardener"},
+	{74, "Hybrid Weapon"},
+	{1964, "Mutaplasmids"},
+}
+
+// DemoShipCategories mirrors the inv_categories rows for the demo groups.
+var DemoShipCategories = []struct {
+	CategoryID int
+	Name       string
+}{
+	{6, "Ship"},
+	{7, "Module"},
+	{17, "Commodity"},
+}
+
+// DemoAbyssal pairs a fake mutated type with its base module and mutaplasmid.
+// Mutated IDs live above real type IDs; seedDemoReferenceData stores them with
+// meta_group_id 15 so the abyssal tab picks them up.
+var DemoAbyssal = []struct {
+	Mutated int
+	Source  int
+	Mutator int
+}{
+	{99101, 2048, 47831},
+	{99102, 3839, 47775},
+	{99103, 2281, 47831},
+	{99104, 3178, 47775},
+}
+
+// DemoAbyssalNames fallbacks when ESI is unreachable during seeding.
+var DemoAbyssalNames = map[int]string{
+	99101: "Abyssal Damage Control II",
+	99102: "Abyssal Large Shield Extender I",
+	99103: "Abyssal Multispectrum Shield Hardener II",
+	99104: "Abyssal Light Neutron Blaster II",
+}
+
+// DemoTypeFallbacks covers every static demo type so seeding degrades to
+// labels instead of "Type N" when ESI is down. Group IDs come from ESI.
+var DemoTypeFallbacks = map[int]struct {
+	Name  string
+	Group int
+}{
+	587:   {"Rifter", 25},
+	24702: {"Hurricane", 419},
+	24698: {"Drake", 419},
+	638:   {"Raven", 27},
+	17480: {"Procurer", 463},
+	32880: {"Venture", 25},
+	2048:  {"Damage Control II", 60},
+	3839:  {"Large Shield Extender I", 38},
+	2281:  {"Multispectrum Shield Hardener II", 77},
+	3178:  {"Light Neutron Blaster II", 74},
+	47831: {"Gravid Heavy Energy Neutralizer Mutaplasmid", 1964},
+	47775: {"Unstable Large Armor Repairer Mutaplasmid", 1964},
+	99101: {"Abyssal Damage Control II", 60},
+	99102: {"Abyssal Large Shield Extender I", 38},
+	99103: {"Abyssal Multispectrum Shield Hardener II", 77},
+	99104: {"Abyssal Light Neutron Blaster II", 74},
+}
+
 // DemoCorpRoles mirrors the roles demo characters are created with.
 var DemoCorpRoles = []string{"Director", "Factory_Manager", "Accountant", "Junior_Accountant", "Project_Manager", "Station_Manager"}
 
@@ -157,6 +231,14 @@ func (r *DemoResponder) Respond(ctx context.Context, method, endpoint string, ch
 	if mm := regexp.MustCompile(`^/universe/planets/(\d+)/?$`).FindStringSubmatch(path); mm != nil {
 		id, _ := strconv.ParseInt(mm[1], 10, 64)
 		return 200, r.planetInfo(ctx, id), nil
+	}
+	if mm := regexp.MustCompile(`^/dogma/dynamic/items/(\d+)/(\d+)/?$`).FindStringSubmatch(path); mm != nil {
+		typeID, _ := strconv.Atoi(mm[1])
+		itemID, _ := strconv.ParseInt(mm[2], 10, 64)
+		if dyn, ok := r.demoDynamicItem(typeID, itemID); ok {
+			return 200, dyn, nil
+		}
+		return 404, map[string]any{"error": "Not found"}, nil
 	}
 	if mm := regexp.MustCompile(`^/characters/(\d+)(/.*)?$`).FindStringSubmatch(path); mm != nil {
 		id, _ := strconv.ParseInt(mm[1], 10, 64)
@@ -484,15 +566,55 @@ func (r *DemoResponder) demoAssets(c DemoCharacter) []any {
 	for _, typeID := range DemoIsotopes {
 		add(typeID, 20000+int((c.ID+int64(typeID))%60000), false)
 	}
-	for k, typeID := range DemoShips {
-		if (c.ID+int64(k))%2 == 0 {
-			add(typeID, 1, true)
-		}
+	// Every demo character owns the full ship lineup so the ships tab is
+	// never empty: one hull per type, named per character via the asset
+	// names endpoint fallback.
+	for _, typeID := range DemoShips {
+		add(typeID, 1, true)
+	}
+	// One mutated module per DemoAbyssal entry so the abyssal tab has data.
+	// Item ids stay in the personal base range; the dynamic payload comes
+	// from demoDynamicItem.
+	for _, ab := range DemoAbyssal {
+		add(ab.Mutated, 1, true)
 	}
 	for _, pair := range r.demoPick(c, 12, "asset") {
 		add(pair[1], 1+int((c.ID+int64(pair[1]))%40), false)
 	}
 	return items
+}
+
+// demoDynamicItem answers /dogma/dynamic/items for demo abyssal items:
+// source + mutator plus mutated dogma attributes that differ from the live
+// base values so the roll scores and attribute rows render.
+func (r *DemoResponder) demoDynamicItem(typeID int, itemID int64) (map[string]any, bool) {
+	for _, ab := range DemoAbyssal {
+		if ab.Mutated != typeID {
+			continue
+		}
+		var attrs []any
+		mk := func(id int, v float64) map[string]any {
+			return map[string]any{"attribute_id": float64(id), "value": v}
+		}
+		switch ab.Mutated {
+		case 99101:
+			attrs = []any{mk(267, 0.80), mk(271, 0.83), mk(272, 0.83), mk(50, 33)}
+		case 99102:
+			attrs = []any{mk(72, 2100), mk(50, 44), mk(30, 140)}
+		case 99103:
+			attrs = []any{mk(987, -36), mk(984, -36), mk(985, -36), mk(986, -36), mk(50, 48), mk(6, 30)}
+		case 99104:
+			attrs = []any{mk(64, 4.9), mk(51, 3300), mk(50, 20), mk(6, 1.35)}
+		default:
+			return nil, false
+		}
+		_ = itemID
+		return map[string]any{
+			"source_type_id": float64(ab.Source), "mutator_type_id": float64(ab.Mutator),
+			"dogma_attributes": attrs,
+		}, true
+	}
+	return nil, false
 }
 
 // demoCorpAssets mirrors a corp hangar snapshot: deterministic per corp,
@@ -523,11 +645,24 @@ func (r *DemoResponder) demoCorpAssets(ctx context.Context, corpID int64) []any 
 		})
 		n++
 	}
+	addSingle := func(typeID int) {
+		items = append(items, map[string]any{
+			"item_id": base + n, "type_id": typeID, "quantity": 1, "is_singleton": true,
+			"location_id": home, "location_type": "station", "location_flag": flags[int(n)%len(flags)],
+		})
+		n++
+	}
 	for _, typeID := range sortedDemoMineralIDs() {
 		add(typeID, int(float64(DemoMinerals[typeID])*(0.6+float64(corpID%50)/100)))
 	}
 	for _, typeID := range DemoIsotopes {
 		add(typeID, 40000+int(corpID%80000))
+	}
+	for _, typeID := range DemoShips {
+		addSingle(typeID)
+	}
+	for _, ab := range DemoAbyssal {
+		addSingle(ab.Mutated)
 	}
 	for _, pair := range r.demoPick(members[0], 12, "corpasset") {
 		add(pair[1], 5+int((corpID+int64(pair[1]))%120))
