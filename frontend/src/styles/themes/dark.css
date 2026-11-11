@@ -1,0 +1,99 @@
+/* Dark: a flat, quiet UI. No atmosphere, no chamfers, no glows; system type,
+   square-ish cards and sentence-case headings. */
+:root[data-theme='dark'] {
+  --bg: #111114;
+  --panel: #1a1a20;
+  --text: #ececf1;
+  --muted: #a8a8b8;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --accent: #7d9bff;
+  --accent2: #9fd8ff;
+  --accent-rgb: 125, 155, 255;
+  --accent2-rgb: 159, 216, 255;
+  --panel2: #141419;
+  --shadow: none;
+  --ok: #7fd6a4;
+  --warn: #e0a44f;
+  --bad: #e57e7e;
+  --manufacturing: #7ba7ff;
+  --research: #a89bff;
+  --reactions: #e0a44f;
+  --font-display: system-ui, sans-serif;
+  --font-body: system-ui, sans-serif;
+  --sidebar-width: 260px;
+  color-scheme: dark;
+}
+
+:root[data-theme='dark'] body::before,
+:root[data-theme='dark'] body::after {
+  content: none;
+}
+
+:root[data-theme='dark'] .panel,
+:root[data-theme='dark'] .card,
+:root[data-theme='dark'] .modal {
+  clip-path: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: none;
+}
+:root[data-theme='dark'] .panel::before,
+:root[data-theme='dark'] .panel::after,
+:root[data-theme='dark'] .card::before,
+:root[data-theme='dark'] .card::after {
+  content: none;
+}
+
+/* Sentence-case headings and controls: quieter than the sci-fi default. */
+:root[data-theme='dark'] .content :is(h1, h2, h3, h4),
+:root[data-theme='dark'] .modal :is(h2, h3) {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+:root[data-theme='dark'] .content h2 {
+  color: var(--text);
+}
+:root[data-theme='dark'] .button {
+  clip-path: none;
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+:root[data-theme='dark'] .button:hover:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: none;
+}
+:root[data-theme='dark'] .button.small {
+  clip-path: none;
+  border-radius: 6px;
+}
+:root[data-theme='dark'] .button:focus-visible {
+  outline-offset: 2px;
+}
+
+:root[data-theme='dark'] thead th {
+  background: var(--panel2);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+:root[data-theme='dark'] .sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+:root[data-theme='dark'] .sidebar::before {
+  content: none;
+}
+:root[data-theme='dark'] .sidebar nav a.active {
+  box-shadow: none;
+}
+:root[data-theme='dark'] .sidebar-foot {
+  background: var(--panel2);
+}

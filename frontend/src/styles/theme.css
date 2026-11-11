@@ -325,8 +325,8 @@ tbody tr:hover > td { background: rgba(var(--accent-rgb), 0.05); }
 .sort { padding: 0; }
 button:disabled { cursor: not-allowed; }
 
-/* ===== Form controls: one system ===== */
-input, select, textarea { color-scheme: dark; }
+/* ===== Form controls: one system (color-scheme follows the active theme) ===== */
+input, select, textarea { color-scheme: inherit; }
 input:where(:not([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='button'], [type='submit'])),
 select,
 textarea {

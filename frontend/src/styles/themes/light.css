@@ -1,0 +1,113 @@
+/* Light: soft, rounded daylight UI. Big radii, gentle shadows, sentence-case
+   headings and pill buttons; none of the dark chrome. */
+:root[data-theme='light'] {
+  --bg: #f2f4f9;
+  --panel: #ffffff;
+  --text: #1a2333;
+  --muted: #5b6b86;
+  --line: rgba(15, 25, 45, 0.12);
+  --line-strong: rgba(15, 25, 45, 0.24);
+  --accent: #2456c8;
+  --accent2: #0e7f8c;
+  --accent-rgb: 36, 86, 200;
+  --accent2-rgb: 14, 127, 140;
+  --panel2: #e9edf5;
+  --shadow: 0 10px 28px rgba(20, 35, 70, 0.12);
+  --ok: #1d7a44;
+  --warn: #9a5b00;
+  --bad: #c22f2f;
+  --manufacturing: #2456c8;
+  --research: #6a3fb5;
+  --reactions: #9a5b00;
+  --font-display: system-ui, sans-serif;
+  --font-body: system-ui, sans-serif;
+  --sidebar-width: 260px;
+  color-scheme: light;
+}
+
+:root[data-theme='light'] body::before,
+:root[data-theme='light'] body::after {
+  content: none;
+}
+
+:root[data-theme='light'] .panel,
+:root[data-theme='light'] .card,
+:root[data-theme='light'] .modal {
+  clip-path: none;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+:root[data-theme='light'] .panel::before,
+:root[data-theme='light'] .panel::after,
+:root[data-theme='light'] .card::before,
+:root[data-theme='light'] .card::after {
+  content: none;
+}
+
+:root[data-theme='light'] .content :is(h1, h2, h3, h4),
+:root[data-theme='light'] .modal :is(h2, h3) {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+:root[data-theme='light'] .content h2 {
+  color: var(--text);
+}
+
+/* Pill controls, soft focus rings. */
+:root[data-theme='light'] .button {
+  clip-path: none;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  padding-inline: 1.15rem;
+}
+:root[data-theme='light'] .button.small {
+  clip-path: none;
+  border-radius: 999px;
+  padding-inline: 0.8rem;
+}
+:root[data-theme='light'] .button:hover:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: none;
+}
+:root[data-theme='light'] .button:focus-visible {
+  outline-offset: 2px;
+}
+
+:root[data-theme='light'] thead th {
+  background: var(--panel2);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme='light'] .sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+:root[data-theme='light'] .sidebar::before {
+  content: none;
+}
+:root[data-theme='light'] .sidebar nav a.active {
+  box-shadow: none;
+}
+:root[data-theme='light'] .sidebar-foot {
+  background: var(--panel2);
+}
+
+/* The mobile top bar and Discord hover are hard-coded dark in theme.css;
+   re-tint them from tokens so the light bridge stays light. */
+:root[data-theme='light'] .topbar {
+  background: linear-gradient(to bottom, var(--panel), color-mix(in srgb, var(--panel) 80%, transparent));
+}
+:root[data-theme='light'] .button.discord-link:hover,
+:root[data-theme='light'] .sidebar nav a.button.discord-link:hover {
+  color: var(--text);
+}

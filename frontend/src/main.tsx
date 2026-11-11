@@ -10,6 +10,10 @@ import {
 import './styles/tokens.css'
 import './styles/app.css'
 import './styles/theme.css'
+import './styles/themes/industrialist.css'
+import './styles/themes/eve-online.css'
+import './styles/themes/dark.css'
+import './styles/themes/light.css'
 import { captureInstallPrompt } from './pwa/install'
 import { registerServiceWorker } from './pwa/register'
 

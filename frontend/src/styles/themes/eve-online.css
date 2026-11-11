@@ -1,0 +1,117 @@
+/* EVE Online: the in-game client. Windows, not cards: hard 1px frames, a
+   title band cut into the first heading, condensed type and amber highlights. */
+:root[data-theme='eve-online'] {
+  --bg: #070b12;
+  --panel: #0e141f;
+  --text: #d7e0ee;
+  --muted: #8fa0b8;
+  --line: rgba(150, 180, 220, 0.14);
+  --line-strong: rgba(170, 205, 255, 0.32);
+  --accent: #58b6ff;
+  --accent2: #ffc857;
+  --accent-rgb: 88, 182, 255;
+  --accent2-rgb: 255, 200, 87;
+  --panel2: #0a0f17;
+  --shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+  --ok: #6fe3a5;
+  --warn: #ffb347;
+  --bad: #ff6b6b;
+  --manufacturing: #58b6ff;
+  --research: #b9a5ff;
+  --reactions: #ffc857;
+  --font-display: 'Rajdhani', system-ui, sans-serif;
+  --font-body: 'Rajdhani', system-ui, sans-serif;
+  --sidebar-width: 260px;
+  color-scheme: dark;
+}
+
+/* One cold vignette instead of the neon wash and scanlines. */
+:root[data-theme='eve-online'] body::before {
+  background: radial-gradient(1500px 700px at 50% -10%, rgba(var(--accent-rgb), 0.16), transparent 60%);
+}
+:root[data-theme='eve-online'] body::after {
+  content: none;
+}
+
+/* ===== Windows: sharp frames with an inset highlight ===== */
+:root[data-theme='eve-online'] .panel,
+:root[data-theme='eve-online'] .card,
+:root[data-theme='eve-online'] .modal {
+  clip-path: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  background: var(--panel);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), var(--shadow);
+}
+/* The chamfer corner accents belong to the industrialist chrome. */
+:root[data-theme='eve-online'] .panel::before,
+:root[data-theme='eve-online'] .panel::after,
+:root[data-theme='eve-online'] .card::before,
+:root[data-theme='eve-online'] .card::after {
+  content: none;
+}
+
+/* A leading heading becomes the window's title band. */
+:root[data-theme='eve-online'] .panel > :is(h2, h3):first-child {
+  margin: -0.75rem -1rem 0.85rem;
+  padding: 0.35rem 1rem;
+  background: linear-gradient(180deg, #23314c, #16203a);
+  border-bottom: 1px solid var(--line-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+}
+:root[data-theme='eve-online'] details.panel > summary {
+  margin: -0.75rem -1rem 0.75rem;
+  padding: 0.35rem 1rem;
+  background: linear-gradient(180deg, #23314c, #16203a);
+  border-bottom: 1px solid var(--line-strong);
+  color: var(--text);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+}
+
+/* ===== Controls: client-style rectangles ===== */
+:root[data-theme='eve-online'] .button {
+  clip-path: none;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.16), rgba(var(--accent-rgb), 0.05));
+}
+:root[data-theme='eve-online'] .button:hover:not(:disabled):not([aria-disabled='true']) {
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.3), rgba(var(--accent-rgb), 0.12));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+:root[data-theme='eve-online'] .button:focus-visible {
+  outline-offset: -3px;
+}
+:root[data-theme='eve-online'] input:where(:not([type='checkbox'], [type='radio'], [type='range'], [type='file'])),
+:root[data-theme='eve-online'] select,
+:root[data-theme='eve-online'] textarea {
+  border-radius: 2px;
+  background-color: var(--panel2);
+  border-color: var(--line-strong);
+}
+
+/* ===== Tables: banded rows and a dim header, like the client lists ===== */
+:root[data-theme='eve-online'] thead th {
+  background: linear-gradient(180deg, #1c2740, #131c30);
+  border-bottom: 1px solid var(--line-strong);
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+:root[data-theme='eve-online'] tbody tr:nth-child(even) > td {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+/* ===== Sidebar: selected item is a lit window tab ===== */
+:root[data-theme='eve-online'] .sidebar-head {
+  background: linear-gradient(180deg, #23314c, #16203a);
+}
+:root[data-theme='eve-online'] .sidebar nav a.active {
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.3), rgba(var(--accent-rgb), 0.12));
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--accent2);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}

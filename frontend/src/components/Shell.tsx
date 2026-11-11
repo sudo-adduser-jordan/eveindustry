@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useMe } from '../api/queries'
 import { useSessionActions } from '../api/account'
 import { usePushSync } from '../api/notifications'
+import { THEMES, useTheme } from '../theme'
 import { InstallPrompt } from './InstallPrompt'
 import { DemoBanner } from './DemoBanner'
 import logoIcon from '../assets/logo-icon.svg'
@@ -20,6 +21,7 @@ function DiscordIcon() {
 export function Shell() {
   const me = useMe()
   const session = useSessionActions()
+  const [theme, setTheme] = useTheme()
   usePushSync(Boolean(me.data) && !me.data?.data.demo)
   const { pathname } = useLocation()
   const activeGroup = groupForPath(pathname)
@@ -92,6 +94,12 @@ export function Shell() {
         <div className="sidebar-foot">
           {me.data ? <p className="sidebar-user">{me.data.data.avatar_url ? <img src={me.data.data.avatar_url} alt="" width="28" height="28" /> : null}<span>{me.data.data.display_name}</span></p> : null}
           {me.data?.data.demo ? null : <p><a href="/auth/eve/scopes">Add character</a></p>}
+          <p className="theme-setting">
+            <label htmlFor="theme-select">Theme</label>
+            <select id="theme-select" value={theme} onChange={(e) => setTheme(e.target.value)}>
+              {THEMES.map((t) => <option key={t.id} value={t.id} title={t.blurb}>{t.label}</option>)}
+            </select>
+          </p>
           <button type="button" className="button small" disabled={session.logout.isPending} onClick={() => session.logout.mutate()}>Log out</button>
           {session.logout.error ? <p role="alert">{session.logout.error.message}</p> : null}
         </div>

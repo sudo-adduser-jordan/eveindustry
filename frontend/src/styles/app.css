@@ -14,6 +14,19 @@ h1 { font: 600 1.5rem var(--font-display); letter-spacing: 0.04em; margin: 0 0 1
 .brand { font: 700 1rem var(--font-display); text-decoration: none; }
 .nav-heading { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0.75rem 0 0.25rem; font-weight: 600; }
 .sidebar-foot { margin-top: auto; color: var(--muted); }
+/* Slim single-row theme picker; the label stays for screen readers and as a
+   small caption, while the select tightens to the sidebar's compact density. */
+.theme-setting { display: flex; align-items: center; gap: 0.4rem; margin: 0; }
+.theme-setting label { flex-shrink: 0; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.theme-setting select {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  padding: 0.15rem 1.5rem 0.15rem 0.45rem;
+  background-position: right 0.4rem center;
+  background-size: 0.6rem;
+}
 .nav-group { flex-shrink: 0; }
 .nav-group-toggle { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%; padding: 0.6rem 0.5rem; border: 0; border-radius: 6px; background: transparent; color: var(--text); font: 600 0.85rem var(--font-body); letter-spacing: 0.04em; text-transform: uppercase; text-align: left; cursor: pointer; }
 .nav-group-toggle:hover, .nav-group-toggle.has-active-page { color: var(--accent); background: rgba(var(--accent2-rgb), 0.06); }

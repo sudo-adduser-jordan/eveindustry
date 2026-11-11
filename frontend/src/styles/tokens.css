@@ -5,6 +5,8 @@
   --text: #e9eefc;
   --muted: #a9b5d1;
   --line: rgba(255, 255, 255, 0.1);
+  /* Stronger border for window frames and hard edges. */
+  --line-strong: rgba(255, 255, 255, 0.22);
   --accent: #7aa7ff;
   --accent2: #6ee7ff;
   /* The accent colours as comma-separated RGB, for translucent variants: rgba(var(--accent-rgb), 0.2).

@@ -1,6 +1,9 @@
 import { fireEvent, screen } from '@testing-library/react'
 import { renderWithData } from '../test/render'
+import { ensureLocalStorage } from '../test/storage'
 import { Shell } from './Shell'
+
+ensureLocalStorage()
 
 beforeEach(() => localStorage.clear())
 
@@ -64,4 +67,16 @@ it('hides the work-in-progress Discord bot from admins until its feature switch 
   view.unmount()
   renderWithData(<Shell />, [[['me'], { data: { display_name: 'Admin', admin: true, features: { discord_bot: true } } }]], ['/admin/dashboard'])
   expect(screen.getByRole('link', { name: 'Discord Bot (WIP)' })).toHaveAttribute('href', '/admin/discord-bot')
+})
+
+it('switches themes from the sidebar and remembers the choice', () => {
+  renderWithData(<Shell />, [[['me'], { data: { display_name: 'Pilot', admin: false } }]], ['/dashboard'])
+  const select = screen.getByLabelText('Theme')
+  expect(select).toHaveValue('industrialist')
+  expect(screen.getByRole('option', { name: 'EVE Online' })).toBeInTheDocument()
+  expect(screen.getByRole('option', { name: 'Light' })).toBeInTheDocument()
+  fireEvent.change(select, { target: { value: 'eve-online' } })
+  expect(select).toHaveValue('eve-online')
+  expect(document.documentElement.dataset.theme).toBe('eve-online')
+  expect(localStorage.getItem('eve-industry-theme')).toBe('eve-online')
 })
