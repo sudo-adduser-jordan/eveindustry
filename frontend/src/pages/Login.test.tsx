@@ -5,10 +5,15 @@ import { me, renderWithData } from '../test/render'
 
 afterEach(() => vi.unstubAllGlobals())
 
-it('shows a disabled SSO button and an enabled demo button', () => {
+it('matches the public login panel: SSO link, demo button and helper copy', () => {
   renderWithData(<Login />)
-  expect(screen.getByRole('button', { name: 'Log in with EVE Online' })).toBeDisabled()
+  expect(screen.getByRole('heading', { name: 'Login' })).toBeInTheDocument()
+  const sso = screen.getByRole('link', { name: 'Login with EVE Online' })
+  expect(sso).toHaveAttribute('href', '/auth/eve/scopes')
+  expect(sso).toHaveClass('button', 'primary')
+  expect(screen.getByText('Review your permissions before continuing to the official EVE SSO page.')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Try the demo' })).toBeEnabled()
+  expect(screen.getByText('Explore with three generated characters. No EVE login needed; data resets daily.')).toBeInTheDocument()
 })
 
 it('sends signed-in visitors straight to the dashboard', () => {

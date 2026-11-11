@@ -60,9 +60,10 @@ export function App() {
   return (
     <Suspense fallback={<p className="muted">Loading…</p>}>
       <Routes>
+        {/* Public entry point: no app sidebar, like the legacy login page. */}
+        <Route path="login" element={<Login />} />
         <Route element={<Shell />}>
           <Route index element={<Overview />} />
-          <Route path="login" element={<Login />} />
           <Route path="characters" element={<Characters />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="market-status" element={<MarketStatus />} />

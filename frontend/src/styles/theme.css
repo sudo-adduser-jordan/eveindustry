@@ -457,3 +457,53 @@ summary:hover { color: var(--accent); }
 }
 .install-prompt p { margin: 0.4rem 0 0.75rem; color: var(--muted); font-size: 0.9rem; }
 .install-prompt-close { position: absolute; top: 0.3rem; right: 0.5rem; border: 0; background: transparent; color: var(--muted); font-size: 1.4rem; line-height: 1; cursor: pointer; }
+
+/* ===== Public auth pages (login): narrow centered panel, like auth.css ===== */
+.auth-page { min-height: 100dvh; display: flex; flex-direction: column; }
+.auth-page .site-header {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem max(1rem, 4vw);
+  background: linear-gradient(to bottom, rgba(11, 15, 23, 0.9), rgba(11, 15, 23, 0.75));
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.2);
+}
+.auth-page .site-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--accent), var(--accent2), transparent);
+  opacity: 0.5;
+}
+.auth-page .site-header .brand { flex: 0 0 auto; min-height: 0; padding: 0; }
+.auth-page .site-header nav { display: flex; gap: 1rem; }
+.auth-page .site-header nav a { color: var(--muted); font-weight: 600; text-decoration: none; }
+.auth-page .site-header nav a:hover, .auth-page .site-header nav a[aria-current='page'] { color: var(--accent2); }
+.auth-content { max-width: 1100px; width: 100%; margin: auto; padding: 2rem 1rem; }
+.auth-panel {
+  position: relative;
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)), var(--panel);
+  box-shadow: var(--shadow);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  margin: 1rem auto;
+}
+.auth-panel.narrow { max-width: 460px; }
+.auth-panel h1 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: clamp(1.7rem, 4vw, 2.5rem);
+  line-height: 1.2;
+  margin: 0 0 1rem;
+}
+.auth-panel .button { margin: 0.25rem 0; }
+.auth-panel p[role='alert'] { color: var(--bad); }
