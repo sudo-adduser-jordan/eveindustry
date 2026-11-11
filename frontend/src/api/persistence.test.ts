@@ -14,14 +14,14 @@ describe('shouldPersist', () => {
     for (const key of [
       ['me'], ['reference', 'market-groups'], ['plans', 'reaction'], ['industry', 'availability'],
       ['assets', 'ships'], ['assets', 'materials'], ['calculators', 'reactions', 'skills', 5],
-      ['moon-scans', 'systems'], ['wholemap', 'map', 30000142],
+      ['moon-scans', 'systems'],
     ]) expect(shouldPersist(key), JSON.stringify(key)).toBe(true)
   })
 
   it('leaves out searches, live market data, paginated assets and feeds', () => {
     for (const key of [
       ['systems', 'search', 'jita'], ['market', 'station-trading', {}], ['market', 'freshness'],
-      ['assets', 'personal', 'items', {}, 1], ['wholemap', 'location', 1], ['calculators', 'reaction-stock', [1]],
+      ['assets', 'personal', 'items', {}, 1], ['calculators', 'reaction-stock', [1]],
     ]) expect(shouldPersist(key), JSON.stringify(key)).toBe(false)
   })
 })

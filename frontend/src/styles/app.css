@@ -198,33 +198,13 @@ fieldset.scan-field { border: 0; padding: 0; margin: 0; }
 }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9rem; }
 .wrap { flex-wrap: wrap; }
-.sig-unknown { color: #9ca3af; } .sig-combat { color: #ef4444; } .sig-data { color: #3b82f6; } .sig-relic { color: #f59e0b; }
-.sig-ore { color: #a78bfa; } .sig-gas { color: #34d399; } .sig-wormhole { color: #06b6d4; } .sig-ghost { color: #8b5cf6; }
-.life-stable, .mass-stable { color: #4ade80; } .life-critical, .mass-critical { color: #ef4444; } .mass-destab { color: #fbbf24; }
-.size-small { color: #f87171; } .size-medium { color: #fbbf24; } .size-large { color: #4ade80; } .size-xlarge { color: #60a5fa; }
 .link { font: inherit; color: var(--text); background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
 .link:hover, .link:focus-visible { color: var(--accent); text-decoration: underline; }
 .system-picker { position: relative; }
 .system-picker .corp-results { position: absolute; z-index: 20; left: 0; right: 0; top: 100%; }
-.chain-map { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.5rem; }
-.chain-link { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
-.chain-node { font: inherit; color: var(--text); display: flex; flex-direction: column; align-items: center; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); border-radius: 8px; padding: 0.4rem 0.9rem; cursor: pointer; }
-.chain-node:hover:not(:disabled) { border-color: var(--accent); }
-.chain-node:disabled { cursor: default; }
-.chain-node.tracked { border-color: #06b6d4; box-shadow: 0 0 8px rgba(6, 182, 212, 0.4); }
-.system-name { font-weight: 600; }
-.chain-connector { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--muted); font-size: 0.8rem; }
-.chain-connector .line { width: 28px; height: 2px; background: rgba(255, 255, 255, 0.25); }
-.chain-connector.life-critical .line, .chain-connector.mass-critical .line { background: #ef4444; }
-.chain-connector.mass-destab .line { background: #fbbf24; }
-.wholemap-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 0.75rem; align-items: start; margin-top: 0.75rem; }
-.wholemap-side { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
-@media (max-width: 900px) { .wholemap-grid { grid-template-columns: minmax(0, 1fr); } }
-.side-card { border: 1px solid var(--line); border-radius: 8px; padding: 0.4rem 0.6rem; margin-top: 0.5rem; }
 .row-actions { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; }
 td.row-actions { margin-top: 0; }
 .button.small { padding: 0.1rem 0.5rem; font-size: 0.85rem; }
-.history { list-style: none; margin: 0; padding: 0; max-height: 200px; overflow-y: auto; }
 .modal { color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 1rem; width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; }
 .modal::backdrop { background: rgba(0, 0, 0, 0.6); }
 .modal-head { display: flex; justify-content: space-between; align-items: center; }
@@ -286,11 +266,7 @@ tr.detail > td { background: rgba(var(--accent2-rgb), 0.04); }
 .program-split { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); margin-top: 1rem; }
 @media (max-width: 900px) { .split, .program-split { grid-template-columns: minmax(0, 1fr); } }
 .summaries { display: flex; flex-direction: column; gap: 0.75rem; }
-.hm { display: flex; align-items: center; gap: 0.35rem; border: 0; padding: 0; margin: 0; flex-wrap: wrap; }
-.hm legend { padding: 0; margin-bottom: 0.25rem; }
-.hm input { width: 4.5rem; }
 .scan-field textarea { min-width: 0; resize: vertical; }
-.ess-forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin: 0.75rem 0; }
 .system-picked { display: flex; align-items: center; gap: 0.75rem; margin: 0; }
 .system-results { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 8px; max-height: 14rem; overflow-y: auto; }
 .system-result { display: block; width: 100%; text-align: left; font: inherit; color: var(--text); background: none; border: 0; padding: 0.35rem 0.6rem; cursor: pointer; }

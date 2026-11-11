@@ -45,16 +45,13 @@ type Deps struct {
 	Plans              store.PlanStore
 	CorpPrograms       store.CorpProgramStore
 	StockItems         store.StockStore
-	Wholemap           store.WholemapStore
 	Programs           store.ProgramStore
 	IndustryDeps       IndustryDeps
 	Progress           ProgressDeps
 	MoonScans          store.MoonScanStore
-	WholemapReads      WholemapReadsDeps
 	AssetBrowser       AssetBrowserDeps
 	Donations          store.DonationStore
 	DonationCharacters DonationESI
-	Ess                store.EssStore
 	Windows            store.WindowStore
 	Projects           ProjectESI
 	AdminUsers         store.AdminUserStore
@@ -150,7 +147,6 @@ func New(d Deps) *echo.Echo {
 	registerResearch(authed, d)
 	registerStockReport(authed, d)
 	registerPlanning(authed, d)
-	registerWholemap(authed, d)
 	registerPlans(authed, d)
 	registerCorpPrograms(authed, d)
 	registerCorpProgramPages(authed, d)
@@ -161,11 +157,9 @@ func New(d Deps) *echo.Echo {
 	registerProgress(authed, d)
 	registerAvailability(authed, d)
 	registerMoonScans(authed, d)
-	registerWholemapReads(authed, d)
 	registerAssets(authed, d)
 	registerAssetExtras(authed, d)
 	registerDonations(authed, d)
-	registerEss(authed, d)
 	registerWindows(authed, d)
 	registerProjects(authed, d)
 	registerAdmin(authed, d)

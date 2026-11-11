@@ -5,7 +5,6 @@ import { me, renderWithData } from '../test/render'
 import BuildPrograms, { progressClass } from './CorporateBuildPrograms'
 import { asSteps, groupSteps } from './BuildProgramDetail'
 import Donations, { leaderboardText } from './Donations'
-import EssTracker, { cycleBody, formatCountdown, secondsUntilPayout } from './EssTracker'
 import ProjectContributors from './ProjectContributors'
 import Projects from './Projects'
 import StructureTimers, { toRequest, windowLabel } from './StructureTimers'
@@ -102,8 +101,8 @@ describe('Donations', () => {
 
 describe('ErrorNotice', () => {
   it('shows the 403 message that says what to fix', () => {
-    render(<ErrorNotice error={new ApiError(403, { message: 'No corporation associated with your account.', code: 'forbidden' })} what="the tracker" unavailable="ESS tracker unavailable:" />)
-    expect(screen.getByRole('alert')).toHaveTextContent('ESS tracker unavailable: No corporation associated with your account.')
+    render(<ErrorNotice error={new ApiError(403, { message: 'No corporation associated with your account.', code: 'forbidden' })} what="the tracker" unavailable="Tracker unavailable:" />)
+    expect(screen.getByRole('alert')).toHaveTextContent('Tracker unavailable: No corporation associated with your account.')
   })
 
   it('is generic for other failures', () => {
@@ -189,53 +188,6 @@ describe('ProjectContributors', () => {
     expect(screen.getByText('60.0%')).toBeInTheDocument()
     expect(screen.getByText('1,500.00 ISK')).toBeInTheDocument()
     expect(screen.getByText('Alpha')).toBeInTheDocument()
-  })
-})
-
-describe('EssTracker', () => {
-  it('lists tracked systems with the next payout', () => {
-    renderWithData(<EssTracker />, [
-      [
-        ['corp', 'ess'],
-        {
-          data: [
-            {
-              id: 1,
-              solar_system_id: 30000142,
-              solar_system_name: 'Jita',
-              cycle_minutes: 165,
-              cycle_anchor_at: '2026-10-21T10:00:00+00:00',
-              next_payout_at: '2099-10-21T12:45:00+00:00',
-              seconds_until_next_payout: 600,
-              notes: 'watch',
-              recent_payouts: [{ id: 9, occurred_at: '2026-10-21T10:00:00+00:00', amount_isk: 2500000, notes: null }],
-            },
-          ],
-          meta,
-        },
-      ],
-    ])
-
-    expect(screen.getByText('Jita')).toBeInTheDocument()
-    expect(screen.getByText('Cycle: 2h 45m')).toBeInTheDocument()
-    expect(screen.getByText('2099-10-21 12:45 UTC')).toBeInTheDocument()
-    expect(screen.getByText('2,500,000 ISK', { exact: false })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Remove Jita' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Save system' })).toBeDisabled()
-  })
-
-  it('rolls a stale payout time forward by whole cycles', () => {
-    const now = Date.parse('2026-10-21T12:00:00Z')
-    expect(secondsUntilPayout('2026-10-21T12:10:00Z', 60, now)).toBe(600)
-    expect(secondsUntilPayout('2026-10-21T11:30:00Z', 60, now)).toBe(1800)
-    expect(secondsUntilPayout('2026-10-21T12:00:00Z', 60, now)).toBe(3600)
-    expect(formatCountdown(3725)).toBe('1:02:05')
-  })
-
-  it('sends the next payout time only when filled in', () => {
-    const base = { cycleH: '2', cycleM: '45', nextH: '', nextM: '', notes: ' hi ' }
-    expect(cycleBody(base)).toEqual({ cycle_hours: 2, cycle_minutes: 45, notes: 'hi' })
-    expect(cycleBody({ ...base, nextM: '30' })).toMatchObject({ next_payout_in_hours: 0, next_payout_in_minutes: 30 })
   })
 })
 

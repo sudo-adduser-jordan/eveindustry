@@ -10,8 +10,7 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
-// registerPlanning mounts the station-configs CRUD. Wholemap + plan
-// endpoints land in later slices.
+// registerPlanning mounts the station-configs CRUD.
 func registerPlanning(v1 *echo.Group, d Deps) {
 	if d.Planning == nil {
 		return

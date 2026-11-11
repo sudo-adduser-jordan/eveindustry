@@ -232,19 +232,6 @@ export function useCorporationSearch(q: string) {
   })
 }
 
-type Schemas = import('./schema').components['schemas']
-
-/** The user's wormhole map from the last 24 h; `systemId` narrows signatures and notes. */
-export function useWholemap(systemId: number | null) {
-  return useQuery({
-    queryKey: ['wholemap', 'map', systemId],
-    queryFn: async () =>
-      unwrap(await api.GET('/wholemap', { params: { query: { system_id: systemId ?? undefined } } })),
-    placeholderData: keepPreviousData,
-    staleTime: 30_000,
-  })
-}
-
 /** Solar systems whose name contains `q` (2+ characters), for the pickers. */
 export function useSystemSearch(q: string) {
   return useQuery({
@@ -252,93 +239,6 @@ export function useSystemSearch(q: string) {
     queryFn: async () => unwrap(await api.GET('/systems', { params: { query: { q } } })),
     enabled: q.length >= 2,
     staleTime: 5 * 60_000,
-  })
-}
-
-/**
- * Where a character is right now (asks ESI every time). Polled while
- * tracking is on; a failure is reported, not retried.
- */
-export function useCurrentLocation(characterId: number | null, enabled: boolean) {
-  return useQuery({
-    queryKey: ['wholemap', 'location', characterId],
-    queryFn: async () =>
-      unwrap(await api.GET('/wholemap/location', { params: { query: { character_id: characterId ?? undefined } } })),
-    enabled,
-    refetchInterval: 15_000,
-    retry: false,
-    gcTime: 0,
-  })
-}
-
-/** Every wholemap write reloads the map afterwards. */
-function useWholemapWrite<V, R>(write: (variables: V) => Promise<R>) {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: write,
-    onSuccess: () => client.invalidateQueries({ queryKey: ['wholemap', 'map'] }),
-  })
-}
-
-export function useAddSignature() {
-  return useWholemapWrite(async (body: Schemas['SignatureStoreRequest']) => unwrap(await api.POST('/wholemap/signatures', { body })))
-}
-
-export function usePasteSignatures() {
-  return useWholemapWrite(async (body: Schemas['SignaturePasteRequest']) =>
-    unwrap(await api.POST('/wholemap/signatures/paste', { body })),
-  )
-}
-
-export function useUpdateSignature() {
-  return useWholemapWrite(async ({ id, ...body }: { id: number } & Schemas['SignatureUpdateRequest']) =>
-    unwrap(await api.PUT('/wholemap/signatures/{signature}', { params: { path: { signature: id } }, body })),
-  )
-}
-
-export function useToggleSignatureLock() {
-  return useWholemapWrite(async (id: number) =>
-    unwrap(await api.POST('/wholemap/signatures/{signature}/lock-toggle', { params: { path: { signature: id } } })),
-  )
-}
-
-export function useDeleteSignature() {
-  return useWholemapWrite((id: number) => postNoContent(api.DELETE('/wholemap/signatures/{signature}', { params: { path: { signature: id } } })))
-}
-
-export function useAddConnection() {
-  return useWholemapWrite(async (body: Schemas['ConnectionStoreRequest']) => unwrap(await api.POST('/wholemap/connections', { body })))
-}
-
-export function useDeleteConnection() {
-  return useWholemapWrite((id: number) => postNoContent(api.DELETE('/wholemap/connections/{connection}', { params: { path: { connection: id } } })))
-}
-
-export function useSaveSystemNote() {
-  return useWholemapWrite(async (body: Schemas['SystemNoteRequest']) => unwrap(await api.PUT('/wholemap/notes', { body })))
-}
-
-export function useDeleteSystemNote() {
-  return useWholemapWrite((id: number) => postNoContent(api.DELETE('/wholemap/notes/{note}', { params: { path: { note: id } } })))
-}
-
-export function useLogJump() {
-  return useMutation({
-    mutationFn: async (body: Schemas['JumpLogStoreRequest']) => unwrap(await api.POST('/wholemap/jump-logs', { body })),
-  })
-}
-
-/** Recorded jumps through one connection, newest first. */
-export function useJumpLogs(connectionId: number | null) {
-  return useQuery({
-    queryKey: ['wholemap', 'jump-logs', connectionId],
-    queryFn: async () =>
-      unwrap(
-        await api.GET('/wholemap/connections/{connection}/jump-logs', {
-          params: { path: { connection: connectionId as number }, query: { per_page: 100 } },
-        }),
-      ),
-    enabled: connectionId !== null,
   })
 }
 

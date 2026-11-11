@@ -16,8 +16,6 @@ export type DonationsQuery = NonNullable<NonNullable<paths['/corporation/donatio
 export type ContributorsQuery = NonNullable<
   NonNullable<paths['/corporation/projects/contributors']['get']['parameters']['query']>
 >
-export type EssRequest = components['schemas']['EssCycleRequest']
-export type EssPayoutRequest = components['schemas']['EssPayoutRequest']
 export type StructureWindowRequest = components['schemas']['StructureWindowRequest']
 
 // ── Donations ──────────────────────────────────────────────────────────────
@@ -97,46 +95,6 @@ export function useRefreshProjects() {
     mutationFn: () => noContent(api.POST('/corporation/projects/refresh')),
     onSuccess: () => client.invalidateQueries({ queryKey: ['corp', 'projects'] }),
   })
-}
-
-// ── ESS tracker ────────────────────────────────────────────────────────────
-
-export function useEssSystems() {
-  return useQuery({
-    queryKey: ['corp', 'ess'],
-    queryFn: async () => unwrap(await api.GET('/corporation/ess', { params: { query: { per_page: 200 } } })),
-    retry: retryUnlessForbidden,
-  })
-}
-
-function useEssMutation<V>(fn: (variables: V) => Promise<unknown>) {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: fn,
-    onSuccess: () => client.invalidateQueries({ queryKey: ['corp', 'ess'] }),
-  })
-}
-
-export function useTrackEssSystem() {
-  return useEssMutation(async (body: EssRequest & { solar_system_id: number; solar_system_name?: string }) =>
-    unwrap(await api.POST('/corporation/ess', { body })),
-  )
-}
-
-export function useUpdateEssSystem() {
-  return useEssMutation(async ({ id, body }: { id: number; body: EssRequest }) =>
-    unwrap(await api.PUT('/corporation/ess/{system}', { params: { path: { system: id } }, body })),
-  )
-}
-
-export function useRemoveEssSystem() {
-  return useEssMutation((id: number) => noContent(api.DELETE('/corporation/ess/{system}', { params: { path: { system: id } } })))
-}
-
-export function useLogEssPayout() {
-  return useEssMutation(async ({ id, body }: { id: number; body: EssPayoutRequest }) =>
-    unwrap(await api.POST('/corporation/ess/{system}/payouts', { params: { path: { system: id } }, body })),
-  )
 }
 
 // ── Structure vulnerability windows ────────────────────────────────────────

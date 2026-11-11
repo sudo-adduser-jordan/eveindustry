@@ -23,7 +23,6 @@ export function shouldPersist(key: readonly unknown[]): boolean {
     case 'assets': return sub === 'materials' || sub === 'ships' || sub === 'abyssal'
     case 'calculators': return sub === 'reactions' && third === 'skills'
     case 'moon-scans': return sub === 'systems'
-    case 'wholemap': return sub === 'map'
     default: return false
   }
 }

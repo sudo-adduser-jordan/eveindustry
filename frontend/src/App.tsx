@@ -26,7 +26,6 @@ const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
 const AdminDiscordBot = lazy(() => import('./pages/admin/AdminDiscordBot'))
 const AdminEsiDiagnostics = lazy(() => import('./pages/admin/AdminEsiDiagnostics'))
 const MoonScan = lazy(() => import('./pages/MoonScan'))
-const Wholemap = lazy(() => import('./pages/Wholemap'))
 const Planetary = lazy(() => import('./pages/Planetary'))
 const FactoryPlanner = lazy(() => import('./pages/FactoryPlanner'))
 const Manufacturing = lazy(() => import('./pages/Manufacturing'))
@@ -37,7 +36,6 @@ const Projects = lazy(() => import('./pages/Projects'))
 const ProjectContributors = lazy(() => import('./pages/ProjectContributors'))
 const CorporateBuildPrograms = lazy(() => import('./pages/CorporateBuildPrograms'))
 const BuildProgramDetail = lazy(() => import('./pages/BuildProgramDetail'))
-const EssTracker = lazy(() => import('./pages/EssTracker'))
 const StructureTimers = lazy(() => import('./pages/StructureTimers'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const IndustryJobs = lazy(() => import('./pages/IndustryJobs'))
@@ -103,7 +101,6 @@ export function App() {
             <Route path="esi-diagnostics" element={<AdminEsiDiagnostics />} />
           </Route>
           <Route path="tools/moon-scan" element={<MoonScan />} />
-          <Route path="wholemap" element={<Wholemap />} />
           <Route path="planetary" element={<Planetary />} />
           <Route path="planetary/factory-planner" element={<FactoryPlanner />} />
           <Route path="corporate/donations" element={<Donations />} />
@@ -111,7 +108,6 @@ export function App() {
           <Route path="corporate/projects/contributors" element={<ProjectContributors />} />
           <Route path="corporate/build-programs" element={<CorporateBuildPrograms />} />
           <Route path="corporate/build-programs/:program" element={<BuildProgramDetail />} />
-          <Route path="corporate/ess-tracker" element={<EssTracker />} />
           <Route path="corporate/structure-vulnerability" element={<StructureTimers />} />
           <Route path="market/browser" element={<MarketBrowser />} />
           <Route path="tools/contract-appraisal" element={<ContractAppraisal />} />

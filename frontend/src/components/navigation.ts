@@ -54,14 +54,12 @@ export const navigationGroups: NavigationGroup[] = [
     { label: 'Region Arbitrage', to: '/market/region-arbitrage' },
     { label: 'Market Data', to: '/market-status' },
     { label: 'Overview', to: '/' },
-    { label: 'Wholemap', to: '/wholemap' },
   ] },
   { id: 'corporate', label: 'Corporate', links: [
     { label: 'Donations', to: '/corporate/donations' },
     { label: 'Projects', to: '/corporate/projects' },
     { label: 'Project Contributors', to: '/corporate/projects/contributors' },
     { label: 'Corp Build Programs', to: '/corporate/build-programs' },
-    { label: 'ESS Tracker', to: '/corporate/ess-tracker' },
     { label: 'Structure Timers', to: '/corporate/structure-vulnerability' },
   ] },
   { id: 'admin', label: 'Admin', admin: true, links: [

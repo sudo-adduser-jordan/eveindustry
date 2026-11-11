@@ -103,14 +103,11 @@ func main() {
 		deps.Progress.Characters = esiChars
 		deps.Progress.Universe = esiUniverse
 		deps.Progress.Reference = queries
-		deps.WholemapReads.Characters = esiChars
-		deps.WholemapReads.Reference = queries
 		deps.AssetBrowser.Characters = esiChars
 		deps.AssetBrowser.Universe = esiUniverse
 		deps.AssetBrowser.Reference = queries
 		deps.Donations = queries
 		deps.DonationCharacters = esiChars
-		deps.Ess = queries
 		deps.Windows = queries
 		deps.Projects = esiChars
 		deps.AdminUsers = queries
@@ -137,7 +134,6 @@ func main() {
 		deps.DemoUsers = queries
 		deps.Plans = queries
 		deps.MoonScans = queries
-		deps.Wholemap = queries
 		deps.Programs = queries
 	}
 	if sqlxDB != nil {
