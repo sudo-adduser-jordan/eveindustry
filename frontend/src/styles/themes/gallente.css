@@ -1,0 +1,73 @@
+/* Gallente Federation: emerald and teal. Rounded, softly elevated cards and
+   an underline for the selected nav item instead of corner glows. */
+:root[data-theme='gallente'] {
+  --bg: #08120f;
+  --panel: #0e1a16;
+  --text: #e3f2ea;
+  --muted: #9db8ab;
+  --line: rgba(140, 210, 175, 0.14);
+  --line-strong: rgba(120, 220, 170, 0.3);
+  --accent: #4ade80;
+  --accent2: #6ee7d0;
+  --accent-rgb: 74, 222, 128;
+  --accent2-rgb: 110, 231, 208;
+  --panel2: #0a1612;
+  --shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  --ok: #7ee2a8;
+  --warn: #e6c05a;
+  --bad: #e37878;
+  --manufacturing: #4ade80;
+  --research: #8fb4ff;
+  --reactions: #e6c05a;
+  --font-display: 'Orbitron', system-ui, sans-serif;
+  --font-body: 'Rajdhani', system-ui, sans-serif;
+  --sidebar-width: 260px;
+  color-scheme: dark;
+}
+
+:root[data-theme='gallente'] body::before {
+  background: radial-gradient(1100px 650px at 20% 0%, rgba(var(--accent-rgb), 0.14), transparent 60%);
+}
+:root[data-theme='gallente'] body::after {
+  content: none;
+}
+
+:root[data-theme='gallente'] .panel,
+:root[data-theme='gallente'] .card,
+:root[data-theme='gallente'] .modal {
+  clip-path: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+:root[data-theme='gallente'] .panel::before,
+:root[data-theme='gallente'] .panel::after,
+:root[data-theme='gallente'] .card::before,
+:root[data-theme='gallente'] .card::after {
+  content: none;
+}
+
+:root[data-theme='gallente'] .button {
+  clip-path: none;
+  border-radius: 8px;
+  letter-spacing: 0.05em;
+}
+:root[data-theme='gallente'] .button.small {
+  clip-path: none;
+  border-radius: 6px;
+}
+:root[data-theme='gallente'] .button:hover:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: none;
+}
+
+/* Selected nav item reads as an underline, not a lit panel. */
+:root[data-theme='gallente'] .sidebar nav a.active {
+  background: transparent;
+  border-color: transparent;
+  border-bottom: 2px solid var(--accent2);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--accent2);
+  text-decoration: none;
+}

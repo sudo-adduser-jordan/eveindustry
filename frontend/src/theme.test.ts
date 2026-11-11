@@ -14,6 +14,10 @@ function themeCss(name: string): string {
 const themeFiles: Record<string, string> = {
   industrialist: themeCss('industrialist.css'),
   'eve-online': themeCss('eve-online.css'),
+  amarr: themeCss('amarr.css'),
+  caldari: themeCss('caldari.css'),
+  gallente: themeCss('gallente.css'),
+  minmatar: themeCss('minmatar.css'),
   dark: themeCss('dark.css'),
   light: themeCss('light.css'),
 }
@@ -85,8 +89,12 @@ it('falls back to the default for unknown themes', () => {
   expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe(DEFAULT_THEME)
 })
 
-it('ships four themes and no longer offers the website theme', () => {
-  expect(THEMES.map((t) => t.id)).toEqual(['industrialist', 'eve-online', 'dark', 'light'])
+it('ships the core and faction themes, and never the website theme', () => {
+  const ids = THEMES.map((t) => t.id)
+  expect(ids).toEqual(expect.arrayContaining([
+    'industrialist', 'eve-online', 'amarr', 'caldari', 'gallente', 'minmatar', 'dark', 'light',
+  ]))
+  expect(new Set(ids).size, 'theme ids must be unique').toBe(ids.length)
   expect(isThemeId('eve-online-website')).toBe(false)
 })
 

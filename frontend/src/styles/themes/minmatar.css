@@ -1,0 +1,66 @@
+/* Minmatar Republic: rust and amber. Square, rugged panels with a heavy
+   accent stripe, condensed capitals and no elevation. */
+:root[data-theme='minmatar'] {
+  --bg: #100c0a;
+  --panel: #1a1310;
+  --text: #f2e4da;
+  --muted: #b8a294;
+  --line: rgba(226, 112, 58, 0.18);
+  --line-strong: rgba(240, 140, 80, 0.38);
+  --accent: #e2703a;
+  --accent2: #f2b544;
+  --accent-rgb: 226, 112, 58;
+  --accent2-rgb: 242, 181, 68;
+  --panel2: #140f0c;
+  --shadow: none;
+  --ok: #86c98a;
+  --warn: #f2b544;
+  --bad: #e06060;
+  --manufacturing: #e2703a;
+  --research: #c3a6ff;
+  --reactions: #f2b544;
+  --font-display: 'Rajdhani', system-ui, sans-serif;
+  --font-body: 'Rajdhani', system-ui, sans-serif;
+  --sidebar-width: 260px;
+  color-scheme: dark;
+}
+
+:root[data-theme='minmatar'] body::before {
+  background: radial-gradient(1000px 600px at 80% 0%, rgba(var(--accent-rgb), 0.12), transparent 60%);
+}
+:root[data-theme='minmatar'] body::after {
+  content: none;
+}
+
+/* The stripe is drawn inside the frame so .panel.warn keeps its own border. */
+:root[data-theme='minmatar'] .panel,
+:root[data-theme='minmatar'] .card,
+:root[data-theme='minmatar'] .modal {
+  clip-path: none;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--panel);
+  box-shadow: inset 3px 0 0 rgba(var(--accent-rgb), 0.5);
+}
+:root[data-theme='minmatar'] .panel::before,
+:root[data-theme='minmatar'] .panel::after,
+:root[data-theme='minmatar'] .card::before,
+:root[data-theme='minmatar'] .card::after {
+  content: none;
+}
+
+:root[data-theme='minmatar'] .content :is(h1, h2, h3, h4) {
+  letter-spacing: 0.1em;
+}
+:root[data-theme='minmatar'] .button {
+  clip-path: none;
+  border-radius: 0;
+  letter-spacing: 0.1em;
+}
+:root[data-theme='minmatar'] .button:hover:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: none;
+}
+:root[data-theme='minmatar'] thead th {
+  background: var(--panel2);
+  border-bottom: 2px solid var(--accent);
+}

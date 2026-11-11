@@ -1,0 +1,83 @@
+/* Caldari State: corporate steel-cyan. Flat, thin-lined and quiet, with
+   sentence-case headings and no elevation. */
+:root[data-theme='caldari'] {
+  --bg: #0a1218;
+  --panel: #0f1a22;
+  --text: #dfeaf2;
+  --muted: #93a7b8;
+  --line: rgba(150, 190, 220, 0.12);
+  --line-strong: rgba(140, 200, 235, 0.28);
+  --accent: #56b8d6;
+  --accent2: #9be7ff;
+  --accent-rgb: 86, 184, 214;
+  --accent2-rgb: 155, 231, 255;
+  --panel2: #0b151c;
+  --shadow: none;
+  --ok: #6fd9a8;
+  --warn: #e6b45a;
+  --bad: #e37878;
+  --manufacturing: #56b8d6;
+  --research: #8fb4ff;
+  --reactions: #e6b45a;
+  --font-display: system-ui, sans-serif;
+  --font-body: system-ui, sans-serif;
+  --sidebar-width: 260px;
+  color-scheme: dark;
+}
+
+:root[data-theme='caldari'] body::before,
+:root[data-theme='caldari'] body::after {
+  content: none;
+}
+
+:root[data-theme='caldari'] .panel,
+:root[data-theme='caldari'] .card,
+:root[data-theme='caldari'] .modal {
+  clip-path: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+  box-shadow: none;
+}
+:root[data-theme='caldari'] .panel::before,
+:root[data-theme='caldari'] .panel::after,
+:root[data-theme='caldari'] .card::before,
+:root[data-theme='caldari'] .card::after {
+  content: none;
+}
+
+:root[data-theme='caldari'] .content :is(h1, h2, h3, h4),
+:root[data-theme='caldari'] .modal :is(h2, h3) {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+:root[data-theme='caldari'] .content h2 {
+  color: var(--text);
+}
+:root[data-theme='caldari'] .button {
+  clip-path: none;
+  border-radius: 4px;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+}
+:root[data-theme='caldari'] .button.small {
+  clip-path: none;
+  border-radius: 4px;
+}
+:root[data-theme='caldari'] .button:hover:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: none;
+}
+:root[data-theme='caldari'] thead th {
+  background: var(--panel2);
+  border-bottom: 1px solid var(--line);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+:root[data-theme='caldari'] .sidebar::before {
+  content: none;
+}
+:root[data-theme='caldari'] .sidebar nav a.active {
+  box-shadow: none;
+}

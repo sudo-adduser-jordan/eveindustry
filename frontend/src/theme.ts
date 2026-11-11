@@ -15,6 +15,10 @@ export const DEFAULT_THEME = 'industrialist'
 export const THEMES: ThemeDefinition[] = [
   { id: 'industrialist', label: 'Industrialist', blurb: 'Sci-fi operations look: chamfered panels, neon accents.', themeColor: '#0d1520' },
   { id: 'eve-online', label: 'EVE Online', blurb: 'In-game client: framed windows, title bands, amber highlights.', themeColor: '#070b12' },
+  { id: 'amarr', label: 'Amarr Empire', blurb: 'Imperial gold with square double frames and tracked capitals.', themeColor: '#0d0a06' },
+  { id: 'caldari', label: 'Caldari State', blurb: 'Corporate steel-cyan: flat, thin lines, sentence case.', themeColor: '#0a1218' },
+  { id: 'gallente', label: 'Gallente Federation', blurb: 'Emerald and teal, rounded and softly elevated.', themeColor: '#08120f' },
+  { id: 'minmatar', label: 'Minmatar Republic', blurb: 'Rust and amber, square panels with a heavy accent stripe.', themeColor: '#100c0a' },
   { id: 'dark', label: 'Dark', blurb: 'Flat and quiet: no glows, system type, sentence-case headings.', themeColor: '#111114' },
   { id: 'light', label: 'Light', blurb: 'Soft daylight: rounded cards, gentle shadows, pill buttons.', themeColor: '#f2f4f9' },
 ]
