@@ -1,0 +1,67 @@
+/* Blood Raider Covenant: near-black with crimson. Square frames capped by a
+   heavy red bar, flat surfaces and tracked capitals. */
+:root[data-theme='blood-raiders'] {
+  --bg: #0f0507;
+  --panel: #1a0a0d;
+  --text: #f0dede;
+  --muted: #b08e93;
+  --line: rgba(190, 40, 60, 0.18);
+  --line-strong: rgba(200, 30, 55, 0.4);
+  --accent: #c1122d;
+  --accent2: #ff5a5a;
+  --accent-rgb: 193, 18, 45;
+  --accent2-rgb: 255, 90, 90;
+  --panel2: #15070a;
+  --shadow: none;
+  --ok: #7bd88f;
+  --warn: #e0b25a;
+  --bad: #ff6b6b;
+  --manufacturing: #c1122d;
+  --research: #b091ff;
+  --reactions: #ff5a5a;
+  --font-display: 'Rajdhani', system-ui, sans-serif;
+  --font-body: 'Rajdhani', system-ui, sans-serif;
+  --sidebar-width: 260px;
+  color-scheme: dark;
+}
+
+:root[data-theme='blood-raiders'] body::before {
+  background: radial-gradient(900px 500px at 50% -10%, rgba(var(--accent-rgb), 0.22), transparent 60%);
+}
+:root[data-theme='blood-raiders'] body::after {
+  content: none;
+}
+
+:root[data-theme='blood-raiders'] .panel,
+:root[data-theme='blood-raiders'] .card,
+:root[data-theme='blood-raiders'] .modal {
+  clip-path: none;
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--accent);
+  border-radius: 0;
+  background: var(--panel);
+  box-shadow: none;
+}
+:root[data-theme='blood-raiders'] .panel::before,
+:root[data-theme='blood-raiders'] .panel::after,
+:root[data-theme='blood-raiders'] .card::before,
+:root[data-theme='blood-raiders'] .card::after {
+  content: none;
+}
+
+:root[data-theme='blood-raiders'] .content :is(h1, h2, h3, h4) {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+:root[data-theme='blood-raiders'] .button {
+  clip-path: none;
+  border-radius: 0;
+  letter-spacing: 0.12em;
+}
+:root[data-theme='blood-raiders'] .button:hover:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: none;
+}
+:root[data-theme='blood-raiders'] thead th {
+  background: var(--panel2);
+  border-bottom: 2px solid var(--accent);
+}

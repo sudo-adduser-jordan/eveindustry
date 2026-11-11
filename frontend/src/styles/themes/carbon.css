@@ -1,0 +1,84 @@
+/* Carbon: the classic EVE client UI. Charcoal frame, steel-blue highlights,
+   flat 1px lines and small caps; no chamfers, glows or scanlines. */
+:root[data-theme='carbon'] {
+  --bg: #0e0f11;
+  --panel: #1b1d21;
+  --text: #c9ced4;
+  --muted: #8d949c;
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(160, 190, 215, 0.28);
+  --accent: #7fa8c9;
+  --accent2: #b8d4e8;
+  --accent-rgb: 127, 168, 201;
+  --accent2-rgb: 184, 212, 232;
+  --panel2: #151719;
+  --shadow: none;
+  --ok: #7bd88f;
+  --warn: #e0b25a;
+  --bad: #e06b6b;
+  --manufacturing: #7fa8c9;
+  --research: #a89bd8;
+  --reactions: #e0b25a;
+  --font-display: 'Rajdhani', system-ui, sans-serif;
+  --font-body: 'Rajdhani', system-ui, sans-serif;
+  --sidebar-width: 260px;
+  color-scheme: dark;
+}
+
+:root[data-theme='carbon'] body::before,
+:root[data-theme='carbon'] body::after {
+  content: none;
+}
+
+:root[data-theme='carbon'] .panel,
+:root[data-theme='carbon'] .card,
+:root[data-theme='carbon'] .modal {
+  clip-path: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  background: var(--panel);
+  box-shadow: none;
+}
+:root[data-theme='carbon'] .panel::before,
+:root[data-theme='carbon'] .panel::after,
+:root[data-theme='carbon'] .card::before,
+:root[data-theme='carbon'] .card::after {
+  content: none;
+}
+
+:root[data-theme='carbon'] .content :is(h1, h2, h3, h4),
+:root[data-theme='carbon'] .modal :is(h2, h3) {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+:root[data-theme='carbon'] .content h2 {
+  color: var(--text);
+}
+:root[data-theme='carbon'] .button {
+  clip-path: none;
+  border-radius: 2px;
+  letter-spacing: 0.09em;
+}
+:root[data-theme='carbon'] .button.small {
+  clip-path: none;
+  border-radius: 2px;
+}
+:root[data-theme='carbon'] .button:hover:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: none;
+}
+:root[data-theme='carbon'] thead th {
+  background: var(--panel2);
+  border-bottom: 1px solid var(--line-strong);
+  letter-spacing: 0.1em;
+}
+:root[data-theme='carbon'] .sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--line-strong);
+}
+:root[data-theme='carbon'] .sidebar::before {
+  content: none;
+}
+:root[data-theme='carbon'] .sidebar nav a.active {
+  box-shadow: none;
+}

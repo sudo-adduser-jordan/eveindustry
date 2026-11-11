@@ -75,6 +75,8 @@ it('switches themes from the sidebar and remembers the choice', () => {
   expect(select).toHaveValue('industrialist')
   expect(screen.getByRole('option', { name: 'EVE Online' })).toBeInTheDocument()
   expect(screen.getByRole('option', { name: 'Light' })).toBeInTheDocument()
+  expect(screen.getByRole('option', { name: 'Angel Cartel' })).toBeInTheDocument()
+  expect(screen.getByRole('group', { name: 'Pirates' })).toBeInTheDocument()
   fireEvent.change(select, { target: { value: 'eve-online' } })
   expect(select).toHaveValue('eve-online')
   expect(document.documentElement.dataset.theme).toBe('eve-online')

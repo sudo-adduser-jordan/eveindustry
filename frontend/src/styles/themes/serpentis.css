@@ -1,0 +1,69 @@
+/* Serpentis: deep green with jade highlights. Rounded, quietly elevated
+   panels and condensed type. */
+:root[data-theme='serpentis'] {
+  --bg: #0a1010;
+  --panel: #101a19;
+  --text: #e2efec;
+  --muted: #96b0aa;
+  --line: rgba(140, 220, 200, 0.12);
+  --line-strong: rgba(90, 220, 180, 0.3);
+  --accent: #4fd1a5;
+  --accent2: #9fe8d4;
+  --accent-rgb: 79, 209, 165;
+  --accent2-rgb: 159, 232, 212;
+  --panel2: #0c1615;
+  --shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  --ok: #7bd88f;
+  --warn: #e0b25a;
+  --bad: #e37878;
+  --manufacturing: #4fd1a5;
+  --research: #8fb4ff;
+  --reactions: #e0b25a;
+  --font-display: 'Rajdhani', system-ui, sans-serif;
+  --font-body: 'Rajdhani', system-ui, sans-serif;
+  --sidebar-width: 260px;
+  color-scheme: dark;
+}
+
+:root[data-theme='serpentis'] body::before {
+  background: radial-gradient(1100px 600px at 50% -10%, rgba(var(--accent-rgb), 0.14), transparent 60%);
+}
+:root[data-theme='serpentis'] body::after {
+  content: none;
+}
+
+:root[data-theme='serpentis'] .panel,
+:root[data-theme='serpentis'] .card,
+:root[data-theme='serpentis'] .modal {
+  clip-path: none;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+:root[data-theme='serpentis'] .panel::before,
+:root[data-theme='serpentis'] .panel::after,
+:root[data-theme='serpentis'] .card::before,
+:root[data-theme='serpentis'] .card::after {
+  content: none;
+}
+
+:root[data-theme='serpentis'] .button {
+  clip-path: none;
+  border-radius: 8px;
+  letter-spacing: 0.05em;
+}
+:root[data-theme='serpentis'] .button.small {
+  clip-path: none;
+  border-radius: 6px;
+}
+:root[data-theme='serpentis'] .button:hover:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: none;
+}
+:root[data-theme='serpentis'] thead th {
+  background: var(--panel2);
+  border-bottom: 1px solid var(--line-strong);
+}
+:root[data-theme='serpentis'] .sidebar nav a.active {
+  box-shadow: none;
+}

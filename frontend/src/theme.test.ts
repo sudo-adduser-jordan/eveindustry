@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ensureLocalStorage } from './test/storage'
-import { applyTheme, DEFAULT_THEME, isThemeId, readTheme, THEMES, THEME_STORAGE_KEY, themeColorFor } from './theme'
+import { applyTheme, DEFAULT_THEME, isThemeId, readTheme, THEMES, THEME_GROUPS, THEME_STORAGE_KEY, themeColorFor } from './theme'
 
 ensureLocalStorage()
 
@@ -14,10 +14,16 @@ function themeCss(name: string): string {
 const themeFiles: Record<string, string> = {
   industrialist: themeCss('industrialist.css'),
   'eve-online': themeCss('eve-online.css'),
+  carbon: themeCss('carbon.css'),
   amarr: themeCss('amarr.css'),
   caldari: themeCss('caldari.css'),
   gallente: themeCss('gallente.css'),
   minmatar: themeCss('minmatar.css'),
+  'angel-cartel': themeCss('angel-cartel.css'),
+  'blood-raiders': themeCss('blood-raiders.css'),
+  guristas: themeCss('guristas.css'),
+  sansha: themeCss('sansha.css'),
+  serpentis: themeCss('serpentis.css'),
   dark: themeCss('dark.css'),
   light: themeCss('light.css'),
 }
@@ -89,13 +95,24 @@ it('falls back to the default for unknown themes', () => {
   expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe(DEFAULT_THEME)
 })
 
-it('ships the core and faction themes, and never the website theme', () => {
+it('ships the core, empire and pirate themes, and never the website theme', () => {
   const ids = THEMES.map((t) => t.id)
   expect(ids).toEqual(expect.arrayContaining([
-    'industrialist', 'eve-online', 'amarr', 'caldari', 'gallente', 'minmatar', 'dark', 'light',
+    'industrialist', 'eve-online', 'carbon',
+    'amarr', 'caldari', 'gallente', 'minmatar',
+    'angel-cartel', 'blood-raiders', 'guristas', 'sansha', 'serpentis',
+    'dark', 'light',
   ]))
   expect(new Set(ids).size, 'theme ids must be unique').toBe(ids.length)
   expect(isThemeId('eve-online-website')).toBe(false)
+})
+
+it('groups every theme into the picker sections', () => {
+  expect(THEME_GROUPS).toEqual(['Core', 'Empires', 'Pirates', 'Neutral'])
+  for (const theme of THEMES) {
+    expect(theme.label, `${theme.id} needs a label`).toBeTruthy()
+    expect(theme.group, `${theme.id} needs a group`).toBeTruthy()
+  }
 })
 
 // Themes must differ in structure, not only in palette: chrome, shape or type.

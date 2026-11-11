@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useMe } from '../api/queries'
 import { useSessionActions } from '../api/account'
 import { usePushSync } from '../api/notifications'
-import { THEMES, useTheme } from '../theme'
+import { THEMES, THEME_GROUPS, useTheme } from '../theme'
 import { InstallPrompt } from './InstallPrompt'
 import { DemoBanner } from './DemoBanner'
 import logoIcon from '../assets/logo-icon.svg'
@@ -97,7 +97,11 @@ export function Shell() {
           <p className="theme-setting">
             <label htmlFor="theme-select">Theme</label>
             <select id="theme-select" value={theme} onChange={(e) => setTheme(e.target.value)}>
-              {THEMES.map((t) => <option key={t.id} value={t.id} title={t.blurb}>{t.label}</option>)}
+              {THEME_GROUPS.map((group) => (
+                <optgroup key={group} label={group}>
+                  {THEMES.filter((t) => t.group === group).map((t) => <option key={t.id} value={t.id} title={t.blurb}>{t.label}</option>)}
+                </optgroup>
+              ))}
             </select>
           </p>
           <button type="button" className="button small" disabled={session.logout.isPending} onClick={() => session.logout.mutate()}>Log out</button>

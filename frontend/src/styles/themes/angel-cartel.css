@@ -1,0 +1,71 @@
+/* Angel Cartel: blood red and silver. Aggressive reverse-chamfered corners,
+   hard frames and a red glow. */
+:root[data-theme='angel-cartel'] {
+  --bg: #120a0c;
+  --panel: #1c1014;
+  --text: #ece0e0;
+  --muted: #b59a9e;
+  --line: rgba(210, 120, 120, 0.14);
+  --line-strong: rgba(230, 80, 90, 0.34);
+  --accent: #cf3247;
+  --accent2: #d9cdc2;
+  --accent-rgb: 207, 50, 71;
+  --accent2-rgb: 217, 205, 194;
+  --panel2: #170c10;
+  --shadow: 0 14px 32px rgba(120, 10, 25, 0.35);
+  --ok: #7bd88f;
+  --warn: #e0b25a;
+  --bad: #ff6b6b;
+  --manufacturing: #cf3247;
+  --research: #b091ff;
+  --reactions: #e0b25a;
+  --font-display: 'Orbitron', system-ui, sans-serif;
+  --font-body: 'Rajdhani', system-ui, sans-serif;
+  --sidebar-width: 260px;
+  color-scheme: dark;
+}
+
+:root[data-theme='angel-cartel'] body::before {
+  background: radial-gradient(1100px 600px at 80% 0%, rgba(var(--accent-rgb), 0.2), transparent 60%);
+}
+:root[data-theme='angel-cartel'] body::after {
+  content: none;
+}
+
+/* Reverse chamfer: the cut corners move to the other diagonal. */
+:root[data-theme='angel-cartel'] .panel,
+:root[data-theme='angel-cartel'] .card {
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+:root[data-theme='angel-cartel'] .modal {
+  clip-path: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+:root[data-theme='angel-cartel'] .panel::before,
+:root[data-theme='angel-cartel'] .panel::after,
+:root[data-theme='angel-cartel'] .card::before,
+:root[data-theme='angel-cartel'] .card::after {
+  content: none;
+}
+
+:root[data-theme='angel-cartel'] .content :is(h1, h2, h3, h4) {
+  letter-spacing: 0.1em;
+}
+:root[data-theme='angel-cartel'] .button {
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  border-radius: 0;
+}
+:root[data-theme='angel-cartel'] .button.small {
+  clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+}
+:root[data-theme='angel-cartel'] thead th {
+  background: var(--panel2);
+  border-bottom: 2px solid var(--accent);
+}

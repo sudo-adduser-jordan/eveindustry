@@ -1,0 +1,66 @@
+/* Guristas Pirates: gunmetal with orange-red highlights. Flat tech panels
+   with a soft inner highlight and no chamfers. */
+:root[data-theme='guristas'] {
+  --bg: #101216;
+  --panel: #191d23;
+  --text: #e6e9ee;
+  --muted: #98a1ad;
+  --line: rgba(200, 215, 235, 0.1);
+  --line-strong: rgba(255, 120, 70, 0.3);
+  --accent: #ff6b3d;
+  --accent2: #cfd6e0;
+  --accent-rgb: 255, 107, 61;
+  --accent2-rgb: 207, 214, 224;
+  --panel2: #141820;
+  --shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  --ok: #7bd88f;
+  --warn: #e0b25a;
+  --bad: #ff6b6b;
+  --manufacturing: #ff6b3d;
+  --research: #b091ff;
+  --reactions: #e0b25a;
+  --font-display: 'Orbitron', system-ui, sans-serif;
+  --font-body: 'Rajdhani', system-ui, sans-serif;
+  --sidebar-width: 260px;
+  color-scheme: dark;
+}
+
+:root[data-theme='guristas'] body::before {
+  background: radial-gradient(1100px 600px at 15% 0%, rgba(var(--accent-rgb), 0.14), transparent 60%);
+}
+:root[data-theme='guristas'] body::after {
+  content: none;
+}
+
+:root[data-theme='guristas'] .panel,
+:root[data-theme='guristas'] .card,
+:root[data-theme='guristas'] .modal {
+  clip-path: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), var(--shadow);
+}
+:root[data-theme='guristas'] .panel::before,
+:root[data-theme='guristas'] .panel::after,
+:root[data-theme='guristas'] .card::before,
+:root[data-theme='guristas'] .card::after {
+  content: none;
+}
+
+:root[data-theme='guristas'] .button {
+  clip-path: none;
+  border-radius: 6px;
+  letter-spacing: 0.06em;
+}
+:root[data-theme='guristas'] .button.small {
+  clip-path: none;
+  border-radius: 5px;
+}
+:root[data-theme='guristas'] .button:hover:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: none;
+}
+:root[data-theme='guristas'] thead th {
+  background: var(--panel2);
+  border-bottom: 1px solid var(--line-strong);
+}
