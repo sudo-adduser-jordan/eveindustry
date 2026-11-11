@@ -93,6 +93,7 @@ func run(args []string) error {
 	r := jobs.NewRunner(jobs.Deps{Log: log})
 	jobs.RegisterRefreshJobs(r, hd)
 	jobs.RegisterSweepJobs(r, hd)
+	jobs.RegisterSDEJobs(r, hd)
 	jobs.RegisterImportJobs(r, hd)
 	jobs.RegisterPrecomputeJobs(r, hd)
 	jobs.RegisterMaintenanceJobs(r, hd)

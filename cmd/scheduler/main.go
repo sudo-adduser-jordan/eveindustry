@@ -64,6 +64,7 @@ func main() {
 	r := jobs.NewRunner(jobs.Deps{Log: log, Locks: locks})
 	jobs.RegisterRefreshJobs(r, hd)
 	jobs.RegisterSweepJobs(r, hd)
+	jobs.RegisterSDEJobs(r, hd)
 	jobs.RegisterImportJobs(r, hd)
 	jobs.RegisterPrecomputeJobs(r, hd)
 	jobs.RegisterMaintenanceJobs(r, hd)
@@ -84,6 +85,9 @@ func main() {
 			sched.Entries = append(sched.Entries, e)
 		}
 		for _, e := range jobs.SweepSchedule(hd, 10000002) {
+			sched.Entries = append(sched.Entries, e)
+		}
+		for _, e := range jobs.SDESchedule(hd) {
 			sched.Entries = append(sched.Entries, e)
 		}
 		for _, e := range jobs.ImportSchedule(hd, 10000002) {
