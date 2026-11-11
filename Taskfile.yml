@@ -8,15 +8,13 @@ tasks:
     desc: Install Go modules and frontend dependencies
     cmds:
       - cmd: go mod download
-      - cmd: npm ci
-        dir: frontend
+      - cmd: npm --prefix frontend ci
       - cmd: go build {{if .GO_TAGS}}-tags {{.GO_TAGS}}{{end}} ./...
   update:
     desc: Update Go and frontend dependencies
     cmds:
       - cmd: go get -u ./... && go mod tidy
-      - cmd: npm update
-        dir: frontend
+      - cmd: npm --prefix frontend update
   remove:
     desc: Remove build outputs and ephemeral run files
     cmds:
