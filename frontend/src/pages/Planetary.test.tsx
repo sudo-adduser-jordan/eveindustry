@@ -102,6 +102,16 @@ describe('Planetary', () => {
     expect(screen.getByText('No planetary interaction data found.')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('esi-planets.manage_planets.v1')
   })
+
+  it('renders a legacy backend payload without crashing', () => {
+    const legacy = response([planet({})])
+    const [p] = legacy.data.characters[0].planets as Array<Record<string, unknown>>
+    delete p.storages
+    delete p.extractor_count
+    renderWithData(<Planetary />, [[['planetary'], legacy]])
+    expect(screen.getByText('Planetary interaction')).toBeInTheDocument()
+    expect(screen.getByText('Jita I', { selector: 'strong' })).toBeInTheDocument()
+  })
 })
 
 describe('extractor timing', () => {

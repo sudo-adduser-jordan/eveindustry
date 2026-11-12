@@ -97,6 +97,32 @@ func TestPlanetaryShow(t *testing.T) {
 	if planet["planet_name"] != "Jita I" || len(planet["extractors"].([]any)) != 1 {
 		t.Fatalf("planet = %v", planet)
 	}
+	for _, key := range []string{"extractor_count", "factory_count", "storage_count", "launchpad_count", "route_count"} {
+		if _, ok := planet[key]; !ok {
+			t.Fatalf("planet missing flat count %q: %v", key, planet)
+		}
+	}
+	if _, ok := planet["storages"]; !ok {
+		t.Fatalf("planet missing storages: %v", planet)
+	}
+	ext := planet["extractors"].([]any)[0].(map[string]any)
+	if ext["icon_url"] == nil || ext["icon_url"] == "" {
+		t.Fatalf("extractor missing icon_url: %v", ext)
+	}
+	storage := planet["storages"].([]any)[0].(map[string]any)
+	if storage["kind"] != "launchpad" {
+		t.Fatalf("storage kind = %v", storage)
+	}
+	if items, ok := storage["items"].([]any); !ok || len(items) != 1 {
+		t.Fatalf("storage items = %v", storage)
+	} else if items[0].(map[string]any)["icon_url"] == nil {
+		t.Fatalf("storage item missing icon_url: %v", items[0])
+	}
+	for _, ov := range outputs {
+		if _, ok := ov.(map[string]any)["source"]; ok {
+			t.Fatalf("output leaks internal source: %v", ov)
+		}
+	}
 	if data["capacity"].([]any)[0].(map[string]any)["status"] != "under_capacity" {
 		t.Fatalf("capacity = %v", data["capacity"])
 	}

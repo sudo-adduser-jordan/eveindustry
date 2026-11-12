@@ -48,7 +48,8 @@ function clock(seconds: number): string {
 }
 
 
-export function groupFactories(factories: Planet['factories']) {
+export function groupFactories(factories: Planet['factories'] | undefined) {
+  if (!factories) return []
   const groups = new Map<number, Planet['factories'][number] & { count: number }>()
   for (const f of factories) {
     const g = groups.get(f.schematic_id)
@@ -62,9 +63,9 @@ function planetText(p: Planet): string {
   return [
     p.planet_name,
     p.planet_type,
-    ...p.outputs.map((o) => o.name),
-    ...p.extractors.map((e) => e.product_name),
-    ...p.factories.map((f) => f.schematic_name),
+    ...(p.outputs ?? []).map((o) => o.name),
+    ...(p.extractors ?? []).map((e) => e.product_name),
+    ...(p.factories ?? []).map((f) => f.schematic_name),
   ]
     .join(' ')
     .toLowerCase()
@@ -101,6 +102,7 @@ function ExtractorRow({ e }: { e: Extractor }) {
 function StorageRow({ s }: { s: Storage }) {
   const level = s.usage_percent < 50 ? 'pi-low' : s.usage_percent < 80 ? 'pi-mid' : 'pi-high'
   const label = s.kind === 'launchpad' ? 'Launchpad' : 'Storage'
+  const items = s.items ?? []
   return (
     <div className="pi-row">
       <div className="pi-line small">
@@ -119,7 +121,7 @@ function StorageRow({ s }: { s: Storage }) {
       >
         <span style={{ width: `${s.usage_percent}%` }} />
       </div>
-      {s.items.map((item) => (
+      {items.map((item) => (
         <div key={item.type_id} className="pi-line small muted">
           <span>
             <img src={item.icon_url} alt="" width={16} height={16} loading="lazy" /> {item.name}
@@ -132,6 +134,15 @@ function StorageRow({ s }: { s: Storage }) {
 }
 
 function PlanetCard({ p }: { p: Planet }) {
+  const alerts = p.alerts ?? []
+  const extractors = p.extractors ?? []
+  const factories = p.factories ?? []
+  const storages = p.storages ?? []
+  const extractorCount = p.extractor_count ?? 0
+  const factoryCount = p.factory_count ?? 0
+  const storageCount = p.storage_count ?? 0
+  const launchpadCount = p.launchpad_count ?? 0
+  const routeCount = p.route_count ?? 0
   return (
     <li className={`planet planet-${p.planet_type}`}>
       <div className="pi-line">
@@ -144,20 +155,20 @@ function PlanetCard({ p }: { p: Planet }) {
         <span className="badge">{p.num_pins} pins</span>
       </div>
       <div className="pi-badges small">
-        {p.extractor_count > 0 ? <span className="badge">{p.extractor_count} extractors</span> : null}
-        {p.factory_count > 0 ? <span className="badge">{p.factory_count} factories</span> : null}
-        {p.storage_count > 0 ? <span className="badge">{p.storage_count} storage</span> : null}
-        {p.launchpad_count > 0 ? <span className="badge">{p.launchpad_count} launchpad</span> : null}
+        {extractorCount > 0 ? <span className="badge">{extractorCount} extractors</span> : null}
+        {factoryCount > 0 ? <span className="badge">{factoryCount} factories</span> : null}
+        {storageCount > 0 ? <span className="badge">{storageCount} storage</span> : null}
+        {launchpadCount > 0 ? <span className="badge">{launchpadCount} launchpad</span> : null}
       </div>
-      {p.alerts.map((a, i) => (
+      {alerts.map((a, i) => (
         <div key={i} className="pi-alert small">
           ⚠ {a.message}
         </div>
       ))}
-      {p.extractors.map((e, i) => (
+      {extractors.map((e, i) => (
         <ExtractorRow key={i} e={e} />
       ))}
-      {groupFactories(p.factories).map((f) => (
+      {groupFactories(factories).map((f) => (
         <div key={f.schematic_id} className="pi-line small">
           <span>
             ⚙ {f.count > 1 ? `${f.count}× ` : null}
@@ -166,10 +177,10 @@ function PlanetCard({ p }: { p: Planet }) {
           <span className="muted">{clock(f.cycle_time)} cycle</span>
         </div>
       ))}
-      {p.storages.map((s, i) => (
+      {storages.map((s, i) => (
         <StorageRow key={i} s={s} />
       ))}
-      {p.route_count > 0 ? <div className="muted small">{p.route_count} route(s)</div> : null}
+      {routeCount > 0 ? <div className="muted small">{routeCount} route(s)</div> : null}
     </li>
   )
 }
@@ -187,9 +198,13 @@ export default function Planetary() {
 
   const d = planetary.data.data
   const query = filter.trim().toLowerCase()
-  const maxPerHour = Math.max(1, ...d.outputs.map((o) => o.per_hour))
-  const characters = d.characters
-    .map((c) => ({ ...c, planets: c.planets.filter((p) => query === '' || planetText(p).includes(query)) }))
+  const outputs = d.outputs ?? []
+  const alerts = d.alerts ?? []
+  const capacity = d.capacity ?? []
+  const allCharacters = d.characters ?? []
+  const maxPerHour = Math.max(1, ...outputs.map((o) => o.per_hour))
+  const characters = allCharacters
+    .map((c) => ({ ...c, planets: (c.planets ?? []).filter((p) => query === '' || planetText(p).includes(query)) }))
     .filter((c) => query === '' || c.planets.length > 0)
 
   return (
@@ -226,7 +241,7 @@ export default function Planetary() {
         </div>
       </dl>
 
-      {d.characters.length === 0 ? (
+      {allCharacters.length === 0 ? (
         <div className="panel">
           <p>No planetary interaction data found.</p>
           <p className="muted">
@@ -235,11 +250,11 @@ export default function Planetary() {
         </div>
       ) : (
         <>
-          {d.alerts.length > 0 ? (
+          {alerts.length > 0 ? (
             <details className="panel">
-              <summary>Alerts ({d.alerts.length})</summary>
+              <summary>Alerts ({alerts.length})</summary>
               <ul className="pi-alerts">
-                {d.alerts.map((a, i) => (
+                {alerts.map((a, i) => (
                   <li key={i}>
                     <strong>{a.character_name}</strong> — {a.planet_name}: {a.message}
                   </li>
@@ -248,7 +263,7 @@ export default function Planetary() {
             </details>
           ) : null}
 
-          {d.outputs.length > 0 ? (
+          {outputs.length > 0 ? (
             <details className="panel">
               <summary>Production outputs</summary>
               <div className="table-wrap">
@@ -269,7 +284,7 @@ export default function Planetary() {
                     </tr>
                   </thead>
                   <tbody>
-                    {d.outputs.map((o) => (
+                    {outputs.map((o) => (
                       <tr key={o.type_id}>
                         <td>
                           <span className="asset-name">
@@ -300,7 +315,7 @@ export default function Planetary() {
             </details>
           ) : null}
 
-          {d.capacity.length > 0 ? (
+          {capacity.length > 0 ? (
             <details className="panel">
               <summary>Factory capacity</summary>
               <div className="table-wrap">
@@ -320,7 +335,7 @@ export default function Planetary() {
                     </tr>
                   </thead>
                   <tbody>
-                    {d.capacity.map((c, i) => (
+                    {capacity.map((c, i) => (
                       <tr key={i}>
                         <td>{c.character_name}</td>
                         <td>{c.planet_name}</td>
@@ -329,7 +344,7 @@ export default function Planetary() {
                         <td className="num">{c.factory_count}</td>
                         <td>
                           <span className={c.status === 'balanced' ? 'badge badge-fresh' : 'badge badge-stale'}>
-                            {CAPACITY_LABELS[c.status]}
+                            {CAPACITY_LABELS[c.status] ?? c.status}
                           </span>
                         </td>
                       </tr>

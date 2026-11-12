@@ -94,13 +94,14 @@ func assemblePlanetary(charOut []any) map[string]any {
 			}
 			planetsFlat = append(planetsFlat, map[string]any{
 				"character_name": cm["character_name"], "planet_name": pm["planet_name"],
-				"planet_type": pm["planet_type"], "summary": pm["summary"],
+				"planet_type": pm["planet_type"], "summary": map[string]any{
+					"extractor_count": planetCount(pm, "extractor_count"),
+					"factory_count":   planetCount(pm, "factory_count"),
+				},
 			})
 			totalPlanets++
-			if sum, ok := pm["summary"].(map[string]any); ok {
-				totalExt += int(numAny(sum["extractor_count"]))
-				totalFac += int(numAny(sum["factory_count"]))
-			}
+			totalExt += int(planetCount(pm, "extractor_count"))
+			totalFac += int(planetCount(pm, "factory_count"))
 			if ol, ok := pm["outputs"].([]any); ok {
 				for _, ov := range ol {
 					o, ok := ov.(map[string]any)
@@ -166,6 +167,16 @@ func numAny(v any) float64 {
 	return 0
 }
 
+func planetCount(pm map[string]any, key string) float64 {
+	if v, ok := pm[key]; ok && v != nil {
+		return numAny(v)
+	}
+	if sum, ok := pm["summary"].(map[string]any); ok {
+		return numAny(sum[key])
+	}
+	return 0
+}
+
 type planetaryChar struct {
 	ch      *auth.Character
 	planets []any
@@ -197,44 +208,84 @@ func collectPlanetary(ctx context.Context, d Deps, uid int64, now time.Time) ([]
 	return out, nil
 }
 
+func typeIconURL(typeID int) string {
+	return "https://images.evetech.net/types/" + itoaProg(typeID) + "/icon?size=32"
+}
+
 func shapeColony(c pi.Colony) any {
 	extractors := []any{}
 	factories := []any{}
+	storages := []any{}
 	for _, pv := range c.Analysis.Pins {
-		p := pv.(map[string]any)
-		if e, ok := p["extractor"]; ok {
-			extractors = append(extractors, e)
+		p, _ := pv.(map[string]any)
+		if p == nil {
+			continue
 		}
-		if f, ok := p["factory"]; ok {
-			ff := f.(map[string]any)
+		if e, ok := p["extractor"].(map[string]any); ok {
+			pid := int(numAny(e["product_type_id"]))
+			extractors = append(extractors, map[string]any{
+				"product_type_id": pid, "product_name": e["product_name"],
+				"icon_url": typeIconURL(pid),
+				"per_hour": e["per_hour"], "is_active": e["is_active"],
+				"install_time": e["install_time"], "expiry_time": e["expiry_time"],
+			})
+		}
+		if f, ok := p["factory"].(map[string]any); ok {
 			factories = append(factories, map[string]any{
-				"schematic_id": ff["schematic_id"], "schematic_name": ff["schematic_name"],
-				"cycle_time": ff["cycle_time"],
+				"schematic_id": f["schematic_id"], "schematic_name": f["schematic_name"],
+				"cycle_time": f["cycle_time"],
+			})
+		}
+		if s, ok := p["storage"].(map[string]any); ok {
+			kind := pi.PinStorage
+			if cat, _ := p["category"].(string); cat == pi.PinLaunchpad {
+				kind = pi.PinLaunchpad
+			}
+			items := []any{}
+			if l, ok := s["items"].([]any); ok {
+				for _, iv := range l {
+					im, _ := iv.(map[string]any)
+					if im == nil {
+						continue
+					}
+					tid := int(numAny(im["type_id"]))
+					items = append(items, map[string]any{
+						"type_id": tid, "name": im["name"],
+						"icon_url": typeIconURL(tid), "amount": im["amount"],
+					})
+				}
+			}
+			storages = append(storages, map[string]any{
+				"kind": kind, "capacity": s["capacity"],
+				"used_volume": s["used_volume"], "usage_percent": s["usage_percent"],
+				"items": items,
 			})
 		}
 	}
 	outs := make([]any, 0, len(c.Analysis.Outputs))
 	for _, ov := range c.Analysis.Outputs {
-		o := ov.(map[string]any)
+		o, _ := ov.(map[string]any)
+		if o == nil {
+			continue
+		}
+		tid := int(numAny(o["type_id"]))
 		outs = append(outs, map[string]any{
-			"type_id": o["type_id"], "name": o["name"],
-			"icon_url": "https://images.evetech.net/types/" + itoaProg(o["type_id"].(int)) + "/icon?size=32",
-			"per_hour": o["per_hour"], "source": o["source"],
+			"type_id": tid, "name": o["name"],
+			"icon_url": typeIconURL(tid),
+			"per_hour": o["per_hour"],
 		})
 	}
 	return map[string]any{
 		"planet_id": c.PlanetID, "planet_name": c.Name,
 		"planet_type": c.Type, "upgrade_level": c.Upgrade, "num_pins": c.NumPins,
-		"summary": map[string]any{
-			"extractor_count": c.Analysis.Summary["extractor_count"],
-			"factory_count":   c.Analysis.Summary["factory_count"],
-			"storage_count":   c.Analysis.Summary["storage_count"],
-			"launchpad_count": c.Analysis.Summary["launchpad_count"],
-			"route_count":     len(c.Analysis.Routes),
-		},
-		"alerts":  stripPlanetAlertContext(c.Analysis.Alerts),
-		"outputs": outs, "extractors": extractors, "factories": factories,
-		"pins": c.Analysis.Pins, "routes": c.Analysis.Routes,
+		"extractor_count": c.Analysis.Summary["extractor_count"],
+		"factory_count":   c.Analysis.Summary["factory_count"],
+		"storage_count":   c.Analysis.Summary["storage_count"],
+		"launchpad_count": c.Analysis.Summary["launchpad_count"],
+		"route_count":     len(c.Analysis.Routes),
+		"alerts":          stripPlanetAlertContext(c.Analysis.Alerts),
+		"outputs":         outs, "extractors": extractors, "factories": factories,
+		"storages": storages,
 	}
 }
 
@@ -273,7 +324,6 @@ func stripPlanetAlertContext(alerts []any) []any {
 		a := av.(map[string]any)
 		out = append(out, map[string]any{
 			"type": a["type"], "severity": a["severity"], "message": a["message"],
-			"pin_id": a["pin_id"],
 		})
 	}
 	return out
