@@ -47,8 +47,8 @@ tasks:
       - cmd: go build -o .run/bin/scheduler ./cmd/scheduler
       - cmd: go run ./cmd/migrate up
       - cmd: DEMO_ENABLED="${DEMO_ENABLED:-true}"; export DEMO_ENABLED; for svc in api worker scheduler; do nohup sh -c 'echo $$ > .run/$0.pid; exec ./.run/bin/$0' "$svc" >.run/log/$svc.log 2>&1 < /dev/null & echo "$svc started"; done
-      - cmd: port="${PORT:-8080}"; curl -fs -o /dev/null "http://localhost:$port/up" && echo "api at http://localhost:$port" || { echo "api did not answer /up yet (see .run/log/api.log)"; exit 1; }
-      - cmd: port="${PORT:-8080}"; ui_port="${UI_PORT:-5173}"; if [ -x frontend/node_modules/.bin/vite ]; then LARAVEL_URL="http://localhost:$port" nohup sh -c 'cd frontend && echo $$ > ../.run/$0.pid; exec ./node_modules/.bin/vite --port "$1" --strictPort' ui "$ui_port" >.run/log/ui.log 2>&1 < /dev/null & echo "web ui starting at http://localhost:$ui_port/app/"; else echo "web ui missing (run task install first)"; exit 1; fi
+      - cmd: port="${PORT:-8080}"; curl -fs --retry 60 --retry-delay 1 --retry-all-errors -o /dev/null "http://localhost:$port/up" && echo "api started at http://localhost:$port" || { echo "api did not answer /up yet (see .run/log/api.log)"; exit 1; }
+      - cmd: port="${PORT:-8080}"; ui_port="${UI_PORT:-5173}"; if [ -x frontend/node_modules/.bin/vite ]; then LARAVEL_URL="http://localhost:$port" nohup sh -c 'cd frontend && echo $$ > ../.run/$0.pid; exec ./node_modules/.bin/vite --port "$1" --strictPort' ui "$ui_port" >.run/log/ui.log 2>&1 < /dev/null & curl -fs --retry 60 --retry-delay 1 --retry-all-errors -o /dev/null "http://localhost:$ui_port/app/" && echo "web ui started at http://localhost:$ui_port/app/" || { echo "web ui did not answer yet (see .run/log/ui.log)"; exit 1; }; else echo "web ui missing (run task install first)"; exit 1; fi
   stop:
     desc: Stop background api worker scheduler ui
     cmds:
