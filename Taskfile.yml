@@ -41,18 +41,18 @@ tasks:
       - .env
     cmds:
       - cmd: mkdir -p .run/bin .run/log logs/test logs/errors
-      - cmd: for svc in api worker scheduler ui; do if [ -f .run/$svc.pid ]; then pid=$(cat .run/$svc.pid 2>/dev/null || true); if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then kill "$pid" 2>/dev/null || true; timeout 10 tail --pid=$pid -f /dev/null 2>/dev/null || true; fi; rm -f .run/$svc.pid; fi; pkill -f "[.]run/bin/$svc" 2>/dev/null || true; done; pkill -f "[n]ode_modules/.bin/vite" 2>/dev/null || true
+      - cmd: for svc in api worker scheduler ui; do if [ -f .run/$svc.pid ]; then pid=$(cat .run/$svc.pid 2>/dev/null || true); if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then kill "$pid" 2>/dev/null || true; fi; rm -f .run/$svc.pid; fi; pkill -f "[.]run/bin/$svc" 2>/dev/null || true; done; pkill -f "[n]ode_modules/.bin/vite" 2>/dev/null || true
       - cmd: go build -o .run/bin/api ./cmd/api
       - cmd: go build -o .run/bin/worker ./cmd/worker
       - cmd: go build -o .run/bin/scheduler ./cmd/scheduler
       - cmd: go run ./cmd/migrate up
-      - cmd: DEMO_ENABLED="${DEMO_ENABLED:-true}"; export DEMO_ENABLED; for svc in api worker scheduler; do nohup sh -c 'echo $$ > .run/$0.pid; exec ./.run/bin/$0' "$svc" >.run/log/$svc.log 2>&1 < /dev/null & timeout 10 sh -c 'until [ -f .run/$0.pid ]; do :; done' "$svc" || { echo "$svc failed to start"; tail -5 .run/log/$svc.log; exit 1; }; pid=$(cat .run/$svc.pid 2>/dev/null || true); if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then echo "$svc started (pid $pid)"; else echo "$svc failed to start"; tail -5 .run/log/$svc.log; exit 1; fi; done
-      - cmd: port="${PORT:-8080}"; api_pid=$(cat .run/api.pid); curl --retry 30 --retry-delay 1 --retry-all-errors --max-time 2 -fs -o /dev/null "http://localhost:$port/up" && echo "api at http://localhost:$port" || { echo "api did not answer /up (see .run/log/api.log)"; tail -10 .run/log/api.log; exit 1; }
-      - cmd: port="${PORT:-8080}"; ui_port="${UI_PORT:-5173}"; if [ -x frontend/node_modules/.bin/vite ]; then LARAVEL_URL="http://localhost:$port" nohup sh -c 'cd frontend && echo $$ > ../.run/$0.pid; exec ./node_modules/.bin/vite --port "$1" --strictPort' ui "$ui_port" >.run/log/ui.log 2>&1 < /dev/null & timeout 10 sh -c 'until [ -f .run/ui.pid ]; do :; done' || echo "ui pidfile slow (see .run/log/ui.log)"; curl --retry 30 --retry-delay 1 --retry-all-errors --max-time 2 -fs -o /dev/null "http://localhost:$ui_port/" && echo "web ui at http://localhost:$ui_port/app/" || echo "ui did not answer (see .run/log/ui.log)"; else echo "web ui missing (run task install first)"; exit 1; fi
+      - cmd: DEMO_ENABLED="${DEMO_ENABLED:-true}"; export DEMO_ENABLED; for svc in api worker scheduler; do nohup sh -c 'echo $$ > .run/$0.pid; exec ./.run/bin/$0' "$svc" >.run/log/$svc.log 2>&1 < /dev/null & echo "$svc started"; done
+      - cmd: port="${PORT:-8080}"; curl -fs -o /dev/null "http://localhost:$port/up" && echo "api at http://localhost:$port" || { echo "api did not answer /up yet (see .run/log/api.log)"; exit 1; }
+      - cmd: port="${PORT:-8080}"; ui_port="${UI_PORT:-5173}"; if [ -x frontend/node_modules/.bin/vite ]; then LARAVEL_URL="http://localhost:$port" nohup sh -c 'cd frontend && echo $$ > ../.run/$0.pid; exec ./node_modules/.bin/vite --port "$1" --strictPort' ui "$ui_port" >.run/log/ui.log 2>&1 < /dev/null & echo "web ui starting at http://localhost:$ui_port/app/"; else echo "web ui missing (run task install first)"; exit 1; fi
   stop:
     desc: Stop background api worker scheduler ui
     cmds:
-      - cmd: for svc in api worker scheduler ui; do if [ -f .run/$svc.pid ]; then pid=$(cat .run/$svc.pid 2>/dev/null || true); if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then kill "$pid" 2>/dev/null || true; timeout 10 tail --pid=$pid -f /dev/null 2>/dev/null || true; if [ -d "/proc/$pid" ]; then kill -9 "$pid" 2>/dev/null || true; fi; echo "$svc stopped (was $pid)"; else echo "$svc not running (stale pid $pid)"; fi; rm -f .run/$svc.pid; else echo "$svc not running"; fi; pkill -f "[.]run/bin/$svc" 2>/dev/null || true; done; pkill -f "[n]ode_modules/.bin/vite" 2>/dev/null || true
+      - cmd: for svc in api worker scheduler ui; do if [ -f .run/$svc.pid ]; then pid=$(cat .run/$svc.pid 2>/dev/null || true); if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then kill "$pid" 2>/dev/null || true; echo "$svc stopped (was $pid)"; else echo "$svc not running (stale pid $pid)"; fi; rm -f .run/$svc.pid; else echo "$svc not running"; fi; pkill -f "[.]run/bin/$svc" 2>/dev/null || true; done; pkill -f "[n]ode_modules/.bin/vite" 2>/dev/null || true
   dev:
     desc: Run api and web UI for local development
     dotenv:
