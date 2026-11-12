@@ -50,7 +50,6 @@ export const navigationGroups: NavigationGroup[] = [
     { label: 'Station Trading', to: '/market/station-trading' },
     { label: 'Region Arbitrage', to: '/market/region-arbitrage' },
     { label: 'Market Data', to: '/market-status' },
-    { label: 'Overview', to: '/' },
   ] },
   { id: 'corporate', label: 'Corporate', links: [
     { label: 'Donations', to: '/corporate/donations' },
