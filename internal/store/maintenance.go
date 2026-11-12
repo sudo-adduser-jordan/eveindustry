@@ -59,6 +59,16 @@ func (s *SQL) WipeUserContent(ctx context.Context, userID int64) error {
 			return err
 		}
 	}
+	for _, q := range []string{
+		`DELETE FROM corporation_build_programs WHERE corporation_id >= 99100000000 AND corporation_id < 99200000000`,
+		`DELETE FROM corporation_build_program_configs WHERE corporation_id >= 99100000000 AND corporation_id < 99200000000`,
+		`DELETE FROM corporate_donation_configs WHERE corporation_id >= 99100000000 AND corporation_id < 99200000000`,
+		`DELETE FROM structure_vulnerability_windows WHERE corporation_id >= 99100000000 AND corporation_id < 99200000000`,
+	} {
+		if _, err := s.db.ExecContext(ctx, q); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

@@ -415,12 +415,122 @@ func (r *DemoResponder) corporationEndpoint(ctx context.Context, corpID int64, r
 		return 200, out, nil
 	}
 	if regexp.MustCompile(`^/wallets/\d+/journal$`).MatchString(rest) {
-		return 200, demoPaged([]any{}, query), demoPages(0)
+		mm := regexp.MustCompile(`^/wallets/(\d+)/journal$`).FindStringSubmatch(rest)
+		div := 1
+		if mm != nil {
+			if n, err := strconv.Atoi(mm[1]); err == nil {
+				div = n
+			}
+		}
+		return 200, demoPaged(r.demoWalletJournal(corpID, div, members), query), demoPages(len(r.demoWalletJournal(corpID, div, members)))
 	}
 	if rest == "/projects" {
-		return 200, map[string]any{"projects": []any{}, "cursor": map[string]any{}}, nil
+		projs := r.DemoProjects(corpID, members)
+		out := make([]any, 0, len(projs))
+		for _, p := range projs {
+			out = append(out, p)
+		}
+		return 200, map[string]any{"projects": out, "cursor": map[string]any{}}, nil
+	}
+	if mm := regexp.MustCompile(`^/projects/([^/]+)/contributors$`).FindStringSubmatch(rest); mm != nil {
+		contribs := r.DemoProjectContributors(corpID, mm[1], members)
+		out := make([]any, 0, len(contribs))
+		for _, c := range contribs {
+			out = append(out, c)
+		}
+		return 200, map[string]any{"contributors": out, "cursor": map[string]any{}}, nil
 	}
 	return 404, map[string]any{"error": "Not available in the demo"}, nil
+}
+
+func (r *DemoResponder) demoWalletJournal(corpID int64, division int, members []DemoCharacter) []any {
+	if len(members) == 0 {
+		return []any{}
+	}
+	var count int
+	switch division {
+	case 1:
+		count = 5
+	case 2:
+		count = 3
+	case 3:
+		count = 2
+	default:
+		return []any{}
+	}
+	reasons := []string{"for the corp", "build fund", "donation", "", "fuel fund"}
+	amounts := []float64{1000000, 2500000, 500000, 5000000, 1500000, 750000}
+	var out []any
+	for i := 0; i < count; i++ {
+		donor := members[(division+i)%len(members)]
+		daysAgo := division*2 + i*5
+		if daysAgo > 28 {
+			daysAgo = daysAgo % 28
+		}
+		dt := r.now().AddDate(0, 0, -daysAgo).UTC().Format(time.RFC3339)
+		amt := amounts[(division+i)%len(amounts)]
+		out = append(out, map[string]any{
+			"id": float64(9000000 + corpID%100000 + int64(division*100+i)), "date": dt,
+			"ref_type": "player_donation", "first_party_id": float64(donor.ID),
+			"second_party_id": float64(members[0].ID), "amount": amt,
+			"balance": math.Round(demoRand(corpID*13+int64(division*31+i)) * 3950000000 / 100 * 100),
+			"reason":  reasons[(division+i)%len(reasons)],
+		})
+	}
+	return out
+}
+
+func (r *DemoResponder) DemoProjects(corpID int64, members []DemoCharacter) []map[string]any {
+	now := r.now().UTC()
+	mk := func(id, name, state string, daysAgo int, current, desired int, initial, remaining float64) map[string]any {
+		return map[string]any{
+			"id": id, "name": name, "state": state,
+			"last_modified": now.AddDate(0, 0, -daysAgo).Format(time.RFC3339),
+			"progress":      map[string]any{"current": float64(current), "desired": float64(desired)},
+			"reward":        map[string]any{"initial": initial, "remaining": remaining},
+		}
+	}
+	return []map[string]any{
+		mk("demo-p1", "Demo Rifter Fleet", "Active", 2, 25, 100, 4000000, 3000000),
+		mk("demo-p2", "Demo Hurricane Wing", "Active", 5, 60, 100, 12000000, 5000000),
+		mk("demo-p3", "Demo Mining Op", "Completed", 10, 100, 100, 8000000, 0),
+		mk("demo-p4", "Demo Logistics Cache", "Closed", 20, 50, 80, 2000000, 500000),
+	}
+}
+
+func (r *DemoResponder) DemoProjectContributors(corpID int64, projectID string, members []DemoCharacter) []map[string]any {
+	if len(members) == 0 {
+		return []map[string]any{}
+	}
+	qtyByProject := map[string][]float64{
+		"demo-p1": {15, 10},
+		"demo-p2": {30, 30},
+		"demo-p3": {60, 40},
+		"demo-p4": {30, 20},
+	}
+	qtys, ok := qtyByProject[projectID]
+	if !ok {
+		qtys = []float64{10, 5}
+	}
+	var out []map[string]any
+	for i := 0; i < len(qtys) && i < len(members); i++ {
+		m := members[i%len(members)]
+		out = append(out, map[string]any{
+			"character_id": float64(m.ID), "character_name": m.Name,
+			"name": m.Name, "contributed": qtys[i], "amount": qtys[i],
+		})
+	}
+	return out
+}
+
+func (r *DemoResponder) DemoCharacterName(ctx context.Context, characterID int64) string {
+	chars, _ := r.Chars(ctx)
+	for _, c := range chars {
+		if c.ID == characterID {
+			return c.Name
+		}
+	}
+	return ""
 }
 
 func demoRand(seed int64) float64 {

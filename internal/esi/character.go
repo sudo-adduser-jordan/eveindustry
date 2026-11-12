@@ -3,6 +3,8 @@ package esi
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 	"net/http"
 	"strconv"
@@ -111,6 +113,13 @@ func (c *CharacterClient) GetCharacter(ctx context.Context, characterID int64) (
 	key := fmt.Sprintf("esi.character.%d", characterID)
 	if v, ok := c.memo.Get(key); ok {
 		return v.(map[string]any), nil
+	}
+	if c.Demo != nil && auth.IsDemoID(characterID) {
+		if name := c.Demo.DemoCharacterName(ctx, characterID); name != "" {
+			data := map[string]any{"character_id": float64(characterID), "name": name}
+			c.memo.Set(key, data, time.Hour)
+			return data, nil
+		}
 	}
 	resp, err := c.client.DoJSON(ctx, http.MethodGet, fmt.Sprintf("/characters/%d/", characterID), nil, nil, nil, nil)
 	if err != nil {
@@ -569,6 +578,23 @@ func (c *CharacterClient) ClearCorporationWalletCache(corporationID int64) {
 }
 
 func (c *CharacterClient) cursorProjects(ctx context.Context, characterID int64, endpoint, field, idField string, params map[string]string) ([]map[string]any, error) {
+	if c.Demo != nil && auth.IsDemoID(characterID) {
+		if corpID, projectID := parseDemoProjectsEndpoint(endpoint); corpID != 0 {
+			chars, _ := c.Demo.Chars(ctx)
+			var members []DemoCharacter
+			for _, m := range chars {
+				if m.CorporationID == corpID {
+					members = append(members, m)
+				}
+			}
+			sortDemoChars(members)
+			if projectID != "" {
+				return c.Demo.DemoProjectContributors(corpID, projectID, members), nil
+			}
+			return c.Demo.DemoProjects(corpID, members), nil
+		}
+		return []map[string]any{}, nil
+	}
 	auth, err := c.credential(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -673,6 +699,22 @@ func (c *CharacterClient) ClearCorporationProjectsCache(corporationID int64) {
 
 func (c *CharacterClient) ClearCorporationProjectContributorsCache(corporationID int64, projectID string) {
 	c.memo.Forget(fmt.Sprintf("esi.corp_project_contributors.%d.%s", corporationID, projectID))
+}
+
+func parseDemoProjectsEndpoint(endpoint string) (int64, string) {
+	trimmed := strings.Trim(endpoint, "/")
+	parts := strings.Split(trimmed, "/")
+	if len(parts) < 3 || parts[0] != "corporations" || parts[2] != "projects" {
+		return 0, ""
+	}
+	corpID, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil {
+		return 0, ""
+	}
+	if len(parts) >= 5 && parts[4] == "contributors" {
+		return corpID, parts[3]
+	}
+	return corpID, ""
 }
 
 func (c *CharacterClient) GetAssetNames(ctx context.Context, characterID int64, itemIDs []int64) (map[int64]string, error) {
