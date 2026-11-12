@@ -66,6 +66,14 @@ func TestDemoCharacterEndpoints(t *testing.T) {
 	if st != 200 {
 		t.Fatalf("jobs = %d", st)
 	}
+	st, body, _ = r.Respond(ctx, "get", "/characters/99000000001/roles/", &ch, nil, nil)
+	if st != 200 {
+		t.Fatalf("roles = %d", st)
+	}
+	roles, ok := body.(map[string]any)["roles"].([]any)
+	if !ok || len(roles) != 1 || roles[0] != "Director" {
+		t.Fatalf("roles must decode as []any for ESI parity, got %#v", body)
+	}
 	st, _, _ = r.Respond(ctx, "get", "/characters/99000000001/unknown/", &ch, nil, nil)
 	if st != 404 {
 		t.Fatalf("unknown = %d", st)

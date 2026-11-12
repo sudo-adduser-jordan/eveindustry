@@ -643,7 +643,7 @@ func (s *SQL) DemoBlueprintPool(ctx context.Context) ([][2]int, error) {
 	}
 	priced := map[int]bool{}
 	if len(pids) > 0 {
-		q, args, err := sqlx.In(`SELECT DISTINCT type_id FROM market_prices WHERE type_id IN (?) AND sell_min > 0`, pids)
+		q, args, err := sqlx.In(`SELECT DISTINCT type_id FROM market_prices WHERE type_id IN (?) AND (sell_min > 0 OR average_price > 0)`, pids)
 		if err != nil {
 			return nil, err
 		}

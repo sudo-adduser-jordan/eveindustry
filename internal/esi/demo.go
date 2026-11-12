@@ -35,6 +35,7 @@ var DemoHubs = []struct {
 var DemoSkills = map[int]int{
 	3380: 5, 3388: 4, 3387: 5, 24625: 4, 3406: 5, 24624: 4, 3402: 5, 3403: 5,
 	3409: 4, 45746: 4, 45748: 4, 45749: 3, 2406: 5, 2403: 4, 2505: 5, 2495: 5,
+	3385: 4, 3389: 4, 12196: 3,
 }
 
 var DemoMinerals = map[int]int{
@@ -85,6 +86,16 @@ var DemoAbyssalNames = map[int]string{
 	99102: "Abyssal Large Shield Extender I",
 	99103: "Abyssal Multispectrum Shield Hardener II",
 	99104: "Abyssal Light Neutron Blaster II",
+}
+
+var DemoReactionFormulas = []struct {
+	TypeID  int
+	GroupID int
+	Name    string
+}{
+	{99201, 1888, "Demo Composite Reaction Formula"},
+	{99202, 1889, "Demo Biochemical Reaction Formula"},
+	{99203, 4097, "Demo Hybrid Reaction Formula"},
 }
 
 var DemoTypeFallbacks = map[int]struct {
@@ -318,7 +329,11 @@ func (r *DemoResponder) characterEndpoint(c DemoCharacter, rest, method string, 
 		}
 		return 200, map[string]any{"skills": skills, "total_sp": total + 5000000, "unallocated_sp": 0}, nil
 	case rest == "/roles":
-		return 200, map[string]any{"roles": c.Roles, "roles_at_base": []any{}, "roles_at_hq": []any{}, "roles_at_other": []any{}}, nil
+		roles := make([]any, 0, len(c.Roles))
+		for _, r := range c.Roles {
+			roles = append(roles, r)
+		}
+		return 200, map[string]any{"roles": roles, "roles_at_base": []any{}, "roles_at_hq": []any{}, "roles_at_other": []any{}}, nil
 	case rest == "/blueprints":
 		return 200, demoPaged(r.demoBlueprints(c, "char", 30), query), demoPages(len(r.demoBlueprints(c, "char", 30)))
 	case rest == "/assets":
@@ -511,6 +526,14 @@ func (r *DemoResponder) demoBlueprints(c DemoCharacter, salt string, count int) 
 			"material_efficiency": me, "time_efficiency": te,
 		})
 	}
+	for k, f := range DemoReactionFormulas {
+		out = append(out, map[string]any{
+			"item_id": base + 900 + int64(k), "type_id": f.TypeID,
+			"location_id": home, "location_flag": "Hangar",
+			"quantity": 3, "runs": -1,
+			"material_efficiency": 0, "time_efficiency": 0,
+		})
+	}
 	return out
 }
 
@@ -641,7 +664,7 @@ func (r *DemoResponder) demoJobs(c DemoCharacter, includeCompleted bool) []any {
 	var jobs []any
 	now := r.now()
 	anchor := now.Add(-2 * time.Hour)
-	acts := []int{1, 1, 1, 1, 1, 3, 4, 5, 1, 1}
+	acts := []int{1, 1, 9, 1, 1, 3, 4, 5, 9, 1}
 	durs := []int{4, 9, 14, 22, 30, 48, 60, 26, 12, 40}
 	base := demoItemBase(c)
 	for i, pair := range r.demoPick(c, 10, "jobs") {
@@ -665,7 +688,7 @@ func (r *DemoResponder) demoJobs(c DemoCharacter, includeCompleted bool) []any {
 			"status": status, "duration": duration,
 			"start_date": start.UTC().Format(time.RFC3339), "end_date": end.UTC().Format(time.RFC3339),
 		}
-		if activity == 1 {
+		if activity == 1 || activity == 9 {
 			job["product_type_id"] = pair[1]
 		}
 		jobs = append(jobs, job)

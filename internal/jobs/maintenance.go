@@ -123,6 +123,7 @@ func ResetDemoAccount(ctx context.Context, h HandlerDeps) error {
 		}
 	}
 	seedDemoReferenceData(ctx, h)
+	seedDemoIndustryData(ctx, h, uid)
 	_ = RefreshAssetData(ctx, h, uid, true)
 	_ = RefreshIndustryData(ctx, h, uid)
 	_ = RefreshDashboardStats(ctx, h, uid)
