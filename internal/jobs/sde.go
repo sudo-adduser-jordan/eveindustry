@@ -78,7 +78,7 @@ func SDESchedule(h HandlerDeps) []ScheduleEntry {
 			},
 		},
 		{
-			Name: "esi:import-types", Every: 7 * 24 * time.Hour, Overlap: 7 * 24 * time.Hour,
+			Name: "esi:import-types", Every: 7 * 24 * time.Hour, At: "03:00", CronDays: "Sun", Overlap: 7 * 24 * time.Hour,
 			Run: func(ctx context.Context, r *Runner, q Queue) error {
 				ids, err := UniverseTypeIDs(ctx, h)
 				if err != nil {
@@ -94,7 +94,7 @@ func SDESchedule(h HandlerDeps) []ScheduleEntry {
 			},
 		},
 		{
-			Name: "sde:import-blueprints", Every: 7 * 24 * time.Hour, Overlap: 7 * 24 * time.Hour,
+			Name: "sde:import-blueprints", Every: 7 * 24 * time.Hour, At: "05:00", CronDays: "Sun", Overlap: 7 * 24 * time.Hour,
 			Run: func(ctx context.Context, r *Runner, q Queue) error {
 				maxBP, err := h.DB.MaxBlueprintTypeID(ctx)
 				if err != nil {

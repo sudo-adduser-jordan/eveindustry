@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ApiError } from '../api/client'
 import {
   useAnalyseMoons,
   useCorporationSearch,
   useLoadMoonSystem,
+  useMe,
   useMoonSystems,
   useSetMoonOccupation,
   type PricingMode,
@@ -174,6 +175,8 @@ export default function MoonScan() {
   const analyse = useAnalyseMoons()
   const load = useLoadMoonSystem()
   const occupation = useSetMoonOccupation()
+  const me = useMe()
+  const isDemo = me.data?.data.demo === true
 
   const [text, setText] = useState('')
   const [region, setRegion] = useState<(typeof REGIONS)[number][0]>('10000002')
@@ -252,6 +255,18 @@ export default function MoonScan() {
   }
 
   const stats = summarise(moons ?? [], hideOccupied)
+
+  const demoLoaded = useRef(false)
+  useEffect(() => {
+    if (!isDemo || demoLoaded.current || moons !== null || message !== null || busy) return
+    const first = (systems.data?.data ?? [])[0]
+    if (!systems.isSuccess || !first) return
+    const timer = setTimeout(() => {
+      demoLoaded.current = true
+      void loadSystem(first.name, 'stored')
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [isDemo, systems.isSuccess, systems.data, moons, message, busy])
 
   return (
     <>

@@ -288,6 +288,21 @@ func numOf(v any) (float64, bool) {
 		return float64(n), true
 	case float64:
 		return n, true
+	case *int:
+		if n == nil {
+			return 0, false
+		}
+		return float64(*n), true
+	case *int64:
+		if n == nil {
+			return 0, false
+		}
+		return float64(*n), true
+	case *float64:
+		if n == nil {
+			return 0, false
+		}
+		return *n, true
 	}
 	return 0, false
 }

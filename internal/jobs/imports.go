@@ -180,7 +180,7 @@ func ImportDailyMarketHistory(ctx context.Context, h HandlerDeps, date string) e
 }
 
 func ImportPublicContracts(ctx context.Context, h HandlerDeps) error {
-	const dataURL = "https://data.everef.net/public-contracts/public-contracts.tar.bz2"
+	const dataURL = "https://data.everef.net/public-contracts/public-contracts-latest.v2.tar.bz2"
 	dir, err := os.MkdirTemp("", "eve_pc_*")
 	if err != nil {
 		return err

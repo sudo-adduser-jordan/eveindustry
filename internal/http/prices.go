@@ -22,23 +22,34 @@ func resolvePrices(ctx context.Context, ms store.MarketStore, typeIDs []int, reg
 		return nil, err
 	} else if hasSnapshot {
 		orderPrices = agg
-	} else {
-		raw, err := ms.RawSellOrders(ctx, ordered, regionID, time.Now().AddDate(0, 0, -market.MaxOrderAgeDays))
-		if err != nil {
-			return nil, err
-		}
-		byType := map[int][]market.Order{}
-		for _, o := range raw {
-			byType[o.TypeID] = append(byType[o.TypeID], market.Order{Price: o.Price, VolumeRemain: int64(o.VolumeRemain)})
-		}
+	}
+	if len(ordered) > 0 {
+		var missing []int
 		for _, id := range ordered {
-			orders := byType[id]
-			for i := 1; i < len(orders); i++ {
-				for j := i; j > 0 && orders[j].Price < orders[j-1].Price; j-- {
-					orders[j], orders[j-1] = orders[j-1], orders[j]
+			if orderPrices[id] <= 0 {
+				missing = append(missing, id)
+			}
+		}
+		if len(missing) > 0 {
+			raw, err := ms.RawSellOrders(ctx, missing, regionID, time.Now().AddDate(0, 0, -market.MaxOrderAgeDays))
+			if err != nil {
+				return nil, err
+			}
+			byType := map[int][]market.Order{}
+			for _, o := range raw {
+				byType[o.TypeID] = append(byType[o.TypeID], market.Order{Price: o.Price, VolumeRemain: int64(o.VolumeRemain)})
+			}
+			for _, id := range missing {
+				orders := byType[id]
+				for i := 1; i < len(orders); i++ {
+					for j := i; j > 0 && orders[j].Price < orders[j-1].Price; j-- {
+						orders[j], orders[j-1] = orders[j-1], orders[j]
+					}
+				}
+				if v := market.PercentileAverage(orders, market.DefaultPercentile); v > 0 {
+					orderPrices[id] = v
 				}
 			}
-			orderPrices[id] = market.PercentileAverage(orders, market.DefaultPercentile)
 		}
 	}
 

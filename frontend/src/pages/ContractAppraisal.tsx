@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react'
-import { useAppraise } from '../api/queries'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useAppraise, useMe } from '../api/queries'
 import { formatIsk, formatQty } from '../components/format'
 import { FreshnessBadge } from '../components/FreshnessBadge'
 
@@ -16,11 +16,25 @@ const METHODS: Array<[Method, string]> = [
   ['lowest', 'Lowest'],
 ]
 
+const EXAMPLE_ITEMS = 'Tritanium\nTritanium\nTritanium\nPyerite\nPyerite\nMexallon\nRifter'
+
 export default function ContractAppraisal() {
   const [items, setItems] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
   const [method, setMethod] = useState<Method>('average')
   const appraise = useAppraise()
+  const me = useMe()
+  const isDemo = me.data?.data.demo === true
+  const demoRan = useRef(false)
+  useEffect(() => {
+    if (!isDemo || demoRan.current || appraise.isPending || appraise.data || appraise.isError) return
+    const timer = setTimeout(() => {
+      demoRan.current = true
+      setItems(EXAMPLE_ITEMS)
+      appraise.mutate({ items: EXAMPLE_ITEMS, filter: 'all', method: 'average' })
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [isDemo, appraise.isPending, appraise.data, appraise.isError])
 
   function submit(e: FormEvent) {
     e.preventDefault()

@@ -92,7 +92,9 @@ func nonNilStrings(in []string) []any {
 var demoAllowedWritePrefixes = []string{
 	"api/v1/logout",
 	"api/v1/calculators/",
-	"api/v1/appraisals",
+	"api/v1/market/appraisals",
+	"api/v1/moon-scans",
+	"api/v1/moon-scans/",
 	"api/v1/build-programs",
 	"api/v1/build-programs/",
 	"api/v1/stock/items",

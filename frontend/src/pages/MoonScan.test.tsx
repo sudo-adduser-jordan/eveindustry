@@ -1,6 +1,16 @@
 import { fireEvent, screen } from '@testing-library/react'
-import { renderWithData } from '../test/render'
+import { me, renderWithData } from '../test/render'
 import MoonScan, { formatMoonIsk, summarise } from './MoonScan'
+
+const demoMe = () => {
+  const m = me([])
+  return { data: { ...m.data, demo: true }, meta: m.meta }
+}
+
+const systems = (names: string[]) => ({
+  data: names.map((name) => ({ name, region_id: 10000002, pricing_mode: 'raw', last_scanned_at: '2026-11-12T06:47:16Z' })),
+  meta: { pagination: { page: 1, per_page: 200, total: names.length, last_page: 1 } },
+})
 
 const moon = (attrs: object) => ({
   id: 1,
@@ -42,6 +52,24 @@ describe('MoonScan', () => {
     fireEvent.change(screen.getByLabelText('Load previously scanned system'), { target: { value: 'ald' } })
     fireEvent.click(screen.getByRole('button', { name: 'Aldali' }))
     expect(screen.getByRole('button', { name: 'Load saved scan' })).toBeEnabled()
+  })
+
+  it('auto-loads the first stored system for the demo account', async () => {
+    renderWithData(<MoonScan />, [
+      [['me'], demoMe()],
+      [['moon-scans', 'systems'], systems(['Tama', 'Amamake'])],
+    ])
+    expect(await screen.findByText('Failed to load system scan. Please try again.')).toBeInTheDocument()
+  })
+
+  it('does not auto-load for non-demo accounts', () => {
+    renderWithData(<MoonScan />, [
+      [['me'], me([])],
+      [['moon-scans', 'systems'], systems(['Tama'])],
+    ])
+    expect(screen.getByText('Paste moon scan data and click Analyse moons to see results.')).toBeInTheDocument()
+    expect(screen.queryByText('Analysing moons…')).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })
 

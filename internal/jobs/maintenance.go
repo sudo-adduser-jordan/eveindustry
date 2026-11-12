@@ -126,6 +126,7 @@ func ResetDemoAccount(ctx context.Context, h HandlerDeps) error {
 	seedDemoIndustryData(ctx, h, uid)
 	seedDemoPlanningData(ctx, h, uid)
 	seedDemoCorporateData(ctx, h, uid, specs[0].charID, specs[0].corpID, specs[0].corpName)
+	seedDemoMoonScans(ctx, h, specs[0].corpID, specs[0].corpName)
 	_ = RefreshAssetData(ctx, h, uid, true)
 	_ = RefreshIndustryData(ctx, h, uid)
 	_ = RefreshDashboardStats(ctx, h, uid)
