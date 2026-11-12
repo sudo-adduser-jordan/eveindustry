@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -348,20 +349,23 @@ func (s *SQL) GroupsOf(ctx context.Context, typeIDs []int) (map[int]int, error) 
 }
 
 func (s *SQL) ActivityProducingType(ctx context.Context, typeID, activityID int) (*BlueprintActivityRow, error) {
-	doc, _ := json.Marshal([]map[string]int{{"type_id": typeID}})
-	var row BlueprintActivityRow
-	err := s.db.GetContext(ctx, &row,
+	like := fmt.Sprintf(`%%"type_id":%d%%`, typeID)
+	var rows []BlueprintActivityRow
+	err := s.db.SelectContext(ctx, &rows,
 		`SELECT blueprint_type_id, activity_id, time, materials, products, skills
 		 FROM blueprint_activities
-		 WHERE activity_id = ? AND products IS NOT NULL AND JSON_CONTAINS(products, CAST(? AS JSON))
-		 LIMIT 1`, activityID, string(doc))
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
+		 WHERE activity_id = ? AND products IS NOT NULL AND products LIKE ?`, activityID, like)
 	if err != nil {
 		return nil, err
 	}
-	return &row, nil
+	for i := range rows {
+		for _, p := range DecodeJSONList(nullString(rows[i].Products)) {
+			if intVal(p["type_id"], 0) == typeID {
+				return &rows[i], nil
+			}
+		}
+	}
+	return nil, nil
 }
 
 func (s *SQL) HasActivity(ctx context.Context, blueprintTypeID, activityID int) (bool, error) {
