@@ -115,8 +115,25 @@ func TestAssetShips(t *testing.T) {
 		t.Fatalf("ships = %d %v", code, body)
 	}
 	data := body["data"].(map[string]any)
-	if data["total_ships"] != 0.0 || len(data["ship_groups"].([]any)) != 0 {
+	if data["total_ships"] != 1.0 || len(data["ship_groups"].([]any)) != 1 {
 		t.Fatalf("ships = %v", data)
+	}
+	group := data["ship_groups"].([]any)[0].(map[string]any)
+	if group["group_name"] != "Frigate" {
+		t.Fatalf("group = %v, want Frigate", group)
+	}
+}
+
+func TestAssetShipsFallbackGroups(t *testing.T) {
+	d := assetBrowserTestDeps(false)
+	d.Industry.(*stubIndustry).groups = nil
+	code, body := get(t, d, "/api/v1/assets/ships")
+	if code != http.StatusOK {
+		t.Fatalf("ships fallback = %d %v", code, body)
+	}
+	data := body["data"].(map[string]any)
+	if data["total_ships"] != 1.0 || len(data["ship_groups"].([]any)) != 1 {
+		t.Fatalf("ships fallback = %v, want demo Rifter via fallback", data)
 	}
 }
 

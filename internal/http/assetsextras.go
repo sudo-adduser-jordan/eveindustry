@@ -160,13 +160,28 @@ func handleAssetShips(d Deps) echo.HandlerFunc {
 		if err != nil {
 			return dbError(c, err)
 		}
-		shipGroups, err := d.Industry.GroupsInCategory(ctx, 6)
+		for id := range typeIDs {
+			if groupOf[id] == 0 {
+				if gid, ok := calc.FallbackShipGroups[id]; ok {
+					if groupOf == nil {
+						groupOf = map[int]int{}
+					}
+					groupOf[id] = gid
+				}
+			}
+		}
+		shipGroups, err := d.Industry.GroupsInCategory(ctx, calc.ShipCategoryID)
 		if err != nil {
 			return dbError(c, err)
 		}
 		inShip := map[int]bool{}
 		for _, g := range shipGroups {
 			inShip[g] = true
+		}
+		for _, g := range groupOf {
+			if _, ok := calc.ShipGroups[g]; ok {
+				inShip[g] = true
+			}
 		}
 		gids := map[int]bool{}
 		for _, g := range groupOf {
@@ -177,6 +192,16 @@ func handleAssetShips(d Deps) echo.HandlerFunc {
 		names, err := d.Industry.GroupNames(ctx, assetKeysInt(gids))
 		if err != nil {
 			return dbError(c, err)
+		}
+		if names == nil {
+			names = map[int]string{}
+		}
+		for gid := range gids {
+			if _, ok := names[gid]; !ok {
+				if n, ok := calc.ShipGroups[gid]; ok {
+					names[gid] = n
+				}
+			}
 		}
 		if len(names) == 0 {
 			return Success(c, http.StatusOK, map[string]any{
