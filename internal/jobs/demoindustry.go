@@ -52,6 +52,37 @@ var demoIndustryFormulas = []struct {
 	{99203, 4097, "Demo Hybrid Reaction Formula"},
 }
 
+var demoIndustryT2 = []struct {
+	T2    int
+	T2BP  int
+	T1    int
+	T1BP  int
+	Name  string
+	Group int
+	Price float64
+}{
+	{99301, 99311, 587, 99011, "Demo Rifter II", 25, 2500000},
+	{99302, 99312, 24702, 99012, "Demo Hurricane II", 419, 40000000},
+}
+
+var demoIndustryDatacores = []struct {
+	ID    int
+	Name  string
+	Price float64
+}{
+	{20171, "Datacore - Electronic Engineering", 50000},
+	{20172, "Datacore - Electromagnetic Physics", 55000},
+}
+
+var demoIndustrySkills = []struct {
+	ID   int
+	Name string
+}{
+	{23087, "Amarr Encryption Methods"},
+	{11443, "Electronic Engineering"},
+	{11433, "Electromagnetic Physics"},
+}
+
 func int64PtrDemo(v int64) *int64 { return &v }
 
 func buildDemoIndustrySeed() store.DemoIndustrySeed {
@@ -111,6 +142,49 @@ func buildDemoIndustrySeed() store.DemoIndustrySeed {
 			SellMin: 10000000, BuyMax: 9000000, Average: 10000000, Adjusted: 10000000,
 		})
 	}
+	for _, dc := range demoIndustryDatacores {
+		g := int64(18)
+		seed.Types = append(seed.Types, store.SdeType{
+			TypeID: dc.ID, Name: dc.Name, GroupID: &g, Published: true,
+		})
+		seed.Prices = append(seed.Prices, store.DemoPrice{
+			TypeID: dc.ID, RegionID: 10000002,
+			SellMin: dc.Price, BuyMax: dc.Price * 0.9, Average: dc.Price, Adjusted: dc.Price,
+		})
+	}
+	for _, sk := range demoIndustrySkills {
+		g := int64(16)
+		seed.Types = append(seed.Types, store.SdeType{
+			TypeID: sk.ID, Name: sk.Name, GroupID: &g, Published: true,
+		})
+	}
+	metaT2 := int64(2)
+	for _, t := range demoIndustryT2 {
+		g := int64(t.Group)
+		portion := int64(1)
+		seed.Types = append(seed.Types, store.SdeType{
+			TypeID: t.T2, Name: t.Name, GroupID: &g,
+			MarketGroupID: &mgStarships, PortionSize: &portion,
+			MetaGroupID: &metaT2, Published: true,
+		})
+		seed.Types = append(seed.Types, store.SdeType{
+			TypeID: t.T2BP, Name: t.Name + " Blueprint", GroupID: &g, Published: true,
+		})
+		seed.Blueprints = append(seed.Blueprints, store.SdeBlueprint{
+			BlueprintTypeID: t.T2BP, ActivityID: 1, Time: 7200,
+			MaterialsJSON: fmt.Sprintf(`[{"type_id":%d,"quantity":1},{"type_id":34,"quantity":20000},{"type_id":35,"quantity":10000}]`, t.T1),
+			ProductsJSON:  fmt.Sprintf(`[{"type_id":%d,"quantity":1}]`, t.T2),
+		})
+		seed.Blueprints = append(seed.Blueprints, store.SdeBlueprint{
+			BlueprintTypeID: t.T1BP, ActivityID: 8, Time: 3600,
+			MaterialsJSON: `[{"type_id":20171,"quantity":4},{"type_id":20172,"quantity":4}]`,
+			ProductsJSON:  fmt.Sprintf(`[{"type_id":%d,"quantity":10,"probability":0.3}]`, t.T2BP),
+		})
+		seed.Prices = append(seed.Prices, store.DemoPrice{
+			TypeID: t.T2, RegionID: 10000002,
+			SellMin: t.Price, BuyMax: t.Price * 0.9, Average: t.Price, Adjusted: t.Price,
+		})
+	}
 	seed.MarketGroups = []store.SdeMarketGroup{
 		{GroupID: 9901, Name: "Demo Starships", HasTypes: true},
 		{GroupID: 9902, Name: "Demo Reaction Formulas", HasTypes: true},
@@ -133,8 +207,12 @@ func seedDemoIndustryData(ctx context.Context, h HandlerDeps, userID int64) {
 	if h.DB == nil {
 		return
 	}
-	if err := h.DB.SeedDemoIndustry(ctx, buildDemoIndustrySeed()); err != nil {
+	seed := buildDemoIndustrySeed()
+	if err := h.DB.SeedDemoIndustry(ctx, seed); err != nil {
 		h.logger().Warn("demo industry seed failed", "err", err)
+	}
+	if err := h.DB.RepairDemoTypes(ctx, seed.Types); err != nil {
+		h.logger().Warn("demo types repair failed", "err", err)
 	}
 	for _, item := range []store.WatchedItemUpsert{
 		{UserID: userID, TypeID: 34, TypeName: "Tritanium", DesiredQuantity: 10000000},

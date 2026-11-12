@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCostIndices, useStructures, type BuildProgramRequest, type Structure } from '../api/calculators'
 import {
   useCalculateInvention,
@@ -124,6 +124,21 @@ export default function InventionPlanner() {
   const calc = useCalculateInvention()
   const [result, setResult] = useState<InventionResult | null>(null)
   const [calcItem, setCalcItem] = useState<{ type_id: number; name: string } | null>(null)
+
+  const isDemo = me.data?.data.demo === true
+  const demoInit = useRef(false)
+  const demoCalculated = useRef(false)
+  useEffect(() => {
+    if (!isDemo || demoInit.current || savedPlans.length === 0) return
+    demoInit.current = true
+    loadPlan(savedPlans[0]!)
+  }, [isDemo, savedPlans])
+  useEffect(() => {
+    if (!isDemo || !demoInit.current || demoCalculated.current || !item || !chainData || result !== null || calc.isPending) return
+    if (baseRuns !== String(chainData.base_runs) || baseProbability !== String(chainData.base_probability)) return
+    demoCalculated.current = true
+    calculate()
+  }, [isDemo, item, chainData, baseRuns, baseProbability, result, calc.isPending])
 
   function request(): InventionRequest | null {
     if (!item) return null

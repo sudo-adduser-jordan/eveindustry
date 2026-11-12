@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCostIndices, useStructures, type Structure } from '../api/calculators'
+import { useMe } from '../api/queries'
 import type { components } from '../api/schema'
 import {
   useCalculateReactionPlan,
@@ -65,6 +66,8 @@ function structureParams(structure: Structure | undefined) {
 }
 
 export default function ReactionPlanner() {
+  const me = useMe()
+  const isDemo = me.data?.data.demo === true
   const structures = useStructures('reaction')
   const list = structures.data?.data ?? []
   const [choice, setChoice] = useState<number | null | undefined>(undefined)
@@ -141,6 +144,19 @@ export default function ReactionPlanner() {
   function updateEntry(index: number, patch: Partial<Entry>) {
     setEntries(entries.map((e, i) => (i === index ? { ...e, ...patch } : e)))
   }
+
+  const demoInit = useRef(false)
+  const demoCalculated = useRef(false)
+  useEffect(() => {
+    if (!isDemo || demoInit.current || savedPlans.length === 0) return
+    demoInit.current = true
+    loadPlan(savedPlans[0]!)
+  }, [isDemo, savedPlans])
+  useEffect(() => {
+    if (!isDemo || !demoInit.current || demoCalculated.current || entries.length === 0 || result !== null || calc.isPending) return
+    demoCalculated.current = true
+    calculate()
+  }, [isDemo, entries, result, calc.isPending])
 
   function calculate() {
     if (entries.length === 0) return

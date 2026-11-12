@@ -94,3 +94,17 @@ func (s *SQL) SeedDemoIndustry(ctx context.Context, seed DemoIndustrySeed) error
 	}
 	return nil
 }
+
+func (s *SQL) RepairDemoTypes(ctx context.Context, types []SdeType) error {
+	for _, t := range types {
+		if t.TypeID < 99000 {
+			continue
+		}
+		if _, err := s.db.ExecContext(ctx, `UPDATE eve_types SET name = ?, group_id = ?, market_group_id = ?,
+			portion_size = ?, meta_group_id = ?, published = ?, updated_at = CURRENT_TIMESTAMP WHERE type_id = ?`,
+			t.Name, t.GroupID, t.MarketGroupID, t.PortionSize, t.MetaGroupID, t.Published, t.TypeID); err != nil {
+			return err
+		}
+	}
+	return nil
+}

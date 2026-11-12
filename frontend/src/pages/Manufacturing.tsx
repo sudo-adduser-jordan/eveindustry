@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   bonusesOf,
   calculateManufacturing,
@@ -113,6 +113,30 @@ export default function Manufacturing() {
   const [showCombined, setShowCombined] = useState(false)
 
   const calc = useCalculateManufacturing()
+
+  const isDemo = me.data?.data.demo === true
+  const demoSeeded = useRef(false)
+  const demoCalculated = useRef(false)
+  useEffect(() => {
+    if (!isDemo || demoSeeded.current) return
+    demoSeeded.current = true
+    setBlueprint({ type_id: 99011, name: 'Demo Rifter Blueprint', group_id: null, icon_url: '' })
+  }, [isDemo])
+  useEffect(() => {
+    if (!isDemo || !demoSeeded.current || demoCalculated.current || !blueprint || !activity.data?.data || calc.isPending || manufacturingStructures.isPending) return
+    const job = buildJob()
+    if (!job) return
+    demoCalculated.current = true
+    calc.mutate(job.request, {
+      onSuccess: (response) => {
+        const added = { ...job, id: 1, result: response.data }
+        setNextId(2)
+        setJobs([added])
+        setCurrent(added)
+        setBlueprint(null)
+      },
+    })
+  }, [isDemo, blueprint, activity.data, manufacturingStructures.isPending, calc.isPending])
 
   const buybackPct = buyback.trim() === '' ? null : num(buyback, 100)
 

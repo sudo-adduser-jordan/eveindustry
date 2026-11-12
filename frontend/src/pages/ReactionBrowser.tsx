@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCostIndices, useReactionBrowse, useStructures } from '../api/calculators'
+import { useMe } from '../api/queries'
 import { FreshnessBadge } from '../components/FreshnessBadge'
 import { ProfitTable } from '../components/calculators/ProfitTable'
 import { DEFAULT_REGION, NumberField, PRICE_REGIONS, SelectField, StructureSelect, errorText, intIn } from '../components/calculators/kit'
@@ -20,6 +21,8 @@ const COMPLEXITY = [
 ] as const
 
 export default function ReactionBrowser() {
+  const me = useMe()
+  const isDemo = me.data?.data.demo === true
   const structures = useStructures('reaction')
   const list = structures.data?.data ?? []
   const [choice, setChoice] = useState<number | null | undefined>(undefined)
@@ -60,6 +63,21 @@ export default function ReactionBrowser() {
       sci: structure?.solar_system_id ? sci : 0,
     })
   }
+
+  const demoApplied = useRef(false)
+  useEffect(() => {
+    if (!isDemo || demoApplied.current || applied !== null || structures.isPending) return
+    demoApplied.current = true
+    const rig = structure && (structure.rig_me === 't1' || structure.rig_me === 't2') ? structure.rig_me : 'none'
+    setApplied({
+      runs: 1,
+      region: Number(DEFAULT_REGION),
+      rig,
+      security: structure?.system_security === 'nullsec' ? 'nullsec' : 'lowsec',
+      tax: structure?.tax_rate ?? 0,
+      sci: 0,
+    })
+  }, [isDemo, applied, structures.isPending, structure, sci])
 
   return (
     <>

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useManufacturingBrowse } from '../api/calculators'
+import { useMe } from '../api/queries'
 import { FreshnessBadge } from '../components/FreshnessBadge'
 import { Pager } from '../components/Pager'
 import { MarketGroupTree } from '../components/calculators/MarketGroupTree'
@@ -19,7 +20,16 @@ const SECURITY = [
 ] as const
 
 export default function ManufacturingBrowser() {
+  const account = useMe()
+  const isDemo = account.data?.data.demo === true
   const [group, setGroup] = useState<{ id: number; name: string } | null>(null)
+  const demoSeeded = useRef(false)
+  useEffect(() => {
+    if (isDemo && !demoSeeded.current && group === null) {
+      demoSeeded.current = true
+      setGroup({ id: 9901, name: 'Demo Starships' })
+    }
+  }, [isDemo, group])
   const [page, setPage] = useState(1)
   const [runs, setRuns] = useState('1')
   const [me, setMe] = useState('0')
