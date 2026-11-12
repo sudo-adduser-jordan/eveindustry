@@ -69,10 +69,22 @@ func corpProgramShape(p store.CorpProgram) map[string]any {
 	}
 }
 
+func corpSettingsIDs(settings map[string]any, key string) []any {
+	out := []any{}
+	if l, ok := settings[key].([]any); ok {
+		for _, v := range l {
+			if n, ok := toFloat(v); ok {
+				out = append(out, int(n))
+			}
+		}
+	}
+	return out
+}
+
 func corpProgramDetailShape(p store.CorpProgram) (map[string]any, map[string]any) {
 	steps := decodeSteps(p.StepsJSON)
 	settings := decodeSettings(derefStr(industry.StrVal(p.SettingsJSON), "{}"))
-	var secs []any
+	secs := []any{}
 	if s, ok := settings["sections"].([]any); ok {
 		for _, v := range s {
 			if m, ok := v.(map[string]any); ok {
@@ -88,10 +100,16 @@ func corpProgramDetailShape(p store.CorpProgram) (map[string]any, map[string]any
 			}
 		}
 	}
+	inIDs := corpSettingsIDs(settings, "input_location_ids")
+	if len(inIDs) == 0 {
+		inIDs = lids
+	}
+	outIDs := corpSettingsIDs(settings, "output_location_ids")
 	data := map[string]any{
 		"id": p.ID, "name": p.Name, "program_type": p.ProgramType,
 		"t2_type_id": nullInt64Val(p.T2TypeID), "t2_type_name": nullStrVal(p.T2TypeName),
 		"steps": shapeSteps(steps), "sections": secs, "location_ids": lids,
+		"input_location_ids": inIDs, "output_location_ids": outIDs,
 		"created_at": p.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 		"updated_at": p.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}

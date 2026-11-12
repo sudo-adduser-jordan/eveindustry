@@ -138,9 +138,18 @@ func corpProgramsOverview(ctx context.Context, d Deps, uid int64) (map[string]an
 }
 
 func corpProgramSummaryShape(p store.CorpProgram) map[string]any {
+	steps := decodeSteps(p.StepsJSON)
+	settings := decodeSettings(nullStrOrEmpty(p.SettingsJSON))
+	inIDs := corpSettingsIDs(settings, "input_location_ids")
+	if len(inIDs) == 0 {
+		inIDs = corpSettingsIDs(settings, "location_ids")
+	}
+	outIDs := corpSettingsIDs(settings, "output_location_ids")
 	return map[string]any{
 		"id": p.ID, "name": p.Name, "program_type": p.ProgramType,
 		"t2_type_id": nullInt64Val(p.T2TypeID), "t2_type_name": nullStrVal(p.T2TypeName),
+		"step_count":         len(steps),
+		"input_location_ids": inIDs, "output_location_ids": outIDs,
 		"created_at": p.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 		"updated_at": p.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}

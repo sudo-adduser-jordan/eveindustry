@@ -278,12 +278,46 @@ func TestCorpProgramPages(t *testing.T) {
 	if data["enabled"] != true || data["can_manage"] != true {
 		t.Fatalf("overview = %v", data)
 	}
-	if len(data["programs"].([]any)) != 2 {
+	progs := data["programs"].([]any)
+	if len(progs) != 2 {
 		t.Fatalf("programs = %v", data["programs"])
+	}
+	first := progs[0].(map[string]any)
+	if _, ok := first["step_count"].(float64); !ok {
+		t.Fatalf("summary step_count missing in %v", first)
+	}
+	for _, key := range []string{"input_location_ids", "output_location_ids"} {
+		ids, ok := first[key].([]any)
+		if !ok {
+			t.Fatalf("summary %s missing in %v", key, first)
+		}
+		_ = ids
 	}
 	code, body = get(t, d, "/api/v1/corporation/build-programs/1")
 	if code != http.StatusOK {
 		t.Fatalf("show = %d %v", code, body)
+	}
+	detail := body["data"].(map[string]any)["program"].(map[string]any)
+	if detail["sections"] == nil {
+		t.Fatalf("detail sections must be an array, got null in %v", detail)
+	}
+	for _, key := range []string{"input_location_ids", "output_location_ids"} {
+		if _, ok := detail[key].([]any); !ok {
+			t.Fatalf("detail %s missing in %v", key, detail)
+		}
+	}
+	code, body = get(t, d, "/api/v1/corporation/build-programs/2")
+	if code != http.StatusOK {
+		t.Fatalf("show empty-settings = %d %v", code, body)
+	}
+	plain := body["data"].(map[string]any)["program"].(map[string]any)
+	if plain["sections"] == nil {
+		t.Fatalf("detail sections must default to [], got null in %v", plain)
+	}
+	for _, key := range []string{"input_location_ids", "output_location_ids"} {
+		if _, ok := plain[key].([]any); !ok {
+			t.Fatalf("detail %s missing in %v", key, plain)
+		}
 	}
 	if code, _ := get(t, d, "/api/v1/corporation/build-programs/9"); code != http.StatusNotFound {
 		t.Fatalf("foreign show = %d", code)
