@@ -1453,6 +1453,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/industry/most-profitable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Most profitable manufacturable items
+         * @description Top items from the precomputed manufacturing costs, sorted by
+         *     profit, with your runs, rig bonus, facility tax and system cost
+         *     index applied. Paginated (max 200 per page).
+         */
+        get: operations["v1.industry.most-profitable"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/calculators/manufacturing": {
         parameters: {
             query?: never;
@@ -8190,6 +8212,56 @@ export interface operations {
                                 costs_as_of: string | null;
                                 source: string;
                                 stale: boolean;
+                            };
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "v1.industry.most-profitable": {
+        parameters: {
+            query?: {
+                me_level?: number | null;
+                price_region_id?: number | null;
+                runs?: number | null;
+                rig_tier?: "none" | "t1" | "t2" | null;
+                security_space?: "highsec" | "lowsec" | "nullsec" | null;
+                facility_tax?: number | null;
+                system_cost_index?: number | null;
+                q?: string | null;
+                only_profitable?: number | boolean | null;
+                page?: number | null;
+                per_page?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ManufacturingBrowserItemResource"][];
+                        meta: {
+                            effective_structure_me_bonus: number;
+                            freshness: {
+                                prices_as_of: string | null;
+                                costs_as_of: string | null;
+                                source: string;
+                                stale: boolean;
+                            };
+                            pagination: {
+                                page: number;
+                                per_page: number;
+                                total: number;
+                                last_page: number;
                             };
                         };
                     };

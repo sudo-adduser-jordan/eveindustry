@@ -122,6 +122,7 @@ func New(d Deps) *echo.Echo {
 	registerSkills(authed, d)
 	registerStock(authed, d)
 	registerIndustry(authed, d)
+	registerMostProfitable(authed, d)
 	registerProduction(authed, d)
 	registerResearch(authed, d)
 	registerStockReport(authed, d)

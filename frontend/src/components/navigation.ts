@@ -23,6 +23,7 @@ export const navigationGroups: NavigationGroup[] = [
   { id: 'industry', label: 'Industry', links: [
     { label: 'Slots', to: '/industry/slots' },
     { label: 'Jobs Overview', to: '/industry/jobs' },
+    { label: 'Most Profitable', to: '/industry/most-profitable' },
     { label: 'Can Produce', to: '/industry/can-produce' },
     { label: 'Reprocessing Value', to: '/industry/reprocessing' },
     { label: 'Blueprint Research', to: '/industry/blueprint-research' },

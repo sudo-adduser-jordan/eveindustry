@@ -152,6 +152,9 @@ func (s *stubIndustry) GroupsInCategory(ctx context.Context, categoryID int) ([]
 func (s *stubIndustry) PrecomputedCosts(ctx context.Context, productIDs []int, regionID, meLevel, limit, offset int) ([]industry.PrecomputedCost, int, error) {
 	return s.precomputed, s.precomputedTotal, nil
 }
+func (s *stubIndustry) TopPrecomputedCosts(ctx context.Context, regionID, meLevel, limit, offset int, search string, onlyProfitable bool) ([]industry.PrecomputedCost, int, error) {
+	return s.precomputed, s.precomputedTotal, nil
+}
 
 func industryTestDeps() Deps {
 	authStub := testAuth()

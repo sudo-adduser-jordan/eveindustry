@@ -205,6 +205,33 @@ type PrecomputedCost struct {
 	SellScoreTotalDays      int     `db:"sell_score_total_days"`
 }
 
+func (s *SQL) TopPrecomputedCosts(ctx context.Context, regionID, meLevel, limit, offset int, search string, onlyProfitable bool) ([]PrecomputedCost, int, error) {
+	where := `WHERE region_id = ? AND me_level = ?`
+	args := []any{regionID, meLevel}
+	if onlyProfitable {
+		where += ` AND base_profit > 0`
+	}
+	if search != "" {
+		where += ` AND product_name LIKE ?`
+		args = append(args, "%"+search+"%")
+	}
+	var total int
+	if err := s.db.GetContext(ctx, &total, `SELECT COUNT(*) FROM manufacturing_costs `+where, args...); err != nil {
+		return nil, 0, err
+	}
+	query := `SELECT product_type_id, blueprint_type_id, product_name, blueprint_name,
+		portion_size, input_cost, output_value, base_profit, profit_margin,
+		sell_score, sell_score_avg_daily_volume, sell_score_avg_order_count,
+		sell_score_active_days, sell_score_total_days
+		FROM manufacturing_costs ` + where + ` ORDER BY base_profit DESC LIMIT ? OFFSET ?`
+	args = append(args, limit, offset)
+	var out []PrecomputedCost
+	if err := s.db.SelectContext(ctx, &out, query, args...); err != nil {
+		return nil, 0, err
+	}
+	return out, total, nil
+}
+
 func (s *SQL) PrecomputedCosts(ctx context.Context, productIDs []int, regionID, meLevel, limit, offset int) ([]PrecomputedCost, int, error) {
 	if len(productIDs) == 0 {
 		return nil, 0, nil
@@ -258,6 +285,7 @@ type IndustryStore interface {
 	GroupNames(ctx context.Context, groupIDs []int) (map[int]string, error)
 	DemoBlueprintPool(ctx context.Context) ([][2]int, error)
 	PrecomputedCosts(ctx context.Context, productIDs []int, regionID, meLevel, limit, offset int) ([]PrecomputedCost, int, error)
+	TopPrecomputedCosts(ctx context.Context, regionID, meLevel, limit, offset int, search string, onlyProfitable bool) ([]PrecomputedCost, int, error)
 	ProductTypeIDsExcludingInvented(ctx context.Context) ([]int, error)
 	ProductGroupCounts(ctx context.Context, typeIDs []int) (map[int]int, error)
 	GroupCategories(ctx context.Context, groupIDs []int) (map[int]int, error)

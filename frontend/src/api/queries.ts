@@ -404,6 +404,20 @@ export function useCanProduce() {
   })
 }
 
+type MostProfitableQuery = NonNullable<paths['/industry/most-profitable']['get']['parameters']['query']>
+
+
+export function useMostProfitable(query: MostProfitableQuery | null) {
+  return useQuery({
+    queryKey: ['industry', 'most-profitable', query],
+    queryFn: async () => unwrap(await api.GET('/industry/most-profitable', { params: { query: query! } })),
+    enabled: query !== null,
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60_000,
+    retry: false,
+  })
+}
+
 
 export function useRefreshCanProduce() {
   const client = useQueryClient()

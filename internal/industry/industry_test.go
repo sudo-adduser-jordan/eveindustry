@@ -122,6 +122,9 @@ func (s *stubStore) GroupsInCategory(ctx context.Context, categoryID int) ([]int
 func (s *stubStore) PrecomputedCosts(ctx context.Context, productIDs []int, regionID, meLevel, limit, offset int) ([]PrecomputedCost, int, error) {
 	return nil, 0, nil
 }
+func (s *stubStore) TopPrecomputedCosts(ctx context.Context, regionID, meLevel, limit, offset int, search string, onlyProfitable bool) ([]PrecomputedCost, int, error) {
+	return nil, 0, nil
+}
 
 func key(bp, act int) string { return string(rune(bp)) + string(rune(act)) }
 

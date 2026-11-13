@@ -38,6 +38,7 @@ const BuildProgramDetail = lazy(() => import('./pages/BuildProgramDetail'))
 const StructureTimers = lazy(() => import('./pages/StructureTimers'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const IndustryJobs = lazy(() => import('./pages/IndustryJobs'))
+const MostProfitable = lazy(() => import('./pages/MostProfitable'))
 const CanProduce = lazy(() => import('./pages/CanProduce'))
 const BlueprintResearch = lazy(() => import('./pages/Research').then((m) => ({ default: m.BlueprintResearch })))
 const ReactionFormulaResearch = lazy(() => import('./pages/Research').then((m) => ({ default: m.ReactionFormulaResearch })))
@@ -80,6 +81,7 @@ export function App() {
           <Route path="industry/reprocessing" element={<Reprocessing />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="industry/jobs" element={<IndustryJobs />} />
+          <Route path="industry/most-profitable" element={<MostProfitable />} />
           <Route path="industry/can-produce" element={<CanProduce />} />
           <Route path="industry/blueprint-research" element={<BlueprintResearch />} />
           <Route path="industry/reaction-formula-research" element={<ReactionFormulaResearch />} />
