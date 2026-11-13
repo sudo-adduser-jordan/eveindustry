@@ -11,12 +11,11 @@ export interface ThemeDefinition {
 }
 
 export const THEME_STORAGE_KEY = 'eve-industry-theme'
-export const DEFAULT_THEME = 'industrialist'
+export const DEFAULT_THEME = 'carbon'
 
 export const THEMES: ThemeDefinition[] = [
-  { id: 'industrialist', label: 'Industrialist', group: 'Core', blurb: 'Sci-fi operations look: chamfered panels, neon accents.', themeColor: '#0d1520' },
-  { id: 'eve-online', label: 'EVE Online', group: 'Core', blurb: 'In-game client: framed windows, title bands, amber highlights.', themeColor: '#070b12' },
   { id: 'carbon', label: 'Carbon', group: 'Core', blurb: 'The classic client UI: charcoal frame, steel-blue highlights.', themeColor: '#0e0f11' },
+  { id: 'eve-online', label: 'EVE Online', group: 'Core', blurb: 'In-game client: framed windows, title bands, amber highlights.', themeColor: '#070b12' },
 
   { id: 'amarr', label: 'Amarr Empire', group: 'Empires', blurb: 'Imperial gold with square double frames and tracked capitals.', themeColor: '#0d0a06' },
   { id: 'caldari', label: 'Caldari State', group: 'Empires', blurb: 'Corporate steel-cyan: flat, thin lines, sentence case.', themeColor: '#0a1218' },
@@ -54,7 +53,7 @@ export function readTheme(): string {
 }
 
 export function themeColorFor(id: string): string {
-  return THEMES.find((theme) => theme.id === id)?.themeColor ?? THEMES[0]?.themeColor ?? '#0d1520'
+  return THEMES.find((theme) => theme.id === id)?.themeColor ?? THEMES[0]?.themeColor ?? '#0e0f11'
 }
 
 

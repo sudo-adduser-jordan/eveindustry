@@ -63,7 +63,7 @@ it('remembers the open group across reloads', () => {
 it('switches themes from the sidebar and remembers the choice', () => {
   renderWithData(<Shell />, [[['me'], { data: { display_name: 'Pilot', admin: false } }]], ['/dashboard'])
   const select = screen.getByLabelText('Theme')
-  expect(select).toHaveValue('industrialist')
+  expect(select).toHaveValue('carbon')
   expect(screen.getByRole('option', { name: 'EVE Online' })).toBeInTheDocument()
   expect(screen.getByRole('option', { name: 'Light' })).toBeInTheDocument()
   expect(screen.getByRole('option', { name: 'Angel Cartel' })).toBeInTheDocument()

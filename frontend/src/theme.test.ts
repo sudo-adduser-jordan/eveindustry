@@ -12,9 +12,8 @@ function themeCss(name: string): string {
 }
 
 const themeFiles: Record<string, string> = {
-  industrialist: themeCss('industrialist.css'),
-  'eve-online': themeCss('eve-online.css'),
   carbon: themeCss('carbon.css'),
+  'eve-online': themeCss('eve-online.css'),
   amarr: themeCss('amarr.css'),
   caldari: themeCss('caldari.css'),
   gallente: themeCss('gallente.css'),
@@ -42,7 +41,7 @@ beforeEach(() => {
     meta.setAttribute('name', 'theme-color')
     document.head.appendChild(meta)
   }
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0d1520')
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0e0f11')
 })
 
 it('registers one theme file per theme id', () => {
@@ -72,7 +71,7 @@ it('keeps each accent and its -rgb twin in sync', () => {
   }
 })
 
-it('defaults to industrialist and rejects unknown saved values', () => {
+it('defaults to carbon and rejects unknown saved values', () => {
   expect(readTheme()).toBe(DEFAULT_THEME)
   localStorage.setItem(THEME_STORAGE_KEY, 'dark')
   expect(readTheme()).toBe('dark')
@@ -98,7 +97,7 @@ it('falls back to the default for unknown themes', () => {
 it('ships the core, empire and pirate themes, and never the website theme', () => {
   const ids = THEMES.map((t) => t.id)
   expect(ids).toEqual(expect.arrayContaining([
-    'industrialist', 'eve-online', 'carbon',
+    'carbon', 'eve-online',
     'amarr', 'caldari', 'gallente', 'minmatar',
     'angel-cartel', 'blood-raiders', 'guristas', 'sansha', 'serpentis',
     'dark', 'light',
@@ -119,7 +118,6 @@ it('groups every theme into the picker sections', () => {
 it('changes more than colours in every non-default theme', () => {
   const structural = ['clip-path', 'border-radius', 'text-transform', 'box-shadow', 'font-display', 'content: none']
   for (const [id, css] of Object.entries(themeFiles)) {
-    if (id === 'industrialist') continue
     const hits = structural.filter((prop) => css.includes(prop))
     expect(hits.length, `${id} only changes colours`).toBeGreaterThanOrEqual(2)
   }
