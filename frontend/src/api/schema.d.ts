@@ -1000,6 +1000,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/esi/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ESI status
+         * @description Whether EVE ESI is reachable and how many players are online,
+         *     from the public ESI status endpoint. `online` is false when ESI
+         *     answers with an error; the endpoint itself returns 502 when ESI
+         *     cannot be reached at all.
+         */
+        get: operations["v1.esi.status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/esi-diagnostics/summary": {
         parameters: {
             query?: never;
@@ -3549,6 +3572,14 @@ export interface components {
         EnableCorporationFeatureRequest: {
             /** @description The character whose token provides the access. Defaults to the first eligible one. */
             character_id?: number | null;
+        };
+        /** ESI server status */
+        EsiStatusResource: {
+            online: boolean;
+            /** @description Players online, null when unknown. */
+            players: number | null;
+            server_version: string | null;
+            vip: boolean;
         };
         /** EsiDiagnosticBatchResource */
         EsiDiagnosticBatchResource: {
@@ -7337,6 +7368,41 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "v1.esi.status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["EsiStatusResource"];
+                        meta: Record<string, never>;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error overview. */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "v1.admin.esi-diagnostics.summary": {

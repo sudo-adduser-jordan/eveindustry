@@ -5,6 +5,7 @@ import { useSessionActions } from '../api/account'
 import { THEMES, THEME_GROUPS, useTheme } from '../theme'
 import { InstallPrompt } from './InstallPrompt'
 import { DemoBanner } from './DemoBanner'
+import EsiStatus from './EsiStatus'
 import logoIcon from '../assets/logo-icon.svg'
 import { PwaStatus } from './PwaStatus'
 import { groupForPath, navigationGroups, NAVIGATION_STORAGE_KEY } from './navigation'
@@ -82,6 +83,7 @@ export function Shell() {
         </nav>
         <div className="sidebar-foot">
           {me.data?.data.demo ? null : <p><a href="/auth/eve/scopes">Add character</a></p>}
+          <EsiStatus />
           <p className="theme-setting">
             <label htmlFor="theme-select">Theme</label>
             <select id="theme-select" value={theme} onChange={(e) => setTheme(e.target.value)}>

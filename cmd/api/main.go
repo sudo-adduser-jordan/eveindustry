@@ -101,6 +101,7 @@ func main() {
 		deps.AssetBrowser.Reference = queries
 		deps.Donations = queries
 		deps.DonationCharacters = esiChars
+		deps.EsiStatus.Universe = esiUniverse
 		deps.Windows = queries
 		deps.Projects = esiChars
 		deps.AdminUsers = queries

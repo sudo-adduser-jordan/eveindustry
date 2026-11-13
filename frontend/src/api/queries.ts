@@ -24,6 +24,17 @@ export function useFreshness() {
 }
 
 
+export function useEsiStatus(refetchInterval: number | false = 60_000) {
+  return useQuery({
+    queryKey: ['esi', 'status'],
+    queryFn: async () => unwrap(await api.GET('/esi/status')),
+    staleTime: 60_000,
+    refetchInterval,
+    retry: false,
+  })
+}
+
+
 export function useAssetsByLocation(scope: AssetScope, search: string, refetchInterval: number | false = false) {
   return useQuery({
     queryKey: ['assets', scope, 'by-location', search],

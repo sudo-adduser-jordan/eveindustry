@@ -49,6 +49,7 @@ type Deps struct {
 	DonationCharacters DonationESI
 	Windows            store.WindowStore
 	Projects           ProjectESI
+	EsiStatus          EsiStatusDeps
 	AdminUsers         store.AdminUserStore
 	Sponsors           store.SponsorStore
 	AdminStats         store.AdminStatsStore
@@ -141,6 +142,7 @@ func New(d Deps) *echo.Echo {
 	registerAdmin(authed, d)
 	registerSponsors(authed, d)
 	registerDiagnostics(authed, d)
+	registerEsiStatus(authed, d)
 	registerCharacters(authed, d)
 	registerDashboard(authed, d)
 	registerAbyssal(authed, d)
