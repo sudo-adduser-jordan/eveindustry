@@ -23,7 +23,7 @@ it('opens one original submenu at a time', () => {
   renderWithData(<Shell />, [[['me'], { data: { display_name: 'Pilot', admin: false } }]], ['/dashboard'])
   fireEvent.click(screen.getByRole('button', { name: 'Assets' }))
   expect(screen.getByRole('link', { name: 'Character Assets' })).toBeVisible()
-  fireEvent.click(screen.getByRole('button', { name: 'Industry Planning' }))
+  fireEvent.click(screen.getByRole('button', { name: /^Industry$/ }))
   expect(screen.queryByRole('link', { name: 'Character Assets' })).not.toBeInTheDocument()
 })
 

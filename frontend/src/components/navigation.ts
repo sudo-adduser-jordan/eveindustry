@@ -29,8 +29,6 @@ export const navigationGroups: NavigationGroup[] = [
     { label: 'Blueprint Research', to: '/industry/blueprint-research' },
     { label: 'Reaction Formula Research', to: '/industry/reaction-formula-research' },
     { label: 'Stock Manager', to: '/industry/stock-manager', stockManager: true },
-  ] },
-  { id: 'industry-planning', label: 'Industry Planning', links: [
     { label: 'Manufacturing', to: '/calculators/manufacturing' },
     { label: 'Invention Planner', to: '/calculators/invention-planner' },
     { label: 'Reactions Planner', to: '/calculators/reaction-planner' },
