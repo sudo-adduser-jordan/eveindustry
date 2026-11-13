@@ -1,4 +1,4 @@
-# Eve Industrialist — Go API
+# Eve Industry — Go API
 
 Go (Echo + sqlx) API for the EVE Online industry tracker. Serves the JSON
 API at `/api/v1` consumed by `frontend/` (React, Vite, TypeScript).

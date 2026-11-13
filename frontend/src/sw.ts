@@ -26,7 +26,7 @@ self.addEventListener('push', (event) => {
   try { payload = event.data?.json() ?? {} } catch {  }
 
   event.waitUntil(
-    self.registration.showNotification(payload.title ?? 'Eve Industrialist', {
+    self.registration.showNotification(payload.title ?? 'Eve Industry', {
       body: payload.body,
       tag: payload.tag,
       icon: '/app/icon-192.png',

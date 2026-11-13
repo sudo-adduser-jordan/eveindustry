@@ -179,7 +179,7 @@ func (c *Client) sendOnce(ctx context.Context, method, endpoint string, query ma
 	}
 	ua := c.UserAgent
 	if ua == "" {
-		ua = "EveIndustrialist/1.0"
+		ua = "EveIndustry/1.0"
 	}
 	req.Header.Set("User-Agent", ua)
 	if c.CompatibilityDate != "" {

@@ -11,7 +11,7 @@ import (
 func TestDemoCharacterScopes(t *testing.T) {
 	s := applyMigrations(t)
 	ctx := context.Background()
-	uid, err := s.EnsureDemoUser(ctx, "demo@eve-industrialist.invalid")
+	uid, err := s.EnsureDemoUser(ctx, "demo@eve-industry.invalid")
 	if err != nil || uid == 0 {
 		t.Fatalf("EnsureDemoUser: %v %d", err, uid)
 	}

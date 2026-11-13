@@ -32,7 +32,7 @@ var demoCorpB = []string{"Forge", "Freight", "Works", "Extraction", "Logistics",
 var demoAlliance = []string{"Aurora", "Meridian", "Ashen Coast", "Fallow Reach", "Kestrel", "Open Horizon"}
 
 func ResetDemoAccount(ctx context.Context, h HandlerDeps) error {
-	uid, err := h.DB.EnsureDemoUser(ctx, "demo@eve-industrialist.invalid")
+	uid, err := h.DB.EnsureDemoUser(ctx, "demo@eve-industry.invalid")
 	if err != nil {
 		return err
 	}

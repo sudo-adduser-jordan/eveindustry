@@ -12,7 +12,7 @@ func TestDemoPlanningSeedsIndustryTabs(t *testing.T) {
 	if err := s.SeedDemoIndustry(ctx, buildDemoIndustrySeed()); err != nil {
 		t.Fatal(err)
 	}
-	uid, err := s.EnsureDemoUser(ctx, "demo@eve-industrialist.invalid")
+	uid, err := s.EnsureDemoUser(ctx, "demo@eve-industry.invalid")
 	if err != nil {
 		t.Fatal(err)
 	}

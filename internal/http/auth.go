@@ -104,7 +104,7 @@ func handleAccountDelete(d Deps) echo.HandlerFunc {
 	}
 }
 
-const DemoEmail = "demo@eve-industrialist.invalid"
+const DemoEmail = "demo@eve-industry.invalid"
 
 type DemoUsers interface {
 	EnsureDemoUser(ctx context.Context, email string) (int64, error)

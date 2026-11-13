@@ -61,7 +61,7 @@ func TestSQLiteUpsertPaths(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Second)
 
-	uid, err := s.EnsureDemoUser(ctx, "demo@eve-industrialist.invalid")
+	uid, err := s.EnsureDemoUser(ctx, "demo@eve-industry.invalid")
 	if err != nil || uid == 0 {
 		t.Fatalf("EnsureDemoUser: %v %d", err, uid)
 	}

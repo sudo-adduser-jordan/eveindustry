@@ -10,7 +10,7 @@ func TestDemoMoonScansSeedToolsTab(t *testing.T) {
 	ctx := context.Background()
 	s, _ := demoTestDB(t)
 	h := HandlerDeps{DB: s}
-	uid, err := s.EnsureDemoUser(ctx, "demo@eve-industrialist.invalid")
+	uid, err := s.EnsureDemoUser(ctx, "demo@eve-industry.invalid")
 	if err != nil {
 		t.Fatal(err)
 	}

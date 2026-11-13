@@ -438,7 +438,7 @@ func handleNotifyTest(d Deps) echo.HandlerFunc {
 		msg := notify.Message{
 			Type: "industry.job_completed", DedupeKey: "test",
 			Title: "Notifications are working",
-			Body:  "This is a test notification from Eve Industrialist.",
+			Body:  "This is a test notification from Eve Industry.",
 			URL:   "/app/dashboard",
 		}
 		sent := 0

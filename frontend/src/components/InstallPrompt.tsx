@@ -8,7 +8,7 @@ export function InstallPrompt() {
   return (
     <div className="install-prompt" role="dialog" aria-labelledby="install-prompt-title">
       <button type="button" className="install-prompt-close" aria-label="Dismiss" onClick={dismiss}>×</button>
-      <strong id="install-prompt-title">Install Eve Industrialist</strong>
+      <strong id="install-prompt-title">Install Eve Industry</strong>
       {canInstall ? (
         <>
           <p>Open it like an app, and turn on notifications for finished jobs and timers.</p>

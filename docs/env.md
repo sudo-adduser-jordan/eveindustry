@@ -22,7 +22,7 @@ Sessions:
 EVE SSO:
 
 - `EVE_CLIENT_ID`, `EVE_CLIENT_SECRET`, empty disables SSO, demo still works.
-- `ESI_USER_AGENT=EveIndustrialist/1.0`
+- `ESI_USER_AGENT=EveIndustry/1.0`
 - `ESI_COMPATIBILITY_DATE=`
 
 Demo:

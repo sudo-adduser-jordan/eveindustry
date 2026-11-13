@@ -39,7 +39,7 @@ type Limiter struct {
 
 func NewLimiter(store CoordStore, appID string) *Limiter {
 	if appID == "" {
-		appID = "eve-industrialist"
+		appID = "eve-industry"
 	}
 	return &Limiter{store: store, appID: appID}
 }

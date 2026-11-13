@@ -29,7 +29,7 @@ export function shouldDehydrate(query: Query): boolean {
 
 let store: UseStore | undefined
 function idb() {
-  store ??= createStore('eve-industrialist', 'cache')
+  store ??= createStore('eve-industry', 'cache')
   return store
 }
 

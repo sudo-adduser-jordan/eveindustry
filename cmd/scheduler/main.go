@@ -40,7 +40,7 @@ func main() {
 		hd.DB = store.NewSQL(db.DB)
 		hd.Industry = industry.NewSQL(db.DB)
 		coord := esi.NewMemStore()
-		limiter := esi.NewLimiter(coord, "eve-industrialist")
+		limiter := esi.NewLimiter(coord, "eve-industry")
 		circuit := esi.NewCircuit(coord)
 		esiClient := esi.NewClient(coord, limiter, circuit, cfg.ESIUserAgent)
 		esiClient.Cache = esi.NewHTTPCache(coord)

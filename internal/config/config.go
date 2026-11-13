@@ -44,7 +44,7 @@ func Load() Config {
 
 		ESIClientID:          os.Getenv("EVE_CLIENT_ID"),
 		ESIClientSecret:      os.Getenv("EVE_CLIENT_SECRET"),
-		ESIUserAgent:         getenv("ESI_USER_AGENT", "EveIndustrialist/1.0"),
+		ESIUserAgent:         getenv("ESI_USER_AGENT", "EveIndustry/1.0"),
 		ESICompatibilityDate: os.Getenv("ESI_COMPATIBILITY_DATE"),
 	}
 }

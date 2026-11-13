@@ -38,7 +38,7 @@ export default function Login() {
       <header className="site-header">
         <Link className="brand" to="/dashboard">
           <img src={logoIcon} alt="" width={32} height={32} />
-          Eve Industrialist
+          Eve Industry
         </Link>
         <nav aria-label="Site navigation">
           <Link to="/login" aria-current="page">

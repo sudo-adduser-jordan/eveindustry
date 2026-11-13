@@ -26,8 +26,8 @@ export default defineConfig({
       },
       manifest: {
         id: '/app/',
-        name: 'Eve Industrialist',
-        short_name: 'Industrialist',
+        name: 'Eve Industry',
+        short_name: 'Industry',
         description: 'Planning and tracking tools for EVE Online industrialists.',
         start_url: '/app/dashboard',
         scope: '/app/',

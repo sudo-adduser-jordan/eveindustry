@@ -26,7 +26,7 @@ it('renders nothing until installation is offered', () => {
 it('offers install and closes when dismissed with Not now or the close button', () => {
   render(<InstallPrompt />)
   offerInstall()
-  expect(screen.getByRole('dialog', { name: 'Install Eve Industrialist' })).toBeInTheDocument()
+  expect(screen.getByRole('dialog', { name: 'Install Eve Industry' })).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
