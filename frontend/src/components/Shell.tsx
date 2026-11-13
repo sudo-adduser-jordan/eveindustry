@@ -8,7 +8,7 @@ import { DemoBanner } from './DemoBanner'
 import EsiStatus from './EsiStatus'
 import logoIcon from '../assets/logo-icon.svg'
 import { PwaStatus } from './PwaStatus'
-import { groupForPath, navigationGroups, NAVIGATION_STORAGE_KEY } from './navigation'
+import { groupForPath, isExternalLink, navigationGroups, NAVIGATION_STORAGE_KEY } from './navigation'
 
 export function Shell() {
   const me = useMe()
@@ -74,7 +74,11 @@ export function Shell() {
                 </button>
                 <div id={`nav-${group.id}`} className="nav-submenu" hidden={!expanded}>
                   {group.links.filter((link) => !link.stockManager || me.data?.data.stock_manager).map((link) => (
-                    <NavLink key={link.to} to={link.to} end={group.links.some((other) => other.to !== link.to && other.to.startsWith(`${link.to}/`)) || link.to === '/'}>{link.label}</NavLink>
+                    isExternalLink(link.to) ? (
+                      <a key={link.to} href={link.to} target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>{link.label}</a>
+                    ) : (
+                      <NavLink key={link.to} to={link.to} end={group.links.some((other) => other.to !== link.to && other.to.startsWith(`${link.to}/`)) || link.to === '/'}>{link.label}</NavLink>
+                    )
                   ))}
                 </div>
               </div>

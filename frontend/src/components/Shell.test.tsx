@@ -60,6 +60,20 @@ it('remembers the open group across reloads', () => {
   expect(screen.getByRole('button', { name: 'Planetary' })).toHaveAttribute('aria-expanded', 'true')
 })
 
+it('opens external tool links in a new tab', () => {
+  renderWithData(<Shell />, [[['me'], { data: { display_name: 'Pilot', admin: false } }]], ['/dashboard'])
+  fireEvent.click(screen.getByRole('button', { name: 'Tools' }))
+  const marketBrowser = screen.getByRole('link', { name: 'Market Browser' })
+  expect(marketBrowser).toHaveAttribute('href', 'https://evemarketbrowser.com/region/')
+  expect(marketBrowser).toHaveAttribute('target', '_blank')
+  expect(marketBrowser).toHaveAttribute('rel', 'noopener noreferrer')
+  const appraisal = screen.getByRole('link', { name: 'Item Appraisal' })
+  expect(appraisal).toHaveAttribute('href', 'https://janice.e-351.com/')
+  expect(appraisal).toHaveAttribute('target', '_blank')
+  expect(appraisal).toHaveAttribute('rel', 'noopener noreferrer')
+  expect(screen.getByRole('link', { name: 'Contract Browser' })).not.toHaveAttribute('target')
+})
+
 it('switches themes from the sidebar and remembers the choice', () => {
   renderWithData(<Shell />, [[['me'], { data: { display_name: 'Pilot', admin: false } }]], ['/dashboard'])
   const select = screen.getByLabelText('Theme')

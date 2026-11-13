@@ -58,6 +58,10 @@ export const navigationGroups: NavigationGroup[] = [
 
 export const NAVIGATION_STORAGE_KEY = 'eve-industry-navigation-group'
 
+export function isExternalLink(to: string): boolean {
+  return to.startsWith('http://') || to.startsWith('https://')
+}
+
 export function groupForPath(pathname: string): string | null {
   return navigationGroups.find((group) => group.links.some(({ to }) => pathname === to || (to !== '/' && pathname.startsWith(`${to}/`))))?.id ?? null
 }
