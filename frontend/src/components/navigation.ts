@@ -18,7 +18,7 @@ export const navigationGroups: NavigationGroup[] = [
     { label: 'Corporation', to: '/assets/corporation' },
     { label: 'Materials', to: '/assets/materials' },
     { label: 'Blueprints', to: '/industry/blueprint-research' },
-    { label: 'Reaction Formulas', to: '/industry/reaction-formula-research' },
+    { label: 'Formulas', to: '/industry/reaction-formula-research' },
   ] },
   { id: 'industry', label: 'Industry', links: [
 	  { label: 'Structures', to: '/structures' },
@@ -45,7 +45,6 @@ export const navigationGroups: NavigationGroup[] = [
 	  { label: 'Contract Browser', to: '/tools/contract-browser' },
 	  { label: 'Station Trading', to: '/market/station-trading' },
 	  { label: 'Region Arbitrage', to: '/market/region-arbitrage' },
-	  { label: 'Market Data', to: '/market-status' },
 	  { label: 'Moon Scan Analyser', to: '/tools/moon-scan' },
   ] },
   { id: 'admin', label: 'Admin', admin: true, links: [

@@ -61,6 +61,7 @@ export function Shell() {
           </button>
         </div>
         <nav id="app-navigation">
+          <NavLink to="/data">Data</NavLink>
           <NavLink to="/dashboard">Dashboard</NavLink>
           <NavLink to="/characters">Characters</NavLink>
           {navigationGroups.filter((group) => !group.admin || me.data?.data.admin).map((group) => {

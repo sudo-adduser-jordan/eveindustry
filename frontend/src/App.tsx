@@ -7,7 +7,7 @@ import { Shell } from './components/Shell'
 const Overview = lazy(() => import('./pages/Overview'))
 const Login = lazy(() => import('./pages/Login'))
 const Characters = lazy(() => import('./pages/Characters'))
-const MarketStatus = lazy(() => import('./pages/MarketStatus'))
+const Data = lazy(() => import('./pages/Data'))
 const Assets = lazy(() => import('./pages/Assets'))
 const IndustrySlots = lazy(() => import('./pages/IndustrySlots'))
 const Reprocessing = lazy(() => import('./pages/Reprocessing'))
@@ -59,7 +59,8 @@ export function App() {
         <Route element={<Shell />}>
           <Route index element={<Overview />} />
           <Route path="characters" element={<Characters />} />
-          <Route path="market-status" element={<MarketStatus />} />
+          <Route path="data" element={<Data />} />
+          <Route path="market-status" element={<Navigate to="/data" replace />} />
           {}
           <Route path="assets" element={<Assets key="personal" scope="personal" />} />
           <Route path="assets/corporation" element={<Assets key="corporate" scope="corporate" />} />
