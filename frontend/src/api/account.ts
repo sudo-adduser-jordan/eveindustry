@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, type ApiErrorBody } from './client'
-import { forgetThisDevice } from './notifications'
 import { leaveSession } from './persistence'
 
 async function done(request: Promise<{ response: Response; error?: unknown }>) {
@@ -20,6 +19,6 @@ export function useCharacterActions() {
 
 export function useSessionActions() {
   return {
-    logout: useMutation({ mutationFn: async () => { await forgetThisDevice().catch(() => undefined); return done(api.POST('/logout')) }, onSuccess: () => leaveSession('/app/login') }),
+    logout: useMutation({ mutationFn: async () => done(api.POST('/logout')), onSuccess: () => leaveSession('/app/login') }),
   }
 }

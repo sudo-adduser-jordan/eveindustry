@@ -49,10 +49,6 @@ func (s *SQL) WipeUserContent(ctx context.Context, userID int64) error {
 		`DELETE FROM invention_plans WHERE user_id = ?`,
 		`DELETE FROM build_programs WHERE user_id = ?`,
 		`DELETE FROM industry_stock_items WHERE user_id = ?`,
-		`DELETE FROM push_subscriptions WHERE user_id = ?`,
-		`DELETE FROM notification_preferences WHERE user_id = ?`,
-		`DELETE FROM notification_settings WHERE user_id = ?`,
-		`DELETE FROM notification_log WHERE user_id = ?`,
 		`DELETE FROM characters WHERE user_id = ?`,
 	} {
 		if _, err := s.db.ExecContext(ctx, q, userID); err != nil {

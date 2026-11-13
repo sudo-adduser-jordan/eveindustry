@@ -19,7 +19,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/jobs"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/logx"
-	"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
@@ -108,16 +107,10 @@ func main() {
 		deps.Sponsors = queries
 		deps.AdminStats = queries
 		deps.Diag = queries
-		deps.Notify = queries
 		deps.Abyssal.Characters = esiChars
 		deps.Abyssal.Reference = queries
 		deps.Abyssal.Universe = esiUniverse
 		deps.Abyssal.Dogma = esiChars
-		deps.NotifyPush = gohttp.NotifyPush{VapidPublicKey: os.Getenv("VAPID_PUBLIC_KEY")}
-		deps.NotifySender = &notify.WebPushSender{
-			Subject: os.Getenv("VAPID_SUBJECT"), PublicKey: os.Getenv("VAPID_PUBLIC_KEY"),
-			PrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
-		}
 		deps.Planetary.Characters = esiChars
 		deps.Planetary.Universe = esiUniverse
 		deps.SponsorImages = gohttp.DiskSponsorStorage{Dir: sponsorDir()}

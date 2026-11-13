@@ -2,7 +2,6 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useMe } from '../api/queries'
 import { useSessionActions } from '../api/account'
-import { usePushSync } from '../api/notifications'
 import { THEMES, THEME_GROUPS, useTheme } from '../theme'
 import { InstallPrompt } from './InstallPrompt'
 import { DemoBanner } from './DemoBanner'
@@ -14,7 +13,6 @@ export function Shell() {
   const me = useMe()
   const session = useSessionActions()
   const [theme, setTheme] = useTheme()
-  usePushSync(Boolean(me.data) && !me.data?.data.demo)
   const { pathname } = useLocation()
   const activeGroup = groupForPath(pathname)
   const [openGroup, setOpenGroup] = useState<string | null>(() => {
@@ -65,7 +63,6 @@ export function Shell() {
         <nav id="app-navigation">
           <NavLink to="/dashboard">Dashboard</NavLink>
           <NavLink to="/characters">Characters</NavLink>
-          <NavLink to="/notifications">Notifications</NavLink>
           {navigationGroups.filter((group) => !group.admin || me.data?.data.admin).map((group) => {
             const expanded = openGroup === group.id
             return (

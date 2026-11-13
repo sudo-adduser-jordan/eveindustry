@@ -185,6 +185,13 @@ func rfc3339OrNil(t *time.Time) any {
 	return t.UTC().Format(time.RFC3339)
 }
 
+func strOrNil(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
 func timePtr(t time.Time) *time.Time { return &t }
 
 func corpLogoURL(id *int64) string {

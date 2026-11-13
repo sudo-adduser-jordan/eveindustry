@@ -11,7 +11,7 @@ export function InstallPrompt() {
       <strong id="install-prompt-title">Install Eve Industrialist</strong>
       {canInstall ? (
         <>
-          <p>Open it like an app, and turn on notifications for finished jobs and timers.</p>
+          <p>Open it like an app for the full-screen experience.</p>
           <div className="form-actions">
             <button type="button" className="button" onClick={() => { void install() }}>Install</button>
             <button type="button" className="button" onClick={dismiss}>Not now</button>
@@ -19,7 +19,7 @@ export function InstallPrompt() {
         </>
       ) : ios ? (
         <>
-          <p>Tap the Share button, then Add to Home Screen. Open the app from your Home Screen to turn on notifications.</p>
+          <p>Tap the Share button, then Add to Home Screen.</p>
           <div className="form-actions">
             <button type="button" className="button" onClick={dismiss}>Got it</button>
           </div>

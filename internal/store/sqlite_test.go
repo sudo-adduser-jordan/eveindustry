@@ -66,23 +66,6 @@ func TestSQLiteUpsertPaths(t *testing.T) {
 		t.Fatalf("EnsureDemoUser: %v %d", err, uid)
 	}
 
-	qh := QuietHours{UserID: uid, Start: nullStr("01:00"), End: nullStr("02:00"), Timezone: "UTC"}
-	if err := s.UpdateQuietHours(ctx, qh); err != nil {
-		t.Fatalf("UpdateQuietHours insert: %v", err)
-	}
-	qh.Start = nullStr("03:00")
-	if err := s.UpdateQuietHours(ctx, qh); err != nil {
-		t.Fatalf("UpdateQuietHours update: %v", err)
-	}
-	got, err := s.QuietHours(ctx, uid)
-	if err != nil || got.Start.String != "03:00" {
-		t.Fatalf("QuietHours: %+v %v", got, err)
-	}
-	var n int
-	if err := s.db.GetContext(ctx, &n, `SELECT COUNT(*) FROM notification_settings WHERE user_id = ?`, uid); err != nil || n != 1 {
-		t.Fatalf("settings rows: %v %d", err, n)
-	}
-
 	md := EndpointMetricDelta{DimensionHash: "h1", BucketAt: now.Truncate(time.Hour),
 		Operation: "op", EventKind: "http_attempt", HTTPStatus: 200, Reason: "ok",
 		Requests: 2, Successes: 2, DurationCount: 2, DurationMax: 50, FirstSeen: now, LastSeen: now}
