@@ -46,9 +46,9 @@ it('toggles the slide-out menu from the burger and closes it with the overlay, c
 })
 
 it('opens the group containing a deep link and keeps admin navigation restricted', () => {
-  renderWithData(<Shell />, [[['me'], { data: { display_name: 'Pilot', admin: false } }]], ['/corporate/build-programs/42'])
-  expect(screen.getByRole('button', { name: 'Corporate' })).toHaveAttribute('aria-expanded', 'true')
-  expect(screen.getByRole('link', { name: 'Corp Build Programs' })).toHaveClass('active')
+  renderWithData(<Shell />, [[['me'], { data: { display_name: 'Pilot', admin: false } }]], ['/tools/contract-browser/42'])
+  expect(screen.getByRole('button', { name: 'Tools' })).toHaveAttribute('aria-expanded', 'true')
+  expect(screen.getByRole('link', { name: 'Contract Browser' })).toHaveClass('active')
   expect(screen.queryByRole('button', { name: 'Admin' })).not.toBeInTheDocument()
 })
 

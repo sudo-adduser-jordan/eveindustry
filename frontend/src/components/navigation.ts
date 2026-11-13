@@ -19,6 +19,8 @@ export const navigationGroups: NavigationGroup[] = [
     { label: 'Materials', to: '/assets/materials' },
     { label: 'Ships', to: '/assets/ships' },
     { label: 'Abyssal Items', to: '/assets/abyssal' },
+    { label: 'Blueprint', to: '/industry/blueprint-research' },
+    { label: 'Reaction Formula', to: '/industry/reaction-formula-research' },
   ] },
   { id: 'industry', label: 'Industry', links: [
     { label: 'Slots', to: '/industry/slots' },
@@ -26,8 +28,6 @@ export const navigationGroups: NavigationGroup[] = [
     { label: 'Most Profitable', to: '/industry/most-profitable' },
     { label: 'Can Produce', to: '/industry/can-produce' },
     { label: 'Reprocessing Value', to: '/industry/reprocessing' },
-    { label: 'Blueprint Research', to: '/industry/blueprint-research' },
-    { label: 'Reaction Formula Research', to: '/industry/reaction-formula-research' },
     { label: 'Stock Manager', to: '/industry/stock-manager', stockManager: true },
     { label: 'Manufacturing', to: '/calculators/manufacturing' },
     { label: 'Invention Planner', to: '/calculators/invention-planner' },
@@ -49,12 +49,6 @@ export const navigationGroups: NavigationGroup[] = [
     { label: 'Station Trading', to: '/market/station-trading' },
     { label: 'Region Arbitrage', to: '/market/region-arbitrage' },
     { label: 'Market Data', to: '/market-status' },
-  ] },
-  { id: 'corporate', label: 'Corporate', links: [
-    { label: 'Donations', to: '/corporate/donations' },
-    { label: 'Projects', to: '/corporate/projects' },
-    { label: 'Project Contributors', to: '/corporate/projects/contributors' },
-    { label: 'Corp Build Programs', to: '/corporate/build-programs' },
     { label: 'Structure Timers', to: '/corporate/structure-vulnerability' },
   ] },
   { id: 'admin', label: 'Admin', admin: true, links: [
