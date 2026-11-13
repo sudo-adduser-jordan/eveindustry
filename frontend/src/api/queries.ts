@@ -124,23 +124,6 @@ export function useAssetMaterials(refetchInterval: RefetchInterval = false) {
 }
 
 
-export function useAssetShips(refetchInterval: RefetchInterval = false) {
-  return useQuery({
-    queryKey: ['assets', 'ships'],
-    queryFn: async () => unwrap(await api.GET('/assets/ships')),
-    refetchInterval,
-  })
-}
-
-
-export function useAbyssalItems(refetchInterval: RefetchInterval = false) {
-  return useQuery({
-    queryKey: ['assets', 'abyssal'],
-    queryFn: async () => unwrap(await api.GET('/assets/abyssal')),
-    refetchInterval,
-  })
-}
-
 type StationTradingQuery = NonNullable<
   NonNullable<paths['/market/station-trading']['get']['parameters']['query']>
 >

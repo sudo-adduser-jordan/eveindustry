@@ -14,8 +14,6 @@ const Reprocessing = lazy(() => import('./pages/Reprocessing'))
 const StationTrading = lazy(() => import('./pages/StationTrading'))
 const RegionArbitrage = lazy(() => import('./pages/RegionArbitrage'))
 const AssetMaterials = lazy(() => import('./pages/AssetMaterials'))
-const AssetShips = lazy(() => import('./pages/AssetShips'))
-const AssetAbyssal = lazy(() => import('./pages/AssetAbyssal'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'))
 const AdminUserJobs = lazy(() => import('./pages/admin/AdminUserJobs'))
@@ -67,8 +65,6 @@ export function App() {
           <Route path="assets" element={<Assets key="personal" scope="personal" />} />
           <Route path="assets/corporation" element={<Assets key="corporate" scope="corporate" />} />
           <Route path="assets/materials" element={<AssetMaterials />} />
-          <Route path="assets/ships" element={<AssetShips />} />
-          <Route path="assets/abyssal" element={<AssetAbyssal />} />
           <Route path="calculators/manufacturing" element={<Manufacturing />} />
           <Route path="calculators/manufacturing-browser" element={<ManufacturingBrowser />} />
           <Route path="calculators/reaction-browser" element={<ReactionBrowser />} />
