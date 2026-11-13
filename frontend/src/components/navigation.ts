@@ -46,7 +46,6 @@ export const navigationGroups: NavigationGroup[] = [
 	  { label: 'Station Trading', to: '/market/station-trading' },
 	  { label: 'Region Arbitrage', to: '/market/region-arbitrage' },
 	  { label: 'Market Data', to: '/market-status' },
-	  { label: 'Structure Timers', to: '/corporate/structure-vulnerability' },
 	  { label: 'Moon Scan Analyser', to: '/tools/moon-scan' },
   ] },
   { id: 'admin', label: 'Admin', admin: true, links: [

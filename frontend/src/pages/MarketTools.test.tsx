@@ -7,7 +7,7 @@ import ContractAppraisal from './ContractAppraisal'
 import ContractBrowser from './ContractBrowser'
 import ContractDetail from './ContractDetail'
 import MarketBrowser from './MarketBrowser'
-import Structures from './Structures'
+import Structures, { toTimerRequest } from './Structures'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -274,5 +274,50 @@ describe('Structures', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Delete' })[0]!)
     expect(del).not.toHaveBeenCalled()
+  })
+
+  it('opens a prefilled timer form on each card and posts the timer', async () => {
+    const post = vi.spyOn(api, 'POST').mockResolvedValue({ data: { data: 1, meta: {} }, response: new Response() } as never)
+    renderWithData(<Structures />, [[key, list]])
+
+    expect(screen.getAllByRole('button', { name: 'Add timer' })).toHaveLength(2)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Add timer' })[0]!)
+
+    expect(screen.getByRole('form', { name: 'Add vulnerability timer for My Azbel' })).toBeInTheDocument()
+    expect(screen.getByText('Jita', { selector: 'strong' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Start time (UTC)')).toHaveValue('18:00')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save timer' }))
+
+    await waitFor(() => expect(post).toHaveBeenCalled())
+    expect(post).toHaveBeenCalledWith('/corporation/structure-vulnerability', {
+      body: {
+        solar_system_id: 30000142,
+        solar_system_name: 'Jita',
+        structure_type: 'upwell',
+        structure_name: 'My Azbel',
+        day_of_week: 0,
+        start_time_utc: '18:00',
+        duration_minutes: 60,
+        reinforce_exit_at: null,
+        notes: null,
+      },
+    })
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Vulnerability timer added.'))
+  })
+
+  it('asks for a system when the structure has none and builds timer requests', () => {
+    renderWithData(<Structures />, [[key, list]])
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Add timer' })[1]!)
+    expect(screen.getByText(/has no system set/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save timer' })).toBeDisabled()
+
+    expect(
+      toTimerRequest(' Hook ', { system: { id: 1, name: 'Jita' }, type: 'skyhook', day: '3', start: '06:00', duration: '30', exit: '', notes: '' }),
+    ).toMatchObject({ structure_name: 'Hook', day_of_week: null, reinforce_exit_at: null, notes: null })
+    expect(
+      toTimerRequest('Hook', { system: null, type: 'upwell', day: '3', start: '06:00', duration: '30', exit: '', notes: '' }),
+    ).toBeNull()
   })
 })

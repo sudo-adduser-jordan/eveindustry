@@ -32,7 +32,6 @@ const Projects = lazy(() => import('./pages/Projects'))
 const ProjectContributors = lazy(() => import('./pages/ProjectContributors'))
 const CorporateBuildPrograms = lazy(() => import('./pages/CorporateBuildPrograms'))
 const BuildProgramDetail = lazy(() => import('./pages/BuildProgramDetail'))
-const StructureTimers = lazy(() => import('./pages/StructureTimers'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const IndustryJobs = lazy(() => import('./pages/IndustryJobs'))
 const MostProfitable = lazy(() => import('./pages/MostProfitable'))
@@ -102,7 +101,6 @@ export function App() {
           <Route path="corporate/projects/contributors" element={<ProjectContributors />} />
           <Route path="corporate/build-programs" element={<CorporateBuildPrograms />} />
           <Route path="corporate/build-programs/:program" element={<BuildProgramDetail />} />
-          <Route path="corporate/structure-vulnerability" element={<StructureTimers />} />
           <Route path="market/browser" element={<MarketBrowser />} />
           <Route path="tools/contract-appraisal" element={<ContractAppraisal />} />
           <Route path="tools/contract-browser" element={<ContractBrowser />} />
