@@ -81,7 +81,6 @@ export function Shell() {
           })}
         </nav>
         <div className="sidebar-foot">
-          {me.data ? <p className="sidebar-user">{me.data.data.avatar_url ? <img src={me.data.data.avatar_url} alt="" width="28" height="28" /> : null}<span>{me.data.data.display_name}</span></p> : null}
           {me.data?.data.demo ? null : <p><a href="/auth/eve/scopes">Add character</a></p>}
           <p className="theme-setting">
             <label htmlFor="theme-select">Theme</label>
