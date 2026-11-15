@@ -6,7 +6,7 @@ import { THEMES, THEME_GROUPS, useTheme } from '../theme'
 import { InstallPrompt } from './InstallPrompt'
 import { DemoBanner } from './DemoBanner'
 import EsiStatus from './EsiStatus'
-import logoIcon from '../assets/logo-icon.svg'
+import { Logo } from './Logo'
 import { PwaStatus } from './PwaStatus'
 import { groupForPath, isExternalLink, navigationGroups, NAVIGATION_STORAGE_KEY } from './navigation'
 
@@ -51,12 +51,12 @@ export function Shell() {
         <button type="button" className="burger" aria-label="Toggle navigation" aria-expanded={navOpen} aria-controls="main-sidebar" onClick={() => setNavOpen(!navOpen)}>
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
         </button>
-        <NavLink className="topbar-brand" to="/dashboard"><img src={logoIcon} alt="" width="24" height="24" /><span>Eve Industry</span></NavLink>
+        <NavLink className="topbar-brand" to="/dashboard"><Logo size={24} /><span>Eve Industry</span></NavLink>
       </header>
       <div className={`sidebar-overlay${navOpen ? ' open' : ''}`} onClick={() => setNavOpen(false)} aria-hidden="true" />
       <aside id="main-sidebar" className={`sidebar${navOpen ? ' open' : ''}`} aria-label="Main navigation">
         <div className="sidebar-head">
-          <NavLink className="brand" to="/dashboard"><img src={logoIcon} alt="" width="28" height="28" /><span>Eve Industry</span></NavLink>
+          <NavLink className="brand" to="/dashboard"><Logo size={28} /><span>Eve Industry</span></NavLink>
           <button type="button" className="sidebar-close" aria-label="Close navigation" onClick={() => setNavOpen(false)}>
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
           </button>
