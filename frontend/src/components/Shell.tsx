@@ -79,7 +79,7 @@ export function Shell() {
       <div className={`sidebar-overlay${navOpen ? ' open' : ''}`} onClick={() => setNavOpen(false)} aria-hidden="true" />
       <aside id="main-sidebar" className={`sidebar${navOpen ? ' open' : ''}`} aria-label="Main navigation">
         <div className="sidebar-head">
-          <NavLink className="brand" to="/dashboard"><Logo size={28} /><span>Eve Industry</span></NavLink>
+          <NavLink className="brand" to="/dashboard"><Logo size={22} /><span>Eve Industry</span></NavLink>
           <button type="button" className="sidebar-close" aria-label="Close navigation" onClick={() => setNavOpen(false)}>
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
           </button>

@@ -72,6 +72,8 @@ code { background: rgba(var(--accent-rgb), 0.08); color: var(--accent2); padding
   z-index: -1;
 }
 .sidebar-head { display: flex; align-items: center; border-bottom: 1px solid rgba(var(--accent-rgb), 0.2); flex-shrink: 0; }
+.sidebar-head .brand { min-height: 0; padding: 0.5rem 1rem; font-size: 0.75rem; }
+.sidebar-head .brand svg { width: 22px; height: 22px; }
 .sidebar-close { display: none; }
 .topbar, .sidebar-overlay { display: none; }
 .brand {
