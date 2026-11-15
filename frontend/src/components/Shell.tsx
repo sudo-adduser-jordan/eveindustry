@@ -85,7 +85,6 @@ export function Shell() {
         </div>
         <nav id="app-navigation">
           <NavLink to="/data">Data</NavLink>
-          {me.data?.data.admin ? <NavLink to="/admin">Admin</NavLink> : null}
           <NavLink to="/dashboard">Dashboard</NavLink>
           <NavLink to="/characters">Characters</NavLink>
           {navigationGroups.filter((group) => !group.admin || me.data?.data.admin).map((group) => {
