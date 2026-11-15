@@ -59,7 +59,7 @@ export default function Login() {
       </div>
       <header className="site-header">
         <Link className="brand" to="/dashboard">
-          <img src={logoIcon} alt="" width={24} height={24} />
+          <img src={logoIcon} alt="" width={20} height={20} />
           Eve Industry
         </Link>
         <nav aria-label="Site navigation">
