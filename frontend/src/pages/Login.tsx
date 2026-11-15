@@ -41,9 +41,9 @@ export default function Login() {
           Eve Industry
         </Link>
         <nav aria-label="Site navigation">
-          <Link to="/login" aria-current="page">
-            Login
-          </Link>
+          <button type="button" onClick={tryDemo} disabled={demo === 'busy'}>
+            {demo === 'busy' ? 'Starting demo…' : 'Demo'}
+          </button>
         </nav>
       </header>
       <main className="auth-content">
@@ -56,12 +56,6 @@ export default function Login() {
             </a>
           </p>
           <p className="muted">Review your permissions before continuing to the official EVE SSO page.</p>
-          <p>
-            <button type="button" className="button" onClick={tryDemo} disabled={demo === 'busy'}>
-              {demo === 'busy' ? 'Starting demo…' : 'Try the demo'}
-            </button>
-          </p>
-          <p className="muted">Explore with three generated characters. No EVE login needed; data resets daily.</p>
           {demo === 'off' ? <p role="alert">Demo mode is off on this server (set DEMO_ENABLED=true).</p> : null}
           {demo === 'error' ? <p role="alert">Could not start the demo. Try again.</p> : null}
         </section>

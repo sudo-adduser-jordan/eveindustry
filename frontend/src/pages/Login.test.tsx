@@ -5,26 +5,26 @@ import { me, renderWithData } from '../test/render'
 
 afterEach(() => vi.unstubAllGlobals())
 
-it('matches the public login panel: SSO link, demo button and helper copy', () => {
+it('matches the public login panel: SSO link, demo entry and helper copy', () => {
   renderWithData(<Login />)
   expect(screen.getByRole('heading', { name: 'Login' })).toBeInTheDocument()
   const sso = screen.getByRole('link', { name: 'Login with EVE Online' })
   expect(sso).toHaveAttribute('href', '/auth/eve/scopes')
   expect(sso).toHaveClass('button', 'primary')
   expect(screen.getByText('Review your permissions before continuing to the official EVE SSO page.')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Try the demo' })).toBeEnabled()
-  expect(screen.getByText('Explore with three generated characters. No EVE login needed; data resets daily.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Demo' })).toBeEnabled()
+  expect(screen.queryByText('Explore with three generated characters. No EVE login needed; data resets daily.')).not.toBeInTheDocument()
 })
 
 it('sends signed-in visitors straight to the dashboard', () => {
   renderWithData(<Login />, [[['me'], me([])]])
-  expect(screen.queryByRole('button', { name: 'Try the demo' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Demo' })).not.toBeInTheDocument()
 })
 
 it('reports when demo mode is off instead of leaving the page', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 404 })))
   renderWithData(<Login />)
-  fireEvent.click(screen.getByRole('button', { name: 'Try the demo' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Demo' }))
   await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Demo mode is off'))
 })
 
@@ -38,6 +38,6 @@ it('navigates to the app after demo sign-in', async () => {
   const assign = vi.fn()
   vi.stubGlobal('location', { assign })
   renderWithData(<Login />)
-  fireEvent.click(screen.getByRole('button', { name: 'Try the demo' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Demo' }))
   await waitFor(() => expect(assign).toHaveBeenCalledWith('/app/dashboard'))
 })

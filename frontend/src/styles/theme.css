@@ -471,8 +471,10 @@ summary:hover { color: var(--accent); }
 }
 .auth-page .site-header .brand { flex: 0 0 auto; min-height: 0; padding: 0; }
 .auth-page .site-header nav { display: flex; gap: 1rem; }
-.auth-page .site-header nav a { color: var(--muted); font-weight: 600; text-decoration: none; }
-.auth-page .site-header nav a:hover, .auth-page .site-header nav a[aria-current='page'] { color: var(--accent2); }
+.auth-page .site-header nav a, .auth-page .site-header nav button { color: var(--muted); font-weight: 600; text-decoration: none; }
+.auth-page .site-header nav a:hover, .auth-page .site-header nav a[aria-current='page'], .auth-page .site-header nav button:hover:not(:disabled) { color: var(--accent2); }
+.auth-page .site-header nav button { font: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.auth-page .site-header nav button:disabled { cursor: default; }
 .auth-content { max-width: 1100px; width: 100%; margin: auto; padding: 2rem 1rem; }
 .auth-panel {
   position: relative;
