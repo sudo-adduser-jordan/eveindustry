@@ -94,6 +94,7 @@ code { background: rgba(var(--accent-rgb), 0.08); color: var(--accent2); padding
   border: 1px solid transparent;
   border-radius: 4px;
   padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
   font-weight: 500;
   color: var(--muted);
   transition: background 0.15s, border-color 0.15s, color 0.15s;
@@ -114,7 +115,7 @@ code { background: rgba(var(--accent-rgb), 0.08); color: var(--accent2); padding
 }
 .nav-group-toggle:hover, .nav-group-toggle.has-active-page { opacity: 1; color: var(--accent); background: transparent; }
 .nav-submenu { background: none; border-left: 0; margin: 0.1rem 0 0.4rem 0.75rem; padding: 0; }
-.nav-submenu a { font-size: 1rem; }
+.nav-submenu a { font-size: 0.8rem; }
 .sidebar-foot { padding: 0.75rem 1rem; border-top: 1px solid rgba(var(--accent-rgb), 0.2); background: rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0; }
 .sidebar-foot p { margin: 0; }
 .sidebar-foot .button { width: 100%; }

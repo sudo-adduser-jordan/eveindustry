@@ -123,10 +123,10 @@ it('changes more than colours in every non-default theme', () => {
   }
 })
 
-it('gives EVE Online window chrome with a title band', () => {
+it('gives EVE Online flat market-browser chrome with corner-cut controls', () => {
   const css = themeFiles['eve-online'] ?? ''
-  expect(css).toContain('clip-path: none')
-  expect(css).toContain('title band')
-  expect(css).toContain('.panel > :is(h2, h3):first-child')
-  expect(css).toContain('font-display: \'Rajdhani\'')
+  expect(css).toContain('clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8.5px)')
+  expect(css).toContain('text-transform: none')
+  expect(css).toContain('#2e6779')
+  expect(css).toContain("font-display: helvetica")
 })
