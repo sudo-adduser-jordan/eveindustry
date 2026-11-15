@@ -225,6 +225,40 @@ describe('Structures', () => {
     expect(screen.getAllByRole('button', { name: 'Make default' })).toHaveLength(1)
   })
 
+  it('shows the corporation and alliance logos from the main character on each card', () => {
+    const dashboard = {
+      data: {
+        characters: [
+          {
+            character_id: 2,
+            name: 'Alt',
+            is_main: false,
+            corporation_name: 'Other Corp',
+            corporation_logo: 'http://other-corp/logo',
+            alliance_name: null,
+            alliance_logo: '',
+          },
+          {
+            character_id: 1,
+            name: 'Pilot',
+            is_main: true,
+            corporation_name: 'Wayne Corp',
+            corporation_logo: 'http://corp/logo',
+            alliance_name: 'Ally',
+            alliance_logo: 'http://ally/logo',
+          },
+        ],
+      },
+      meta: {},
+    }
+    renderWithData(<Structures />, [[key, list], [['dashboard'], dashboard]])
+
+    expect(screen.getAllByTitle('Wayne Corp')).toHaveLength(2)
+    expect(screen.getAllByTitle('Ally')).toHaveLength(2)
+    expect(screen.getAllByTitle('Wayne Corp')[0]).toHaveAttribute('src', 'http://corp/logo')
+    expect(screen.queryByTitle('Other Corp')).not.toBeInTheDocument()
+  })
+
   it('swaps to refineries for reactions and posts the new structure', async () => {
     const post = vi.spyOn(api, 'POST').mockResolvedValue({ data: { data: structure({ id: 3 }), meta: {} }, response: new Response() } as never)
     renderWithData(<Structures />, [[key, { data: [], meta: list.meta }]])

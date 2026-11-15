@@ -44,10 +44,12 @@ const seed: Array<[readonly unknown[], unknown]> = [
 ]
 
 describe('Data', () => {
-  it('shows market, contract and character sections', () => {
+  it('shows character data first, then market and contract sections', () => {
     renderWithData(<Data />, seed)
 
     expect(screen.getByRole('heading', { name: 'Data' })).toBeInTheDocument()
+    const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
+    expect(headings).toEqual(['Character data', 'Market data', 'Contract data'])
     expect(screen.getByRole('heading', { name: 'Market data' })).toBeInTheDocument()
     expect(screen.getByText('The Forge')).toBeInTheDocument()
 

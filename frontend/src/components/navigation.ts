@@ -33,8 +33,7 @@ export const navigationGroups: NavigationGroup[] = [
   ] },
   { id: 'industry', label: 'Industry', links: [
 	  { label: 'Structures', to: '/structures' },
-	  { label: 'Jobs', to: '/industry/jobs' },
-	  { label: 'Slots', to: '/industry/slots' },
+	  { label: 'Jobs', to: '/industry/slots' },
 	  { separator: true },
 	  { label: 'Build Programs', to: '/build-programs' },
 	  { label: 'Manufacturing', to: '/calculators/manufacturing' },

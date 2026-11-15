@@ -146,9 +146,9 @@ export default function Data() {
       <h1>Data</h1>
       <p>How fresh the data behind the app is, and what is linked to your account.</p>
       <div className="data-sections">
+        <CharacterDataSection />
         <MarketDataSection />
         <ContractDataSection />
-        <CharacterDataSection />
       </div>
     </>
   )

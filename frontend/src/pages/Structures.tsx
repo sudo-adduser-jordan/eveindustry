@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
+  useDashboard,
   useDeleteStructure,
   useSaveStructure,
   useSetDefaultStructure,
@@ -410,7 +411,21 @@ function StructureTimerForm({ s, onDone }: { s: Structure; onDone: (added: boole
   )
 }
 
-function StructureCard({ s, onEdit }: { s: Structure; onEdit: () => void }) {
+function StructureCard({
+  s,
+  onEdit,
+  corpLogo,
+  corpName,
+  allianceLogo,
+  allianceName,
+}: {
+  s: Structure
+  onEdit: () => void
+  corpLogo?: string | null
+  corpName?: string | null
+  allianceLogo?: string | null
+  allianceName?: string | null
+}) {
   const remove = useDeleteStructure()
   const makeDefault = useSetDefaultStructure()
   const [timerOpen, setTimerOpen] = useState(false)
@@ -419,6 +434,20 @@ function StructureCard({ s, onEdit }: { s: Structure; onEdit: () => void }) {
   return (
     <li className="panel structure">
       <div className="structure-head">
+        {corpLogo ? (
+          <img className="portrait" src={corpLogo} alt="" title={corpName ?? undefined} width={32} height={32} loading="lazy" />
+        ) : null}
+        {allianceLogo ? (
+          <img
+            className="portrait"
+            src={allianceLogo}
+            alt=""
+            title={allianceName ?? undefined}
+            width={32}
+            height={32}
+            loading="lazy"
+          />
+        ) : null}
         <strong>{s.name}</strong>
         {s.is_default ? <span className="badge badge-fresh">★ Default</span> : null}
         <span className="structure-actions">
@@ -479,10 +508,13 @@ function StructureCard({ s, onEdit }: { s: Structure; onEdit: () => void }) {
 
 export default function Structures() {
   const structures = useStructures()
-  
+  const dashboard = useDashboard()
+
   const [editing, setEditing] = useState<Structure | null>(null)
 
   const list = structures.data?.data ?? []
+  const characters = dashboard.data?.data.characters ?? []
+  const identity = characters.find((c) => c.is_main) ?? characters[0]
   const byActivity = ACTIVITIES.map(([activity, label]) => [label, list.filter((s) => s.activity_type === activity)] as const)
 
   return (
@@ -508,7 +540,15 @@ export default function Structures() {
                 <h2 className="subhead">{label}</h2>
                 <ul className="structure-list">
                   {rows.map((s) => (
-                    <StructureCard key={s.id} s={s} onEdit={() => setEditing(s)} />
+                    <StructureCard
+                      key={s.id}
+                      s={s}
+                      onEdit={() => setEditing(s)}
+                      corpLogo={identity?.corporation_logo ?? null}
+                      corpName={identity?.corporation_name ?? null}
+                      allianceLogo={identity?.alliance_logo ?? null}
+                      allianceName={identity?.alliance_name ?? null}
+                    />
                   ))}
                 </ul>
               </section>
