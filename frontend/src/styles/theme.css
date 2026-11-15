@@ -71,9 +71,9 @@ code { background: rgba(var(--accent-rgb), 0.08); color: var(--accent2); padding
   pointer-events: none;
   z-index: -1;
 }
-.sidebar-head { display: flex; align-items: center; border-bottom: 1px solid rgba(var(--accent-rgb), 0.2); flex-shrink: 0; }
-.sidebar-head .brand { min-height: 0; padding: 0.5rem 1rem; font-size: 0.75rem; }
-.sidebar-head .brand svg { width: 22px; height: 22px; }
+.sidebar-head { display: flex; align-items: center; gap: 0.75rem; height: 50px; padding: 0 1rem; border-bottom: 1px solid rgba(var(--accent-rgb), 0.2); flex-shrink: 0; }
+.sidebar-head .brand { min-height: 0; padding: 0; font: 800 0.8rem var(--font-display); letter-spacing: 0.08em; }
+.sidebar-head .brand svg { flex-shrink: 0; }
 .sidebar-close { display: none; }
 .topbar, .sidebar-overlay { display: none; }
 .brand {
