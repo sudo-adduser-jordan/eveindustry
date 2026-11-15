@@ -495,4 +495,10 @@ summary:hover { color: var(--accent); }
   margin: 0 0 1rem;
 }
 .auth-panel .button { margin: 0.25rem 0; }
+/* Official EVE SSO artwork: identical in every theme, white on dark themes, black on light. */
+.eve-sso-button { display: inline-block; line-height: 0; }
+.eve-sso-button img { max-width: 100%; height: auto; }
+.eve-sso-button .eve-sso-black { display: none; }
+:root[data-theme='light'] .eve-sso-button .eve-sso-black { display: inline; }
+:root[data-theme='light'] .eve-sso-button .eve-sso-white { display: none; }
 .auth-panel p[role='alert'] { color: var(--bad); }

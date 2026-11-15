@@ -5,12 +5,12 @@ import { me, renderWithData } from '../test/render'
 
 afterEach(() => vi.unstubAllGlobals())
 
-it('matches the public login panel: SSO link, demo entry and helper copy', () => {
+it('matches the public login panel: SSO button, demo entry and helper copy', () => {
   renderWithData(<Login />)
   expect(screen.getByRole('heading', { name: 'Login' })).toBeInTheDocument()
-  const sso = screen.getByRole('link', { name: 'Login with EVE Online' })
+  const sso = screen.getByRole('link', { name: 'Log in with EVE Online' })
   expect(sso).toHaveAttribute('href', '/auth/eve/scopes')
-  expect(sso).toHaveClass('button', 'primary')
+  expect(sso).toHaveClass('eve-sso-button')
   expect(screen.getByText('Review your permissions before continuing to the official EVE SSO page.')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Demo' })).toBeEnabled()
   expect(screen.queryByText('Explore with three generated characters. No EVE login needed; data resets daily.')).not.toBeInTheDocument()

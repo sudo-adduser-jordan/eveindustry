@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useMe } from '../api/queries'
 import logoIcon from '../assets/logo-icon.svg'
+import eveSsoLoginBlack from '../assets/eve-sso-login-black-large.png'
+import eveSsoLoginWhite from '../assets/eve-sso-login-white-large.png'
 
 type DemoState = 'idle' | 'busy' | 'off' | 'error'
 
@@ -51,8 +53,10 @@ export default function Login() {
           <h1 id="login-heading">Login</h1>
           <p>Login securely with your EVE Online account.</p>
           <p>
-            <a className="button primary" href="/auth/eve/scopes">
-              Login with EVE Online
+            <a className="eve-sso-button" href="/auth/eve/scopes">
+              <img className="eve-sso-white" src={eveSsoLoginWhite} alt="" aria-hidden="true" width={270} height={45} />
+              <img className="eve-sso-black" src={eveSsoLoginBlack} alt="" aria-hidden="true" width={270} height={45} />
+              <span className="visually-hidden">Log in with EVE Online</span>
             </a>
           </p>
           <p className="muted">Review your permissions before continuing to the official EVE SSO page.</p>
