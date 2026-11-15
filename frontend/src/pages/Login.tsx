@@ -4,13 +4,9 @@ import { useMe } from '../api/queries'
 import logoIcon from '../assets/logo-icon.svg'
 import eveSsoLoginBlack from '../assets/eve-sso-login-black-large.png'
 import eveSsoLoginWhite from '../assets/eve-sso-login-white-large.png'
+import { LOGIN_POSTER_SRC, LOGIN_POSTER_SRCSET, LOGIN_VIDEO_SRC } from '../loginBackdrop'
 
 type DemoState = 'idle' | 'busy' | 'off' | 'error'
-
-const LOGIN_VIDEO_SRC = 'https://web.ccpgamescdn.com/aws/eveonline/videos/FracturedSkies-WH.webm'
-const LOGIN_POSTER_BASE = 'https://web.ccpgamescdn.com/aws/eveonline/images/FracturedSkies-bg.jpg'
-const LOGIN_POSTER_SRC = `${LOGIN_POSTER_BASE}?w=1700&q=75&fm=webp`
-const LOGIN_POSTER_SRCSET = [700, 1100, 1500, 1920, 2400].map((w) => `${LOGIN_POSTER_BASE}?w=${w}&q=75&fm=webp ${w}w`).join(', ')
 
 
 export default function Login() {

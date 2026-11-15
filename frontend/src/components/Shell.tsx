@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useMe } from '../api/queries'
 import { useSessionActions } from '../api/account'
 import { THEMES, THEME_GROUPS, useTheme } from '../theme'
+import { LOGIN_POSTER_SRC, LOGIN_POSTER_SRCSET, LOGIN_VIDEO_SRC, readLoginBg, writeLoginBg } from '../loginBackdrop'
 import { InstallPrompt } from './InstallPrompt'
 import { DemoBanner } from './DemoBanner'
 import EsiStatus from './EsiStatus'
@@ -14,6 +15,11 @@ export function Shell() {
   const me = useMe()
   const session = useSessionActions()
   const [theme, setTheme] = useTheme()
+  const [loginBg, setLoginBgState] = useState(readLoginBg)
+  const setLoginBg = (on: boolean) => {
+    setLoginBgState(on)
+    writeLoginBg(on)
+  }
   const { pathname } = useLocation()
   const activeGroup = groupForPath(pathname)
   const [openGroup, setOpenGroup] = useState<string | null>(() => {
@@ -47,6 +53,23 @@ export function Shell() {
 
   return (
     <div className="shell">
+      {loginBg ? (
+        <div className="auth-backdrop" aria-hidden="true">
+          <img className="auth-backdrop-poster" src={LOGIN_POSTER_SRC} srcSet={LOGIN_POSTER_SRCSET} sizes="100vw" alt="" />
+          <video
+            className="auth-backdrop-video"
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            poster={LOGIN_POSTER_SRC}
+            tabIndex={-1}
+          >
+            <source src={LOGIN_VIDEO_SRC} type="video/webm" />
+          </video>
+          <div className="auth-backdrop-scrim" />
+        </div>
+      ) : null}
       <header className="topbar">
         <button type="button" className="burger" aria-label="Toggle navigation" aria-expanded={navOpen} aria-controls="main-sidebar" onClick={() => setNavOpen(!navOpen)}>
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
@@ -99,6 +122,13 @@ export function Shell() {
                 </optgroup>
               ))}
             </select>
+            <input
+              type="checkbox"
+              checked={loginBg}
+              onChange={(e) => setLoginBg(e.target.checked)}
+              aria-label="Use login page background"
+              title="Use login page background"
+            />
           </p>
           <button type="button" className="button small" disabled={session.logout.isPending} onClick={() => session.logout.mutate()}>Log out</button>
           {session.logout.error ? <p role="alert">{session.logout.error.message}</p> : null}
