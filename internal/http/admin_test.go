@@ -97,6 +97,19 @@ func TestAdminGate(t *testing.T) {
 	}
 }
 
+func TestAdminGateDemo(t *testing.T) {
+	d := adminTestDeps()
+	stub := d.Sessions.(*stubAuth)
+	stub.user.IsAdmin = false
+	stub.user.IsDemo = true
+	if code, body := get(t, d, "/api/v1/admin/users"); code != http.StatusOK {
+		t.Fatalf("demo read = %d %v", code, body)
+	}
+	if code, _ := post(t, d, "/api/v1/admin/users/2/toggle-admin", `{}`); code != http.StatusForbidden {
+		t.Fatalf("demo write = %d, want 403", code)
+	}
+}
+
 func TestAdminUsers(t *testing.T) {
 	d := adminTestDeps()
 	code, body := get(t, d, "/api/v1/admin/users")

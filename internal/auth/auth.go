@@ -76,7 +76,7 @@ func MePayload(u *User, characters []Character, sourceURL string) map[string]any
 	}
 	return map[string]any{
 		"id": u.ID, "name": u.Name, "display_name": display, "avatar_url": avatar,
-		"admin": u.Admin(), "stock_manager": u.IsStockManager, "demo": u.IsDemo,
+		"admin": u.Admin() || u.IsDemo, "stock_manager": u.IsStockManager, "demo": u.IsDemo,
 		"source_url": sourceURL,
 		"characters": chars,
 	}

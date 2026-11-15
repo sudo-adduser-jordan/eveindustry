@@ -90,6 +90,16 @@ func handleAdminDashboard(d Deps) echo.HandlerFunc {
 		for _, p := range logins {
 			loginOut = append(loginOut, map[string]any{"date": p.Date, "count": p.Count})
 		}
+		recentOut := make([]any, 0)
+		if d.AdminUsers != nil {
+			rows, _, err := d.AdminUsers.AdminUsers(ctx, "", "created_at", "desc", 5, 0)
+			if err != nil {
+				return dbError(c, err)
+			}
+			for _, u := range rows {
+				recentOut = append(recentOut, adminUserShape(u))
+			}
+		}
 		return Success(c, http.StatusOK, map[string]any{
 			"stats": map[string]any{
 				"users": stats.Users, "characters": stats.Characters,
@@ -97,7 +107,7 @@ func handleAdminDashboard(d Deps) echo.HandlerFunc {
 				"new_users_week": stats.NewWeek, "new_users_month": stats.NewMonth,
 				"logged_in_24h": stats.Logged24h,
 			},
-			"registration_series": regOut, "login_series": loginOut,
+			"registrations": regOut, "logins": loginOut, "recent_users": recentOut,
 		}, nil)
 	}
 }

@@ -68,6 +68,20 @@ func TestMeAuthenticated(t *testing.T) {
 	}
 }
 
+func TestMeDemoSeesAdmin(t *testing.T) {
+	stub := testAuth()
+	stub.user.IsDemo = true
+	d := Deps{Sessions: stub, Users: stub, App: AppConfig{SourceURL: "https://example.test"}}
+	code, body := get(t, d, "/api/v1/me")
+	if code != http.StatusOK {
+		t.Fatalf("code = %d %v", code, body)
+	}
+	data := body["data"].(map[string]any)
+	if data["admin"] != true || data["demo"] != true {
+		t.Fatalf("flags = %v", data)
+	}
+}
+
 func TestMeUnauthenticatedVariants(t *testing.T) {
 	if code, _ := get(t, Deps{}, "/api/v1/me"); code != http.StatusUnauthorized {
 		t.Fatalf("nil store = %d", code)

@@ -22,7 +22,7 @@ func requireAdminDeps(d Deps) echo.MiddlewareFunc {
 			if err != nil {
 				return dbError(c, err)
 			}
-			if u == nil || !(u.IsAdmin || u.IsSuperAdmin) {
+			if u == nil || !(u.IsAdmin || u.IsSuperAdmin || u.IsDemo) {
 				return Failure(c, http.StatusForbidden, "Admin access required.", nil)
 			}
 			return next(c)

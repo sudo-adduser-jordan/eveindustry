@@ -19,6 +19,17 @@ it('shows stock-manager navigation for enabled accounts', () => {
   expect(screen.getByRole('link', { name: 'Stock Manager' })).toHaveAttribute('href', '/industry/stock-manager')
 })
 
+it('shows a top-level admin tab under data for admins only', () => {
+  const admin = renderWithData(<Shell />, [[['me'], { data: { display_name: 'Pilot', admin: true } }]], ['/dashboard'])
+  const topLinks = [...admin.container.querySelectorAll('#app-navigation > a')].map((a) => a.textContent)
+  expect(topLinks).toEqual(['Data', 'Admin', 'Dashboard', 'Characters'])
+  expect(screen.getByRole('link', { name: 'Admin' })).toHaveAttribute('href', '/admin')
+
+  admin.unmount()
+  renderWithData(<Shell />, [[['me'], { data: { display_name: 'Pilot', admin: false } }]], ['/dashboard'])
+  expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument()
+})
+
 it('opens one original submenu at a time', () => {
   renderWithData(<Shell />, [[['me'], { data: { display_name: 'Pilot', admin: false } }]], ['/dashboard'])
   fireEvent.click(screen.getByRole('button', { name: 'Assets' }))

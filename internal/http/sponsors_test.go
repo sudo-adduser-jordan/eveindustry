@@ -133,8 +133,16 @@ func TestAdminDashboard(t *testing.T) {
 	if stats["users"] != 10.0 || stats["logged_in_24h"] != 1.0 {
 		t.Fatalf("stats = %v", stats)
 	}
-	if len(data["registration_series"].([]any)) != 1 || len(data["login_series"].([]any)) != 1 {
+	if len(data["registrations"].([]any)) != 1 || len(data["logins"].([]any)) != 1 {
 		t.Fatalf("series = %v", data)
+	}
+	recent, ok := data["recent_users"].([]any)
+	if !ok || len(recent) == 0 {
+		t.Fatalf("recent_users = %v", data["recent_users"])
+	}
+	first, ok := recent[0].(map[string]any)
+	if !ok || first["display_name"] == nil || first["role"] == nil {
+		t.Fatalf("recent user = %v", recent[0])
 	}
 }
 
