@@ -4,11 +4,22 @@ export interface NavigationLink {
   stockManager?: boolean
 }
 
+export interface NavigationSeparator {
+  separator: true
+  stockManager?: boolean
+}
+
+export type NavigationEntry = NavigationLink | NavigationSeparator
+
+export function isSeparator(entry: NavigationEntry): entry is NavigationSeparator {
+  return (entry as NavigationSeparator).separator === true
+}
+
 export interface NavigationGroup {
   id: string
   label: string
   admin?: boolean
-  links: NavigationLink[]
+  links: NavigationEntry[]
 }
 
 
@@ -24,14 +35,17 @@ export const navigationGroups: NavigationGroup[] = [
 	  { label: 'Structures', to: '/structures' },
 	  { label: 'Jobs', to: '/industry/jobs' },
 	  { label: 'Slots', to: '/industry/slots' },
+	  { separator: true },
+	  { label: 'Build Programs', to: '/build-programs' },
+	  { label: 'Manufacturing', to: '/calculators/manufacturing' },
+	  { label: 'Invention', to: '/calculators/invention-planner' },
+	  { label: 'Reaction', to: '/calculators/reaction-planner' },
+	  { separator: true },
 	  { label: 'Can Produce', to: '/industry/can-produce' },
 	  { label: 'Most Profitable', to: '/industry/most-profitable' },
-	  { label: 'Build Programs', to: '/build-programs' },
-	  { label: 'Manufacturing Planner', to: '/calculators/manufacturing' },
-	  { label: 'Invention Planner', to: '/calculators/invention-planner' },
-	  { label: 'Reactions Planner', to: '/calculators/reaction-planner' },
 	  { label: 'Stock Manager', to: '/industry/stock-manager', stockManager: true },
 	  { label: 'Reprocessing Value', to: '/industry/reprocessing' },
+	  { separator: true },
 	  { label: 'Manufacturing Browser', to: '/calculators/manufacturing-browser' },
 	  { label: 'Reaction Browser', to: '/calculators/reaction-browser' },
   ] },
@@ -42,6 +56,7 @@ export const navigationGroups: NavigationGroup[] = [
   { id: 'tools', label: 'Tools', links: [
 	  { label: 'Market Browser', to: 'https://evemarketbrowser.com/region/' },
 	  { label: 'Item Appraisal', to: 'https://janice.e-351.com/' },
+	  { separator: true },
 	  { label: 'Contract Browser', to: '/tools/contract-browser' },
 	  { label: 'Station Trading', to: '/market/station-trading' },
 	  { label: 'Region Arbitrage', to: '/market/region-arbitrage' },
@@ -62,5 +77,5 @@ export function isExternalLink(to: string): boolean {
 }
 
 export function groupForPath(pathname: string): string | null {
-  return navigationGroups.find((group) => group.links.some(({ to }) => pathname === to || (to !== '/' && pathname.startsWith(`${to}/`))))?.id ?? null
+  return navigationGroups.find((group) => group.links.some((entry) => !isSeparator(entry) && (pathname === entry.to || (entry.to !== '/' && pathname.startsWith(`${entry.to}/`)))))?.id ?? null
 }

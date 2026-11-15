@@ -8,7 +8,7 @@ import { DemoBanner } from './DemoBanner'
 import EsiStatus from './EsiStatus'
 import { Logo } from './Logo'
 import { PwaStatus } from './PwaStatus'
-import { groupForPath, isExternalLink, navigationGroups, NAVIGATION_STORAGE_KEY } from './navigation'
+import { groupForPath, isExternalLink, isSeparator, navigationGroups, NAVIGATION_STORAGE_KEY } from './navigation'
 
 export function Shell() {
   const me = useMe()
@@ -73,11 +73,13 @@ export function Shell() {
                   <span>{group.label}</span><span className="nav-chevron" aria-hidden="true">⌄</span>
                 </button>
                 <div id={`nav-${group.id}`} className="nav-submenu" hidden={!expanded}>
-                  {group.links.filter((link) => !link.stockManager || me.data?.data.stock_manager).map((link) => (
-                    isExternalLink(link.to) ? (
+                  {group.links.filter((link) => !link.stockManager || me.data?.data.stock_manager).map((link, index) => (
+                    isSeparator(link) ? (
+                      <span key={`sep-${index}`} className="nav-separator" aria-hidden="true" />
+                    ) : isExternalLink(link.to) ? (
                       <a key={link.to} href={link.to} target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>{link.label}</a>
                     ) : (
-                      <NavLink key={link.to} to={link.to} end={group.links.some((other) => other.to !== link.to && other.to.startsWith(`${link.to}/`)) || link.to === '/'}>{link.label}</NavLink>
+                      <NavLink key={link.to} to={link.to} end={group.links.some((other) => !isSeparator(other) && other.to !== link.to && other.to.startsWith(`${link.to}/`)) || link.to === '/'}>{link.label}</NavLink>
                     )
                   ))}
                 </div>
