@@ -7,6 +7,9 @@ import eveSsoLoginWhite from '../assets/eve-sso-login-white-large.png'
 
 type DemoState = 'idle' | 'busy' | 'off' | 'error'
 
+const LOGIN_VIDEO_SRC = 'https://web.ccpgamescdn.com/aws/eveonline/videos/FracturedSkies-WH.webm'
+const LOGIN_POSTER_SRC = 'https://web.ccpgamescdn.com/aws/eveonline/images/FracturedSkies-bg.jpg?w=1700&q=75&fm=webp'
+
 
 export default function Login() {
   const me = useMe()
@@ -36,7 +39,22 @@ export default function Login() {
   }
 
   return (
-    <div className="auth-page">
+    <div className="auth-page has-video-bg">
+      <div className="auth-backdrop" aria-hidden="true">
+        <img className="auth-backdrop-poster" src={LOGIN_POSTER_SRC} alt="" fetchPriority="high" />
+        <video
+          className="auth-backdrop-video"
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+          poster={LOGIN_POSTER_SRC}
+          tabIndex={-1}
+        >
+          <source src={LOGIN_VIDEO_SRC} type="video/webm" />
+        </video>
+        <div className="auth-backdrop-scrim" />
+      </div>
       <header className="site-header">
         <Link className="brand" to="/dashboard">
           <img src={logoIcon} alt="" width={32} height={32} />

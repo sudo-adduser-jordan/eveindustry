@@ -447,14 +447,30 @@ summary:hover { color: var(--accent); }
 
 /* ===== Public auth pages (login): narrow centered panel, like auth.css ===== */
 .auth-page { min-height: 100dvh; display: flex; flex-direction: column; }
+.auth-page.has-video-bg { position: relative; isolation: isolate; }
+.auth-backdrop { position: fixed; inset: 0; z-index: -1; overflow: hidden; background: var(--bg); }
+.auth-backdrop-poster, .auth-backdrop-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.auth-backdrop-poster { z-index: 0; }
+.auth-backdrop-video { z-index: 1; }
+.auth-backdrop-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(to bottom, color-mix(in srgb, var(--bg) 55%, transparent), color-mix(in srgb, var(--bg) 25%, transparent) 40%, color-mix(in srgb, var(--bg) 65%, transparent)),
+    radial-gradient(1200px 600px at 50% 40%, transparent 30%, color-mix(in srgb, var(--bg) 55%, transparent) 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-backdrop-video { display: none; }
+}
 .auth-page .site-header {
   position: relative;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem max(1rem, 4vw);
+  gap: 0.5rem 1rem;
+  padding: 0.5rem max(1rem, 4vw);
   background: linear-gradient(to bottom, rgba(11, 15, 23, 0.9), rgba(11, 15, 23, 0.75));
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(var(--accent-rgb), 0.2);
