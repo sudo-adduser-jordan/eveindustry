@@ -1,7 +1,6 @@
 import { useLayoutEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useMe } from '../api/queries'
-import logoIcon from '../assets/logo-icon.svg'
 import { LOGIN_POSTER_SRC, LOGIN_POSTER_SRCSET, LOGIN_VIDEO_SRC } from '../loginBackdrop'
 import { themeColorFor } from '../theme'
 import { EveSsoButton } from '../components/EveSsoButton'
@@ -69,7 +68,6 @@ export default function Login() {
       </div>
       <header className="site-header">
         <Link className="brand" to="/dashboard">
-          <img src={logoIcon} alt="" width={20} height={20} />
           Eve Industry
         </Link>
         <nav aria-label="Site navigation">
