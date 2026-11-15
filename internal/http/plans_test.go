@@ -13,7 +13,6 @@ import (
 type stubPlans struct {
 	inv  map[int64]store.InventionPlan
 	reac map[int64]store.ReactionPlan
-	moon *store.MoonOccupation
 	next int64
 	now  time.Time
 }
@@ -99,32 +98,10 @@ func (s *stubPlans) DeleteReactionPlan(ctx context.Context, id, uid int64) (bool
 	return false, nil
 }
 
-func (s *stubPlans) MoonForCorporation(ctx context.Context, moonID int64) (*store.MoonOccupation, error) {
-	if s.moon != nil && s.moon.MoonID == moonID {
-		m := *s.moon
-		return &m, nil
-	}
-	return nil, nil
-}
-
-func (s *stubPlans) SetMoonOccupation(ctx context.Context, moonID int64, occupied bool, corpID *int64, corpName *string) (*store.MoonOccupation, error) {
-	m := *s.moon
-	m.Occupied = occupied
-	if occupied {
-		m.OccupyingCorporationID, m.OccupyingCorporationName = corpID, corpName
-	} else {
-		m.OccupyingCorporationID, m.OccupyingCorporationName = nil, nil
-	}
-	s.moon = &m
-	out := m
-	return &out, nil
-}
-
 func plansTestDeps() Deps {
 	stub := testAuth()
 	stub.chars = []auth.Character{{CharacterID: 11, Name: "Main", IsMain: true, IsEsiActive: true, CorporationID: int64Ptr(988)}}
 	now := time.Date(2026, 11, 8, 12, 0, 0, 0, time.UTC)
-	sysCorp := int64(988)
 	return Deps{Sessions: stub, Users: stub, Plans: &stubPlans{
 		inv: map[int64]store.InventionPlan{
 			1: {ID: 1, UserID: 1, Name: "Rifter", T2TypeID: 587, T2TypeName: "Rifter", DecryptorKey: "none"},
@@ -133,7 +110,6 @@ func plansTestDeps() Deps {
 		reac: map[int64]store.ReactionPlan{
 			2: {ID: 2, UserID: 1, Name: "Comp", EntriesJSON: `[]`, DefaultRunsPerSlot: 240, StructureType: "athanor", RigTier: "none", SecuritySpace: "lowsec"},
 		},
-		moon: &store.MoonOccupation{MoonID: 5, MoonName: "Jita IV-1", SystemCorporationID: &sysCorp},
 		next: 100, now: now,
 	}}
 }
@@ -202,40 +178,5 @@ func TestReactionPlansCRUD(t *testing.T) {
 	}
 	if code, _ := deleteReq(t, d, "/api/v1/reaction-plans/2"); code != http.StatusNoContent {
 		t.Fatalf("delete = %d", code)
-	}
-}
-
-func TestMoonOccupation(t *testing.T) {
-	d := plansTestDeps()
-	code, body := putJSON(t, d, "/api/v1/moon-scans/moons/5/occupation", `{"occupied":true,"corporation_id":988,"corporation_name":"ACME"}`)
-	if code != http.StatusOK {
-		t.Fatalf("occupy = %d %v", code, body)
-	}
-	data := body["data"].(map[string]any)
-	if data["occupied"] != true || data["occupying_corporation_id"].(float64) != 988 {
-		t.Fatalf("occupied = %v", data)
-	}
-	code, body = putJSON(t, d, "/api/v1/moon-scans/moons/5/occupation", `{"occupied":false,"corporation_id":1}`)
-	if code != http.StatusOK || body["data"].(map[string]any)["occupied"] != false {
-		t.Fatalf("free = %d %v", code, body)
-	}
-	if body["data"].(map[string]any)["occupying_corporation_id"] != nil {
-		t.Fatalf("cleared = %v", body)
-	}
-	if code, _ := putJSON(t, d, "/api/v1/moon-scans/moons/4242/occupation", `{"occupied":true}`); code != http.StatusNotFound {
-		t.Fatalf("missing = %d", code)
-	}
-	if code, _ := putJSON(t, d, "/api/v1/moon-scans/moons/5/occupation", `{}`); code != http.StatusUnprocessableEntity {
-		t.Fatalf("bad = %d", code)
-	}
-}
-
-func TestMoonOccupationNoCorp(t *testing.T) {
-	d := plansTestDeps()
-	stub := d.Sessions.(*stubAuth)
-	stub.chars = []auth.Character{{CharacterID: 11, Name: "Lonely", IsMain: true, IsEsiActive: true}}
-	code, body := putJSON(t, d, "/api/v1/moon-scans/moons/5/occupation", `{"occupied":true}`)
-	if code != http.StatusUnprocessableEntity || body["message"] != "No corporation found." {
-		t.Fatalf("no corp = %d %v", code, body)
 	}
 }

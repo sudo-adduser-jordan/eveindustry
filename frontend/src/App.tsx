@@ -21,7 +21,6 @@ const AdminSponsors = lazy(() => import('./pages/admin/AdminSponsors'))
 const AdminSponsorForm = lazy(() => import('./pages/admin/AdminSponsorForm'))
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
 const AdminEsiDiagnostics = lazy(() => import('./pages/admin/AdminEsiDiagnostics'))
-const MoonScan = lazy(() => import('./pages/MoonScan'))
 const Planetary = lazy(() => import('./pages/Planetary'))
 const FactoryPlanner = lazy(() => import('./pages/FactoryPlanner'))
 const Manufacturing = lazy(() => import('./pages/Manufacturing'))
@@ -94,7 +93,6 @@ export function App() {
             <Route path="settings" element={<AdminSettings />} />
             <Route path="esi-diagnostics" element={<AdminEsiDiagnostics />} />
           </Route>
-          <Route path="tools/moon-scan" element={<MoonScan />} />
           <Route path="planetary" element={<Planetary />} />
           <Route path="planetary/factory-planner" element={<FactoryPlanner />} />
           <Route path="corporate/donations" element={<Donations />} />

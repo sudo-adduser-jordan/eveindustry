@@ -18,7 +18,6 @@ export function shouldPersist(key: readonly unknown[]): boolean {
   switch (root) {
     case 'assets': return sub === 'materials'
     case 'calculators': return sub === 'reactions' && third === 'skills'
-    case 'moon-scans': return sub === 'systems'
     default: return false
   }
 }

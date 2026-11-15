@@ -14,7 +14,6 @@ describe('shouldPersist', () => {
     for (const key of [
       ['me'], ['reference', 'market-groups'], ['plans', 'reaction'], ['industry', 'availability'],
       ['assets', 'materials'], ['calculators', 'reactions', 'skills', 5],
-      ['moon-scans', 'systems'],
     ]) expect(shouldPersist(key), JSON.stringify(key)).toBe(true)
   })
 

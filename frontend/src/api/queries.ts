@@ -165,55 +165,6 @@ export function useRegionArbitrage(query: RegionArbitrageQuery) {
   })
 }
 
-export type PricingMode = 'raw' | 'compressed' | 'refined'
-
-
-export function useMoonSystems() {
-  return useQuery({
-    queryKey: ['moon-scans', 'systems'],
-    queryFn: async () => unwrap(await api.GET('/moon-scans/systems', { params: { query: { per_page: 200 } } })),
-    staleTime: 60_000,
-  })
-}
-
-
-export function useAnalyseMoons() {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: async (body: { scan_data: string; region_id: '10000002' | '10000043' | '10000032' | '10000030' | '10000042'; pricing_mode: PricingMode }) =>
-      unwrap(await api.POST('/moon-scans', { body })),
-    onSuccess: () => client.invalidateQueries({ queryKey: ['moon-scans', 'systems'] }),
-  })
-}
-
-
-export function useLoadMoonSystem() {
-  return useMutation({
-    mutationFn: async ({ system, pricing_mode }: { system: string; pricing_mode?: PricingMode }) =>
-      unwrap(
-        await api.GET('/moon-scans/systems/{system}', {
-          params: { path: { system }, query: { pricing_mode, per_page: 200 } },
-        }),
-      ),
-  })
-}
-
-
-export function useSetMoonOccupation() {
-  return useMutation({
-    mutationFn: async ({
-      moonId,
-      ...body
-    }: {
-      moonId: number
-      occupied: boolean
-      corporation_id?: number
-      corporation_name?: string
-    }) => unwrap(await api.PUT('/moon-scans/moons/{moonId}/occupation', { params: { path: { moonId } }, body })),
-  })
-}
-
-
 export function useCorporationSearch(q: string) {
   return useQuery({
     queryKey: ['corporations', 'search', q],

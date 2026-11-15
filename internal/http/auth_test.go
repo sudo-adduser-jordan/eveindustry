@@ -459,9 +459,6 @@ func TestDemoWriteBlocked(t *testing.T) {
 	if auth.DemoWriteBlocked(true, "POST", "/api/v1/market/appraisals") {
 		t.Fatal("market appraisals are stateless and allowed")
 	}
-	if auth.DemoWriteBlocked(true, "POST", "/api/v1/moon-scans") {
-		t.Fatal("demo corp moon scans allowed")
-	}
 	if !auth.DemoWriteBlocked(true, "DELETE", "/api/v1/account") {
 		t.Fatal("account delete blocked")
 	}

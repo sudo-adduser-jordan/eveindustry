@@ -119,7 +119,6 @@ func main() {
 		deps.StockItems = queries
 		deps.DemoUsers = queries
 		deps.Plans = queries
-		deps.MoonScans = queries
 		deps.Programs = queries
 	}
 	if sqlxDB != nil {

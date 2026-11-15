@@ -105,7 +105,7 @@ Request flow: route → handler → domain package → sqlx store / SQLite / `in
 | Assets | `AssetService`, `AbyssalService` |
 | Planetary | `PlanetaryService`, `FactoryPlanetPlannerService` |
 | Market and contracts | `MarketTradingService`, `MarketBrowserService`, `ContractAppraisalService` |
-| Corporation | `CorporateDonationService`, `CorporationProjectsService`, `MoonScanService`, `EsiService` |
+| Corporation | `CorporateDonationService`, `CorporationProjectsService`, `EsiService` |
 | Wormholes | `EsiService` |
 | Admin | Admin users, sponsors and ESI diagnostics |
 | Install and themes | `SetupStatusService`, `ThemeService`, command `app:install` |

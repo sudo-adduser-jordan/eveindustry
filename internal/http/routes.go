@@ -43,7 +43,6 @@ type Deps struct {
 	Programs           store.ProgramStore
 	IndustryDeps       IndustryDeps
 	Progress           ProgressDeps
-	MoonScans          store.MoonScanStore
 	AssetBrowser       AssetBrowserDeps
 	Donations          store.DonationStore
 	DonationCharacters DonationESI
@@ -133,7 +132,6 @@ func New(d Deps) *echo.Echo {
 	registerPrograms(authed, d)
 	registerProgress(authed, d)
 	registerAvailability(authed, d)
-	registerMoonScans(authed, d)
 	registerAssets(authed, d)
 	registerAssetExtras(authed, d)
 	registerDonations(authed, d)
