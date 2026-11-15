@@ -48,8 +48,8 @@ h1 { font: 600 1.5rem var(--font-display); letter-spacing: 0.04em; margin: 0 0 1
 .cards { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
 .card { display: flex; gap: 0.75rem; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0.75rem; }
 .card img { border-radius: 8px; }
-.table-wrap { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; min-width: 560px; }
+.table-wrap { overflow-x: auto; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; background: var(--panel); }
 th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--line); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0.75rem 1rem; }
