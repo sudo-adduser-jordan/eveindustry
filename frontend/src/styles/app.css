@@ -53,6 +53,7 @@ table { border-collapse: collapse; width: 100%; min-width: 560px; }
 th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--line); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0.75rem 1rem; }
+.data-sections { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
 .warn { border-color: var(--warn); }
 .button { font: inherit; color: var(--text); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 0.35rem 0.9rem; cursor: pointer; }
 .button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }

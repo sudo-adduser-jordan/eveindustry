@@ -63,6 +63,14 @@ describe('Data', () => {
     expect(screen.getByText('Jita IV')).toBeInTheDocument()
   })
 
+  it('spaces the sections with a shared wrapper', () => {
+    const { container } = renderWithData(<Data />, seed)
+
+    const wrapper = container.querySelector('.data-sections')
+    expect(wrapper).not.toBeNull()
+    expect(wrapper?.querySelectorAll(':scope > section.panel')).toHaveLength(3)
+  })
+
   it('explains missing data per section', () => {
     renderWithData(<Data />, [
       [['market', 'freshness'], { data: [], meta: {} }],
