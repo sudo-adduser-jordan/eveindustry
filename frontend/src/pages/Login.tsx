@@ -8,7 +8,9 @@ import eveSsoLoginWhite from '../assets/eve-sso-login-white-large.png'
 type DemoState = 'idle' | 'busy' | 'off' | 'error'
 
 const LOGIN_VIDEO_SRC = 'https://web.ccpgamescdn.com/aws/eveonline/videos/FracturedSkies-WH.webm'
-const LOGIN_POSTER_SRC = 'https://web.ccpgamescdn.com/aws/eveonline/images/FracturedSkies-bg.jpg?w=1700&q=75&fm=webp'
+const LOGIN_POSTER_BASE = 'https://web.ccpgamescdn.com/aws/eveonline/images/FracturedSkies-bg.jpg'
+const LOGIN_POSTER_SRC = `${LOGIN_POSTER_BASE}?w=1700&q=75&fm=webp`
+const LOGIN_POSTER_SRCSET = [700, 1100, 1500, 1920, 2400].map((w) => `${LOGIN_POSTER_BASE}?w=${w}&q=75&fm=webp ${w}w`).join(', ')
 
 
 export default function Login() {
@@ -41,7 +43,7 @@ export default function Login() {
   return (
     <div className="auth-page has-video-bg">
       <div className="auth-backdrop" aria-hidden="true">
-        <img className="auth-backdrop-poster" src={LOGIN_POSTER_SRC} alt="" fetchPriority="high" />
+        <img className="auth-backdrop-poster" src={LOGIN_POSTER_SRC} srcSet={LOGIN_POSTER_SRCSET} sizes="100vw" alt="" fetchPriority="high" />
         <video
           className="auth-backdrop-video"
           autoPlay
