@@ -11,7 +11,7 @@ export interface ThemeDefinition {
 }
 
 export const THEME_STORAGE_KEY = 'eve-industry-theme'
-export const DEFAULT_THEME = 'carbon'
+export const DEFAULT_THEME = 'eve-online'
 
 export const THEMES: ThemeDefinition[] = [
   { id: 'carbon', label: 'Carbon', group: 'Core', blurb: 'The classic client UI: charcoal frame, steel-blue highlights.', themeColor: '#0e0f11' },

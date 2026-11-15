@@ -16,10 +16,10 @@
     <script>
       // Apply the saved theme before first paint to avoid a flash of the default.
       // A stale 'industrialist' value (theme removed) maps to the new default.
-      // A stale 'eve' value maps to 'eve-online', which now carries that look.
+      // A stale 'eve' value maps to 'eve-online', which now carries that look as the default.
       try {
         var t = localStorage.getItem('eve-industry-theme');
-        if (t === 'industrialist') t = 'carbon';
+        if (t === 'industrialist') t = 'eve-online';
         if (t === 'eve') t = 'eve-online';
         if (t && /^[a-z0-9_-]+$/.test(t)) document.documentElement.dataset.theme = t;
       } catch (e) {}

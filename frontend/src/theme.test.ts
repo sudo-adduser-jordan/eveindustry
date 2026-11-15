@@ -71,7 +71,7 @@ it('keeps each accent and its -rgb twin in sync', () => {
   }
 })
 
-it('defaults to carbon and rejects unknown saved values', () => {
+it('defaults to eve-online and rejects unknown saved values', () => {
   expect(readTheme()).toBe(DEFAULT_THEME)
   localStorage.setItem(THEME_STORAGE_KEY, 'dark')
   expect(readTheme()).toBe('dark')

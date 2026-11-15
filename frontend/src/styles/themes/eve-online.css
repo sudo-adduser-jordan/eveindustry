@@ -55,7 +55,8 @@
   clip-path: none;
   border: 1px solid var(--line);
   border-radius: 0;
-  background: var(--panel);
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+  backdrop-filter: blur(14px);
   box-shadow: var(--shadow);
 }
 :root[data-theme='eve-online'] .panel::before,
@@ -155,7 +156,8 @@
 }
 
 :root[data-theme='eve-online'] .sidebar {
-  background: var(--panel);
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+  backdrop-filter: blur(14px);
   border-right: 1px solid var(--line);
 }
 :root[data-theme='eve-online'] .sidebar::before {
@@ -173,5 +175,5 @@
   box-shadow: none;
 }
 :root[data-theme='eve-online'] .sidebar-foot {
-  background: var(--panel);
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
 }
