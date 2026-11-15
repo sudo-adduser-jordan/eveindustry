@@ -13,7 +13,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/cache"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/health"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
-	"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/setup"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
@@ -50,15 +49,13 @@ type Deps struct {
 	DonationCharacters DonationESI
 	Windows            store.WindowStore
 	Projects           ProjectESI
+	EsiStatus          EsiStatusDeps
 	AdminUsers         store.AdminUserStore
 	Sponsors           store.SponsorStore
 	AdminStats         store.AdminStatsStore
 	SponsorImages      SponsorStorage
 	Diag               store.DiagStore
 	Cache              *cache.Cache
-	Notify             store.NotifyStore
-	NotifySender       notify.Sender
-	NotifyPush         NotifyPush
 	Abyssal            AbyssalDeps
 	Planetary          PlanetaryDeps
 
@@ -145,8 +142,8 @@ func New(d Deps) *echo.Echo {
 	registerAdmin(authed, d)
 	registerSponsors(authed, d)
 	registerDiagnostics(authed, d)
+	registerEsiStatus(authed, d)
 	registerCharacters(authed, d)
-	registerNotifications(authed, d)
 	registerDashboard(authed, d)
 	registerAbyssal(authed, d)
 	registerPlanetary(authed, d)

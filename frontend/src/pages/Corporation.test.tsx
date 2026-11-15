@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { ApiError } from '../api/client'
 import { ErrorNotice } from '../components/CorpCommon'
 import { me, renderWithData } from '../test/render'
@@ -7,7 +7,6 @@ import { asSteps, groupSteps } from './BuildProgramDetail'
 import Donations, { leaderboardText } from './Donations'
 import ProjectContributors from './ProjectContributors'
 import Projects from './Projects'
-import StructureTimers, { toRequest, windowLabel } from './StructureTimers'
 
 const meta = { pagination: { page: 1, per_page: 200, total: 1, last_page: 1 } }
 const seedMe: [readonly unknown[], unknown] = [['me'], me(['esi-wallet.read_corporation_wallets.v1', 'esi-corporations.read_projects.v1'])]
@@ -188,51 +187,6 @@ describe('ProjectContributors', () => {
     expect(screen.getByText('60.0%')).toBeInTheDocument()
     expect(screen.getByText('1,500.00 ISK')).toBeInTheDocument()
     expect(screen.getByText('Alpha')).toBeInTheDocument()
-  })
-})
-
-describe('StructureTimers', () => {
-  const win = (over: object) => ({
-    id: 1,
-    solar_system_id: 30000142,
-    solar_system_name: 'Jita',
-    structure_type: 'upwell',
-    structure_name: 'My Azbel',
-    day_of_week: 3,
-    start_time_utc: '18:00',
-    duration_minutes: 60,
-    reinforce_exit_at: '2026-11-01T12:00:00+00:00',
-    notes: null,
-    ...over,
-  })
-
-  it('groups windows by system', () => {
-    renderWithData(<StructureTimers />, [
-      [
-        ['corp', 'structure-windows'],
-        { data: [win({}), win({ id: 2, structure_type: 'skyhook', structure_name: 'Hook', day_of_week: null, reinforce_exit_at: null })], meta },
-      ],
-    ])
-
-    expect(screen.getByRole('region', { name: 'Jita' })).toBeInTheDocument()
-    expect(screen.getByText('Wednesday @ 18:00 · 60 min')).toBeInTheDocument()
-    expect(screen.getByText('Daily @ 18:00 · 60 min')).toBeInTheDocument()
-    expect(screen.getByText('2026-11-01 12:00')).toBeInTheDocument()
-  })
-
-  it('edits a window in the form', () => {
-    renderWithData(<StructureTimers />, [[['corp', 'structure-windows'], { data: [win({})], meta }]])
-    fireEvent.click(screen.getByRole('button', { name: 'Edit My Azbel' }))
-    expect(screen.getByText('Edit My Azbel')).toBeInTheDocument()
-    expect(screen.getByLabelText('Structure name')).toHaveValue('My Azbel')
-    expect(screen.getByLabelText('Day of week')).toHaveValue('3')
-  })
-
-  it('builds the request, dropping the day for skyhooks', () => {
-    const f = { system: { id: 1, name: 'Jita' }, type: 'skyhook' as const, name: ' Hook ', day: '3', start: '06:00', duration: '30', exit: '', notes: '' }
-    expect(toRequest(f)).toMatchObject({ structure_name: 'Hook', day_of_week: null, reinforce_exit_at: null, notes: null })
-    expect(toRequest({ ...f, system: null })).toBeNull()
-    expect(windowLabel(win({ structure_type: 'skyhook', day_of_week: null }) as never)).toBe('Daily')
   })
 })
 

@@ -7,6 +7,8 @@ import {
   useSystemSearch,
   type StructureInput,
 } from '../api/queries'
+import { useAddStructureWindow, type StructureWindowRequest } from '../api/corp'
+import { SystemPicker as TimerSystemPicker } from '../components/SystemPicker'
 import type { components } from '../api/schema'
 
 type Structure = components['schemas']['StructureResource']
@@ -293,9 +295,126 @@ function StructureForm({ editing, onDone }: { editing: Structure | null; onDone:
   )
 }
 
+export const TIMER_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+export interface TimerDraft {
+  system: { id: number; name: string } | null
+  type: 'upwell' | 'skyhook'
+  day: string
+  start: string
+  duration: string
+  exit: string
+  notes: string
+}
+
+export function toTimerRequest(structureName: string, f: TimerDraft): StructureWindowRequest | null {
+  if (!f.system || structureName.trim() === '') return null
+  return {
+    solar_system_id: f.system.id,
+    solar_system_name: f.system.name,
+    structure_type: f.type,
+    structure_name: structureName.trim(),
+    day_of_week: f.type === 'skyhook' ? null : Number(f.day),
+    start_time_utc: f.start,
+    duration_minutes: Number(f.duration),
+    reinforce_exit_at: f.exit ? `${f.exit}:00Z` : null,
+    notes: f.notes.trim() || null,
+  }
+}
+
+function StructureTimerForm({ s, onDone }: { s: Structure; onDone: (added: boolean) => void }) {
+  const add = useAddStructureWindow()
+  const [system, setSystem] = useState<TimerDraft['system']>(
+    s.solar_system_id !== null && s.solar_system_name ? { id: s.solar_system_id, name: s.solar_system_name } : null,
+  )
+  const [type, setType] = useState<TimerDraft['type']>('upwell')
+  const [day, setDay] = useState('0')
+  const [start, setStart] = useState('18:00')
+  const [duration, setDuration] = useState('60')
+  const [exit, setExit] = useState('')
+  const [notes, setNotes] = useState('')
+
+  function submit(e: FormEvent) {
+    e.preventDefault()
+    const body = toTimerRequest(s.name, { system, type, day, start, duration, exit, notes })
+    if (!body) return
+    add.mutate(body, { onSuccess: () => onDone(true) })
+  }
+
+  return (
+    <form className="panel scan-form" onSubmit={submit} aria-label={`Add vulnerability timer for ${s.name}`}>
+      <h3 className="subhead">Add vulnerability timer for {s.name}</h3>
+      {s.solar_system_id !== null && s.solar_system_name ? (
+        <p className="small muted">Uses this structure&apos;s system unless changed below.</p>
+      ) : (
+        <p className="small muted">This structure has no system set, pick the timer&apos;s system below.</p>
+      )}
+      <TimerSystemPicker id={`timer-system-${s.id}`} label="Solar system" value={system} onChange={setSystem} />
+      <div className="scan-field">
+        <label htmlFor={`timer-type-${s.id}`}>Structure type</label>
+        <select id={`timer-type-${s.id}`} value={type} onChange={(e) => setType(e.target.value as TimerDraft['type'])}>
+          <option value="upwell">Upwell structure</option>
+          <option value="skyhook">Skyhook (vulnerable daily)</option>
+        </select>
+      </div>
+      {type === 'upwell' ? (
+        <div className="scan-field">
+          <label htmlFor={`timer-day-${s.id}`}>Day of week</label>
+          <select id={`timer-day-${s.id}`} value={day} onChange={(e) => setDay(e.target.value)}>
+            {TIMER_DAYS.map((d, i) => (
+              <option key={d} value={i}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+      <div className="scan-field">
+        <label htmlFor={`timer-start-${s.id}`}>Start time (UTC)</label>
+        <input id={`timer-start-${s.id}`} type="time" required value={start} onChange={(e) => setStart(e.target.value)} />
+      </div>
+      <div className="scan-field">
+        <label htmlFor={`timer-duration-${s.id}`}>Duration (minutes)</label>
+        <input
+          id={`timer-duration-${s.id}`}
+          type="number"
+          min={5}
+          max={1440}
+          required
+          value={duration}
+          onChange={(e) => setDuration(e.target.value)}
+        />
+      </div>
+      <div className="scan-field">
+        <label htmlFor={`timer-exit-${s.id}`}>Reinforced until (UTC, optional)</label>
+        <input id={`timer-exit-${s.id}`} type="datetime-local" value={exit} onChange={(e) => setExit(e.target.value)} />
+      </div>
+      <div className="scan-field">
+        <label htmlFor={`timer-notes-${s.id}`}>Notes</label>
+        <textarea id={`timer-notes-${s.id}`} rows={2} maxLength={500} value={notes} onChange={(e) => setNotes(e.target.value)} />
+      </div>
+      {add.isError ? (
+        <p role="alert" className="warn">
+          {add.error.message}
+        </p>
+      ) : null}
+      <div className="form-actions">
+        <button type="submit" className="button" disabled={!system || add.isPending}>
+          Save timer
+        </button>
+        <button type="button" className="button" onClick={() => onDone(false)}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  )
+}
+
 function StructureCard({ s, onEdit }: { s: Structure; onEdit: () => void }) {
   const remove = useDeleteStructure()
   const makeDefault = useSetDefaultStructure()
+  const [timerOpen, setTimerOpen] = useState(false)
+  const [timerAdded, setTimerAdded] = useState(false)
   const error = remove.error ?? makeDefault.error
   return (
     <li className="panel structure">
@@ -310,6 +429,9 @@ function StructureCard({ s, onEdit }: { s: Structure; onEdit: () => void }) {
           ) : null}
           <button type="button" className="button" onClick={onEdit}>
             Edit
+          </button>
+          <button type="button" className="button" aria-expanded={timerOpen} onClick={() => setTimerOpen((v) => !v)}>
+            {timerOpen ? 'Close timer' : 'Add timer'}
           </button>
           <button
             type="button"
@@ -336,6 +458,20 @@ function StructureCard({ s, onEdit }: { s: Structure; onEdit: () => void }) {
         <p role="alert" className="warn">
           {error.message}
         </p>
+      ) : null}
+      {timerAdded ? (
+        <p role="status" className="small text-profit">
+          Vulnerability timer added.
+        </p>
+      ) : null}
+      {timerOpen ? (
+        <StructureTimerForm
+          s={s}
+          onDone={(added) => {
+            setTimerOpen(false)
+            if (added) setTimerAdded(true)
+          }}
+        />
       ) : null}
     </li>
   )

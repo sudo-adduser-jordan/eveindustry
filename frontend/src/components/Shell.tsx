@@ -2,19 +2,18 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useMe } from '../api/queries'
 import { useSessionActions } from '../api/account'
-import { usePushSync } from '../api/notifications'
 import { THEMES, THEME_GROUPS, useTheme } from '../theme'
 import { InstallPrompt } from './InstallPrompt'
 import { DemoBanner } from './DemoBanner'
+import EsiStatus from './EsiStatus'
 import logoIcon from '../assets/logo-icon.svg'
 import { PwaStatus } from './PwaStatus'
-import { groupForPath, navigationGroups, NAVIGATION_STORAGE_KEY } from './navigation'
+import { groupForPath, isExternalLink, navigationGroups, NAVIGATION_STORAGE_KEY } from './navigation'
 
 export function Shell() {
   const me = useMe()
   const session = useSessionActions()
   const [theme, setTheme] = useTheme()
-  usePushSync(Boolean(me.data) && !me.data?.data.demo)
   const { pathname } = useLocation()
   const activeGroup = groupForPath(pathname)
   const [openGroup, setOpenGroup] = useState<string | null>(() => {
@@ -63,9 +62,9 @@ export function Shell() {
           </button>
         </div>
         <nav id="app-navigation">
+          <NavLink to="/data">Data</NavLink>
           <NavLink to="/dashboard">Dashboard</NavLink>
           <NavLink to="/characters">Characters</NavLink>
-          <NavLink to="/notifications">Notifications</NavLink>
           {navigationGroups.filter((group) => !group.admin || me.data?.data.admin).map((group) => {
             const expanded = openGroup === group.id
             return (
@@ -75,7 +74,11 @@ export function Shell() {
                 </button>
                 <div id={`nav-${group.id}`} className="nav-submenu" hidden={!expanded}>
                   {group.links.filter((link) => !link.stockManager || me.data?.data.stock_manager).map((link) => (
-                    <NavLink key={link.to} to={link.to} end={group.links.some((other) => other.to !== link.to && other.to.startsWith(`${link.to}/`)) || link.to === '/'}>{link.label}</NavLink>
+                    isExternalLink(link.to) ? (
+                      <a key={link.to} href={link.to} target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>{link.label}</a>
+                    ) : (
+                      <NavLink key={link.to} to={link.to} end={group.links.some((other) => other.to !== link.to && other.to.startsWith(`${link.to}/`)) || link.to === '/'}>{link.label}</NavLink>
+                    )
                   ))}
                 </div>
               </div>
@@ -83,8 +86,8 @@ export function Shell() {
           })}
         </nav>
         <div className="sidebar-foot">
-          {me.data ? <p className="sidebar-user">{me.data.data.avatar_url ? <img src={me.data.data.avatar_url} alt="" width="28" height="28" /> : null}<span>{me.data.data.display_name}</span></p> : null}
           {me.data?.data.demo ? null : <p><a href="/auth/eve/scopes">Add character</a></p>}
+          <EsiStatus />
           <p className="theme-setting">
             <label htmlFor="theme-select">Theme</label>
             <select id="theme-select" value={theme} onChange={(e) => setTheme(e.target.value)}>

@@ -7,16 +7,13 @@ import { Shell } from './components/Shell'
 const Overview = lazy(() => import('./pages/Overview'))
 const Login = lazy(() => import('./pages/Login'))
 const Characters = lazy(() => import('./pages/Characters'))
-const Notifications = lazy(() => import('./pages/Notifications'))
-const MarketStatus = lazy(() => import('./pages/MarketStatus'))
+const Data = lazy(() => import('./pages/Data'))
 const Assets = lazy(() => import('./pages/Assets'))
 const IndustrySlots = lazy(() => import('./pages/IndustrySlots'))
 const Reprocessing = lazy(() => import('./pages/Reprocessing'))
 const StationTrading = lazy(() => import('./pages/StationTrading'))
 const RegionArbitrage = lazy(() => import('./pages/RegionArbitrage'))
 const AssetMaterials = lazy(() => import('./pages/AssetMaterials'))
-const AssetShips = lazy(() => import('./pages/AssetShips'))
-const AssetAbyssal = lazy(() => import('./pages/AssetAbyssal'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'))
 const AdminUserJobs = lazy(() => import('./pages/admin/AdminUserJobs'))
@@ -35,7 +32,6 @@ const Projects = lazy(() => import('./pages/Projects'))
 const ProjectContributors = lazy(() => import('./pages/ProjectContributors'))
 const CorporateBuildPrograms = lazy(() => import('./pages/CorporateBuildPrograms'))
 const BuildProgramDetail = lazy(() => import('./pages/BuildProgramDetail'))
-const StructureTimers = lazy(() => import('./pages/StructureTimers'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const IndustryJobs = lazy(() => import('./pages/IndustryJobs'))
 const MostProfitable = lazy(() => import('./pages/MostProfitable'))
@@ -63,14 +59,12 @@ export function App() {
         <Route element={<Shell />}>
           <Route index element={<Overview />} />
           <Route path="characters" element={<Characters />} />
-          <Route path="notifications" element={<Notifications />} />
-          <Route path="market-status" element={<MarketStatus />} />
+          <Route path="data" element={<Data />} />
+          <Route path="market-status" element={<Navigate to="/data" replace />} />
           {}
           <Route path="assets" element={<Assets key="personal" scope="personal" />} />
           <Route path="assets/corporation" element={<Assets key="corporate" scope="corporate" />} />
           <Route path="assets/materials" element={<AssetMaterials />} />
-          <Route path="assets/ships" element={<AssetShips />} />
-          <Route path="assets/abyssal" element={<AssetAbyssal />} />
           <Route path="calculators/manufacturing" element={<Manufacturing />} />
           <Route path="calculators/manufacturing-browser" element={<ManufacturingBrowser />} />
           <Route path="calculators/reaction-browser" element={<ReactionBrowser />} />
@@ -108,7 +102,6 @@ export function App() {
           <Route path="corporate/projects/contributors" element={<ProjectContributors />} />
           <Route path="corporate/build-programs" element={<CorporateBuildPrograms />} />
           <Route path="corporate/build-programs/:program" element={<BuildProgramDetail />} />
-          <Route path="corporate/structure-vulnerability" element={<StructureTimers />} />
           <Route path="market/browser" element={<MarketBrowser />} />
           <Route path="tools/contract-appraisal" element={<ContractAppraisal />} />
           <Route path="tools/contract-browser" element={<ContractBrowser />} />

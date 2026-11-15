@@ -10,7 +10,6 @@ import {
 import './styles/tokens.css'
 import './styles/app.css'
 import './styles/theme.css'
-import './styles/themes/industrialist.css'
 import './styles/themes/eve-online.css'
 import './styles/themes/carbon.css'
 import './styles/themes/amarr.css'

@@ -13,7 +13,6 @@ import (
 	"github.com/sudo-adduser-jordan/eveindustry/internal/industry"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/jobs"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/logx"
-	"github.com/sudo-adduser-jordan/eveindustry/internal/notify"
 	"github.com/sudo-adduser-jordan/eveindustry/internal/store"
 )
 
@@ -56,10 +55,6 @@ func main() {
 		hd.ESIUniverse = esi.NewUniverseClient(esiClient, hd.DB, nil, hd.DB)
 		hd.ESIMarket = esi.NewMarketClient(esiClient, nil)
 		jobs.WireDemo(&hd)
-		hd.Sender = &notify.WebPushSender{
-			Subject: os.Getenv("VAPID_SUBJECT"), PublicKey: os.Getenv("VAPID_PUBLIC_KEY"),
-			PrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
-		}
 	}
 	r := jobs.NewRunner(jobs.Deps{Log: log, Locks: locks})
 	jobs.RegisterRefreshJobs(r, hd)
@@ -68,7 +63,6 @@ func main() {
 	jobs.RegisterImportJobs(r, hd)
 	jobs.RegisterPrecomputeJobs(r, hd)
 	jobs.RegisterMaintenanceJobs(r, hd)
-	jobs.RegisterNotifyJobs(r, hd)
 	diagDeps := jobs.DiagFlusherDeps{HandlerDeps: hd}
 	if db != nil {
 		diagDeps.Stream = &esi.SQLStream{DB: db.DB}
@@ -100,9 +94,6 @@ func main() {
 			sched.Entries = append(sched.Entries, e)
 		}
 		for _, e := range jobs.DiagSchedule(diagDeps) {
-			sched.Entries = append(sched.Entries, e)
-		}
-		for _, e := range jobs.NotifySchedule(hd) {
 			sched.Entries = append(sched.Entries, e)
 		}
 	}

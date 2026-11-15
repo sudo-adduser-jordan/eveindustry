@@ -142,7 +142,6 @@ Dispatched by `cmd/scheduler` (one tick loop, run every minute). Times are UTC. 
 | `esi:diagnostics-flush` | every minute | on, no-op unless `ESI_DIAGNOSTICS_ENABLED` | Queues `FlushEsiDiagnostics` (`default`): drains the `go_diag_stream` table in 200-event checkpointed transactions, bounded to 45 s; re-queues itself only while a backlog remains. Gaps are recorded in the checkpoint. | `esi_diagnostic_events`, `esi_endpoint_metrics`, `esi_budget_metrics`, `esi_telemetry_checkpoints` |
 | `esi:diagnostics-prune` | daily 06:30 | on | Deletes expired diagnostics rows in 500-row batches (events 14 d, endpoint metrics 90 d, budget minute rows 7 d, hourly 90 d). | same |
 | `demo:reset` | daily 03:30 | on, no-op unless `DEMO_ENABLED` | Regenerates the demo account with three new characters and warms its caches. See `docs/demo-mode.md`. | demo user rows, `characters`, asset snapshots |
-| `notifications:dispatch` | every 5 min | on | Prunes `notification_log` (14 d), then queues `DispatchUserNotifications` (`default`) for active users with a push subscription; no-op until VAPID keys are set. See `docs/pwa.md`. | `notification_log`, `push_subscriptions` |
 | `esi:refresh-tokens` | every 10 min | off | Tokens are refreshed on demand inside `EsiService` instead. | `characters` |
 | `market:fetch-region-history` | every 6 h | off | `FetchRegionHistory` → `FetchRegionHistoryChunk`. Replaced by the everef import. | `market_history` |
 

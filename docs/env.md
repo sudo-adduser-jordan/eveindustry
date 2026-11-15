@@ -34,10 +34,6 @@ Diagnostics:
 
 - `ESI_DIAGNOSTICS_ENABLED=false`, Admin ESI Diagnostics off unless enabled.
 
-Push:
-
-- `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, empty keeps push off.
-
 Uploads:
 
 - `SPONSOR_DIR=storage/sponsors`
