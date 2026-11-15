@@ -69,7 +69,7 @@ fix:
 
 # AGENTS.md
 
-Go (Echo + sqlx) API for EVE Online industrialists. Players sign in with
+Go (Echo + sqlx) API for EVE Online industry. Players sign in with
 EVE SSO, link characters, and use planning and tracking tools built on their
 ESI data plus public market data. The Go API serves `/api/v1` consumed by
 `frontend/` (Vite, TypeScript).

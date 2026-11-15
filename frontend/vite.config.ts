@@ -28,7 +28,7 @@ export default defineConfig({
         id: '/app/',
         name: 'Eve Industry',
         short_name: 'Industry',
-        description: 'Planning and tracking tools for EVE Online industrialists.',
+        description: 'Planning and tracking tools for EVE Online industry.',
         start_url: '/app/dashboard',
         scope: '/app/',
         display: 'standalone',
