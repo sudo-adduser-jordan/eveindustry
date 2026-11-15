@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useMe } from '../api/queries'
 import logoIcon from '../assets/logo-icon.svg'
 import eveSsoLoginBlack from '../assets/eve-sso-login-black-large.png'
 import eveSsoLoginWhite from '../assets/eve-sso-login-white-large.png'
 import { LOGIN_POSTER_SRC, LOGIN_POSTER_SRCSET, LOGIN_VIDEO_SRC } from '../loginBackdrop'
+import { themeColorFor } from '../theme'
 
 type DemoState = 'idle' | 'busy' | 'off' | 'error'
 
@@ -12,6 +13,20 @@ type DemoState = 'idle' | 'busy' | 'off' | 'error'
 export default function Login() {
   const me = useMe()
   const [demo, setDemo] = useState<DemoState>('idle')
+
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    const prevTheme = root.dataset.theme
+    const meta = document.querySelector('meta[name="theme-color"]')
+    const prevMeta = meta?.getAttribute('content') ?? null
+    root.dataset.theme = 'eve-online'
+    meta?.setAttribute('content', themeColorFor('eve-online'))
+    return () => {
+      if (prevTheme) root.dataset.theme = prevTheme
+      else delete root.dataset.theme
+      if (meta && prevMeta !== null) meta.setAttribute('content', prevMeta)
+    }
+  }, [])
 
   if (me.data) {
     return <Navigate to="/dashboard" replace />

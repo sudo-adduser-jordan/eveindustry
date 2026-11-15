@@ -128,5 +128,5 @@ it('gives EVE Online flat market-browser chrome with corner-cut controls', () =>
   expect(css).toContain('clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8.5px)')
   expect(css).toContain('text-transform: none')
   expect(css).toContain('#2e6779')
-  expect(css).toContain("font-display: helvetica")
+  expect(css).toContain("font-display: 'Shentox'")
 })

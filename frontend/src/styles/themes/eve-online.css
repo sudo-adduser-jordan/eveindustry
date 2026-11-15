@@ -1,3 +1,60 @@
+@font-face {
+  font-family: 'Shentox';
+  font-display: swap;
+  src: url('../../assets/fonts/Shentox-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Shentox';
+  font-display: swap;
+  src: url('../../assets/fonts/Shentox-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Shentox';
+  font-display: swap;
+  src: url('../../assets/fonts/Shentox-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Shentox';
+  font-display: swap;
+  src: url('../../assets/fonts/Shentox-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Rogan';
+  font-display: swap;
+  src: url('../../assets/fonts/Rogan-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Rogan';
+  font-display: swap;
+  src: url('../../assets/fonts/Rogan-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Rogan';
+  font-display: swap;
+  src: url('../../assets/fonts/Rogan-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Rogan';
+  font-display: swap;
+  src: url('../../assets/fonts/Rogan-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+}
+
 :root[data-theme='eve-online'] {
   --bg: #05070b;
   --panel: #111317;
@@ -17,8 +74,8 @@
   --manufacturing: #58a7bf;
   --research: #a89bd8;
   --reactions: #f39058;
-  --font-display: helvetica, arial, system-ui, sans-serif;
-  --font-body: helvetica, arial, system-ui, sans-serif;
+  --font-display: 'Shentox', helvetica, arial, system-ui, sans-serif;
+  --font-body: 'Rogan', helvetica, arial, system-ui, sans-serif;
   --sidebar-width: 260px;
   color-scheme: dark;
 }
