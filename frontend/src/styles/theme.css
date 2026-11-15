@@ -526,6 +526,10 @@ summary:hover { color: var(--accent); }
   line-height: 1.2;
   margin: 0 0 1rem;
 }
+.auth-content .auth-panel {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 60%, transparent), color-mix(in srgb, var(--panel) 60%, transparent));
+  backdrop-filter: blur(14px);
+}
 .auth-panel .button { margin: 0.25rem 0; }
 /* Official EVE SSO artwork: identical in every theme, white on dark themes, black on light. */
 .eve-sso-button { display: inline-block; line-height: 0; }
