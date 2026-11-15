@@ -16,9 +16,10 @@ export function formatIsk(value: number): string {
 
 
 const DEMO_ID_FLOOR = 99_000_000_000
+const DEMO_PORTRAIT_URL = 'https://e.dotlan.net/images/Alliance/99015350_128.png'
 
 export function portraitUrl(characterId: number, size = 32): string {
   return characterId >= DEMO_ID_FLOOR
-    ? `/demo/portrait/${characterId}.svg?size=${size}`
+    ? DEMO_PORTRAIT_URL
     : `https://images.evetech.net/characters/${characterId}/portrait?size=${size}`
 }

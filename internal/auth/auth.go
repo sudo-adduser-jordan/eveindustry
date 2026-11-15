@@ -7,15 +7,16 @@ import (
 )
 
 const (
-	DemoBase    = 99_000_000_000
-	DemoCeiling = 99_300_000_000
+	DemoBase        = 99_000_000_000
+	DemoCeiling     = 99_300_000_000
+	DemoPortraitURL = "https://e.dotlan.net/images/Alliance/99015350_128.png"
 )
 
 func IsDemoID(id int64) bool { return id >= DemoBase && id < DemoCeiling }
 
 func PortraitURL(characterID int64) string {
 	if IsDemoID(characterID) {
-		return fmt.Sprintf("/demo/portrait/%d.svg?size=128", characterID)
+		return DemoPortraitURL
 	}
 	return fmt.Sprintf("https://images.evetech.net/characters/%d/portrait?size=128", characterID)
 }

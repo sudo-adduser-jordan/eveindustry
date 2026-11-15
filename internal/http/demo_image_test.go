@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/sudo-adduser-jordan/eveindustry/internal/auth"
 )
 
 func demoImageReq(t *testing.T, path string) (int, http.Header, string) {
@@ -16,16 +18,13 @@ func demoImageReq(t *testing.T, path string) (int, http.Header, string) {
 	return rec.Code, rec.Header(), rec.Body.String()
 }
 
-func TestDemoPortraitServesSVG(t *testing.T) {
-	code, hdr, body := demoImageReq(t, "/demo/portrait/99014526777.svg?size=128")
-	if code != http.StatusOK {
-		t.Fatalf("portrait = %d, want 200", code)
+func TestDemoPortraitRedirectsToCorpLogo(t *testing.T) {
+	code, hdr, _ := demoImageReq(t, "/demo/portrait/99014526777.svg?size=128")
+	if code != http.StatusFound {
+		t.Fatalf("portrait = %d, want %d", code, http.StatusFound)
 	}
-	if ct := hdr.Get("Content-Type"); ct != "image/svg+xml" {
-		t.Fatalf("content-type = %q, want image/svg+xml", ct)
-	}
-	if !strings.HasPrefix(body, "<svg") || !strings.Contains(body, `width="128"`) {
-		t.Fatalf("portrait body is not a sized SVG: %.120s", body)
+	if loc := hdr.Get("Location"); loc != auth.DemoPortraitURL {
+		t.Fatalf("portrait Location = %q, want %q", loc, auth.DemoPortraitURL)
 	}
 	if hdr.Get("Cache-Control") == "" {
 		t.Fatalf("portrait missing Cache-Control")
@@ -42,10 +41,6 @@ func TestDemoLogoServesSVG(t *testing.T) {
 	}
 	if !strings.HasPrefix(body, "<svg") || !strings.Contains(body, `width="64"`) {
 		t.Fatalf("logo body is not a sized SVG: %.120s", body)
-	}
-	_, _, portrait := demoImageReq(t, "/demo/portrait/99101050398.svg?size=64")
-	if portrait == body {
-		t.Fatalf("portrait and logo SVGs are identical")
 	}
 }
 

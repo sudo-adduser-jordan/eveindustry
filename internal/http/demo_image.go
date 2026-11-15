@@ -18,14 +18,15 @@ func registerDemoImages(e *echo.Echo) {
 
 func handleDemoImage(portrait bool) echo.HandlerFunc {
 	defSize := 64
-	if portrait {
-		defSize = 128
-	}
 	return func(c echo.Context) error {
 		raw := strings.TrimSuffix(c.Param("id"), ".svg")
 		id, err := strconv.ParseInt(raw, 10, 64)
 		if err != nil || !auth.IsDemoID(id) {
 			return Failure(c, http.StatusNotFound, "Not Found.", nil)
+		}
+		if portrait {
+			c.Response().Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			return c.Redirect(http.StatusFound, auth.DemoPortraitURL)
 		}
 		size := defSize
 		if q := c.QueryParam("size"); q != "" {
@@ -40,11 +41,7 @@ func handleDemoImage(portrait bool) echo.HandlerFunc {
 			size = 1024
 		}
 		var body string
-		if portrait {
-			body = demoPortraitSVG(id, size)
-		} else {
-			body = demoLogoSVG(id, size)
-		}
+		body = demoLogoSVG(id, size)
 		res := c.Response()
 		res.Header().Set("Content-Type", "image/svg+xml")
 		res.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
@@ -58,23 +55,6 @@ func demoHue(id int64) int {
 		h += 360
 	}
 	return int(h)
-}
-
-func demoPortraitSVG(id int64, size int) string {
-	h := demoHue(id)
-	h2 := (h + 50) % 360
-	return fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%[1]d" height="%[1]d" viewBox="0 0 128 128">`+
-		`<defs><radialGradient id="g" cx="50%%" cy="32%%" r="80%%">`+
-		`<stop offset="0%%" stop-color="hsl(%[2]d,42%%,30%%)"/>`+
-		`<stop offset="100%%" stop-color="hsl(%[2]d,45%%,11%%)"/></radialGradient>`+
-		`<clipPath id="c"><rect width="128" height="128" rx="26"/></clipPath></defs>`+
-		`<g clip-path="url(#c)"><rect width="128" height="128" fill="url(#g)"/>`+
-		`<circle cx="102" cy="18" r="34" fill="hsl(%[3]d,80%%,60%%)" fill-opacity="0.16"/>`+
-		`<circle cx="22" cy="112" r="26" fill="hsl(%[3]d,80%%,60%%)" fill-opacity="0.12"/>`+
-		`<circle cx="64" cy="54" r="23" fill="hsl(%[2]d,75%%,64%%)"/>`+
-		`<path d="M22 132c4-32 22-46 42-46s38 14 42 46z" fill="hsl(%[2]d,75%%,64%%)"/>`+
-		`<circle cx="64" cy="64" r="57" fill="none" stroke="hsl(%[2]d,85%%,72%%)" stroke-opacity="0.55" stroke-width="3"/>`+
-		`</g></svg>`, size, h, h2)
 }
 
 func demoLogoSVG(id int64, size int) string {
